@@ -2,41 +2,43 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, 
-  Users, 
+  BookOpen, 
   TrendingUp, 
-  DollarSign, 
+  Users, 
   Award, 
   CheckCircle, 
   Star,
   Zap,
   Shield,
-  Target
+  Target,
+  Clock,
+  Globe
 } from 'lucide-react';
 
-const JoinAsCustomer: React.FC = () => {
+const JoinAsLearner: React.FC = () => {
   const benefits = [
     {
-      icon: DollarSign,
-      title: "Multiple Income Streams",
-      description: "Earn through direct sales, team bonuses, and binary tree commissions with unlimited earning potential.",
-      color: "from-green-500 to-emerald-600"
-    },
-    {
-      icon: Users,
-      title: "Binary Tree System",
-      description: "Fair and balanced compensation structure with automated left-first placement for optimal growth.",
+      icon: BookOpen,
+      title: "Unlimited Course Access",
+      description: "Access thousands of courses in programming, science, mathematics, and more subjects.",
       color: "from-blue-500 to-indigo-600"
     },
     {
+      icon: Users,
+      title: "Expert Tutors",
+      description: "Learn from verified tutors with years of experience in their respective fields.",
+      color: "from-green-500 to-emerald-600"
+    },
+    {
       icon: TrendingUp,
-      title: "Real-time Analytics",
-      description: "Track your network growth, earnings, and performance with comprehensive dashboard analytics.",
+      title: "Progress Tracking",
+      description: "Monitor your learning progress with detailed analytics and achievement tracking.",
       color: "from-purple-500 to-pink-600"
     },
     {
-      icon: Shield,
-      title: "Secure Platform",
-      description: "Enterprise-grade security with blockchain technology ensuring transparent and secure transactions.",
+      icon: Award,
+      title: "Certificates",
+      description: "Earn verified certificates upon course completion to showcase your skills.",
       color: "from-yellow-500 to-orange-600"
     }
   ];
@@ -44,52 +46,49 @@ const JoinAsCustomer: React.FC = () => {
   const steps = [
     {
       step: "1",
-      title: "Register Your Account",
-      description: "Complete our simple registration form with your basic information and choose a unique username.",
-      image: "https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      title: "Create Your Account",
+      description: "Sign up with your basic information and set your learning goals.",
+      image: "https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
     },
     {
       step: "2",
-      title: "Verify Your Identity",
-      description: "Complete email and mobile verification to secure your account and enable all features.",
-      image: "https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      title: "Choose Your Courses",
+      description: "Browse our extensive catalog and enroll in courses that interest you.",
+      image: "https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
     },
     {
       step: "3",
-      title: "Choose Your Plan",
-      description: "Select a subscription plan that matches your goals and investment capacity.",
-      image: "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      title: "Get Assigned a Tutor",
+      description: "Our system will assign you a qualified tutor based on your learning needs.",
+      image: "https://images.pexels.com/photos/5212700/pexels-photo-5212700.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
     },
     {
       step: "4",
-      title: "Start Building",
-      description: "Begin building your network and earning through our transparent binary system.",
-      image: "https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      title: "Start Learning",
+      description: "Begin your educational journey with personalized guidance and support.",
+      image: "https://images.pexels.com/photos/4144923/pexels-photo-4144923.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
     }
   ];
 
   const testimonials = [
     {
       name: "Sarah Johnson",
-      earnings: "$5,200",
-      period: "monthly",
-      quote: "The binary system is incredibly fair and transparent. I've built a sustainable income stream that continues to grow.",
+      achievement: "Full-Stack Developer",
+      quote: "The personalized tutoring helped me transition from marketing to web development in just 6 months.",
       image: "https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
       rating: 5
     },
     {
       name: "Michael Chen",
-      earnings: "$8,750",
-      period: "monthly",
-      quote: "The platform's analytics help me optimize my strategy. The support team is always there when I need help.",
+      achievement: "Data Scientist",
+      quote: "The mathematics and programming courses gave me the foundation I needed for my data science career.",
       image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
       rating: 5
     },
     {
       name: "Emma Davis",
-      earnings: "$12,300",
-      period: "monthly",
-      quote: "I love the blockchain transparency. Every transaction is visible and secure. It's the future of MLM.",
+      achievement: "Physics Teacher",
+      quote: "The advanced physics courses helped me become a better educator and understand complex concepts.",
       image: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop",
       rating: 5
     }
@@ -101,8 +100,8 @@ const JoinAsCustomer: React.FC = () => {
       <section className="relative bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white py-20 overflow-hidden">
         <div className="absolute inset-0">
           <img 
-            src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop" 
-            alt="Join as Customer"
+            src="https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop" 
+            alt="Join as Learner"
             className="w-full h-full object-cover opacity-20"
           />
         </div>
@@ -111,50 +110,50 @@ const JoinAsCustomer: React.FC = () => {
             <div>
               <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 mb-6 border border-white/20">
                 <Target className="h-5 w-5 text-yellow-300" />
-                <span className="text-sm font-medium">Customer Registration</span>
+                <span className="text-sm font-medium">Learner Registration</span>
               </div>
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                Start Your <span className="bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">Financial Journey</span>
+                Start Your <span className="bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">Learning Journey</span>
               </h1>
               <p className="text-xl text-gray-200 mb-8 leading-relaxed">
-                Join thousands of successful entrepreneurs building their financial future through our innovative binary tree MLM system.
+                Join thousands of learners mastering new skills with expert tutors in programming, science, mathematics, and more.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  to="/customer/register"
+                  to="/learner/register"
                   className="group bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-4 rounded-2xl font-bold hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                 >
                   <span>Register Now</span>
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
-                  to="/subscription-plans"
+                  to="/courses"
                   className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-indigo-900 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
                 >
-                  <span>View Plans</span>
+                  <span>Browse Courses</span>
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
             <div className="relative">
               <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20">
-                <h3 className="text-2xl font-bold mb-6">Quick Stats</h3>
+                <h3 className="text-2xl font-bold mb-6">Platform Stats</h3>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-yellow-300 mb-2">50K+</div>
-                    <div className="text-sm text-gray-300">Active Members</div>
+                    <div className="text-3xl font-bold text-yellow-300 mb-2">10K+</div>
+                    <div className="text-sm text-gray-300">Active Learners</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-300 mb-2">$2M+</div>
-                    <div className="text-sm text-gray-300">Total Earnings</div>
+                    <div className="text-3xl font-bold text-green-300 mb-2">500+</div>
+                    <div className="text-sm text-gray-300">Expert Tutors</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-300 mb-2">150+</div>
-                    <div className="text-sm text-gray-300">Countries</div>
+                    <div className="text-3xl font-bold text-blue-300 mb-2">1000+</div>
+                    <div className="text-sm text-gray-300">Courses</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-300 mb-2">99.9%</div>
-                    <div className="text-sm text-gray-300">Uptime</div>
+                    <div className="text-3xl font-bold text-purple-300 mb-2">95%</div>
+                    <div className="text-sm text-gray-300">Success Rate</div>
                   </div>
                 </div>
               </div>
@@ -169,13 +168,13 @@ const JoinAsCustomer: React.FC = () => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center space-x-2 bg-indigo-100 rounded-full px-6 py-3 mb-6">
               <Award className="h-5 w-5 text-indigo-600" />
-              <span className="text-sm font-semibold text-indigo-600">Customer Benefits</span>
+              <span className="text-sm font-semibold text-indigo-600">Learner Benefits</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Join as a Customer?
+              Why Learn With Us?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Unlock exclusive benefits and earning opportunities designed specifically for individual entrepreneurs.
+              Experience personalized education with expert tutors and comprehensive course materials.
             </p>
           </div>
 
@@ -207,7 +206,7 @@ const JoinAsCustomer: React.FC = () => {
               Get Started in 4 Easy Steps
             </h2>
             <p className="text-xl text-gray-600">
-              Join our community and start earning in minutes
+              Begin your learning journey in minutes
             </p>
           </div>
 
@@ -247,10 +246,10 @@ const JoinAsCustomer: React.FC = () => {
               <span className="text-sm font-semibold text-green-600">Success Stories</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              What Our Customers Say
+              What Our Learners Say
             </h2>
             <p className="text-xl text-gray-600">
-              Real stories from real people building real success
+              Real stories from real learners achieving real success
             </p>
           </div>
 
@@ -265,18 +264,15 @@ const JoinAsCustomer: React.FC = () => {
                   />
                   <div>
                     <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                    <div className="flex items-center space-x-1">
+                    <p className="text-indigo-600 font-semibold">{testimonial.achievement}</p>
+                    <div className="flex items-center space-x-1 mt-1">
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
                       ))}
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-6 italic">"{testimonial.quote}"</p>
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-2xl text-center">
-                  <div className="text-2xl font-bold">{testimonial.earnings}</div>
-                  <div className="text-sm opacity-90">{testimonial.period} earnings</div>
-                </div>
+                <p className="text-gray-600 italic">"{testimonial.quote}"</p>
               </div>
             ))}
           </div>
@@ -289,18 +285,18 @@ const JoinAsCustomer: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Customer Requirements
+                Learner Requirements
               </h2>
               <p className="text-xl text-indigo-100 mb-8">
-                Simple requirements to get started on your entrepreneurial journey.
+                Simple requirements to start your learning journey.
               </p>
               <div className="space-y-4">
                 {[
-                  "Must be 18 years or older",
+                  "Must be 13 years or older",
                   "Valid email address and phone number",
-                  "Government-issued ID for verification",
-                  "Active subscription to one of our plans",
-                  "Commitment to ethical business practices"
+                  "Basic computer/internet access",
+                  "Commitment to learning and growth",
+                  "Willingness to engage with tutors and community"
                 ].map((requirement, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <CheckCircle className="h-6 w-6 text-green-300 flex-shrink-0" />
@@ -311,13 +307,13 @@ const JoinAsCustomer: React.FC = () => {
             </div>
             <div className="relative">
               <img 
-                src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" 
+                src="https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" 
                 alt="Requirements"
                 className="rounded-2xl shadow-2xl"
               />
               <div className="absolute -bottom-6 -left-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 p-6 rounded-2xl shadow-xl">
-                <div className="text-2xl font-bold">Ready to Start?</div>
-                <div className="text-sm opacity-90">Join thousands of successful entrepreneurs</div>
+                <div className="text-2xl font-bold">Ready to Learn?</div>
+                <div className="text-sm opacity-90">Join thousands of successful learners</div>
               </div>
             </div>
           </div>
@@ -328,28 +324,28 @@ const JoinAsCustomer: React.FC = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            Ready to Transform Your Life?
+            Ready to Transform Your Future?
           </h2>
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Join our community of successful entrepreneurs and start building your financial future today. 
-            Your journey to financial freedom starts with a single click.
+            Join our community of learners and start building the skills you need for success. 
+            Your educational journey starts with a single click.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
             <Link
-              to="/customer/register"
+              to="/learner/register"
               className="group bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             >
-              <DollarSign className="h-6 w-6" />
-              <span>Start Earning Today</span>
+              <BookOpen className="h-6 w-6" />
+              <span>Start Learning Today</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              to="/subscription-plans"
+              to="/courses"
               className="group border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-2xl font-semibold hover:bg-indigo-50 transition-all duration-300 flex items-center justify-center space-x-3"
             >
               <CheckCircle className="h-5 w-5" />
-              <span>View Pricing Plans</span>
+              <span>Browse Courses</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -358,19 +354,19 @@ const JoinAsCustomer: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-75">
             <div className="flex items-center justify-center space-x-2">
               <Shield className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">SSL Secured</span>
+              <span className="text-sm text-gray-600">Secure Platform</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <CheckCircle className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">Verified Platform</span>
+              <span className="text-sm text-gray-600">Verified Tutors</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Users className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">50K+ Members</span>
+              <span className="text-sm text-gray-600">10K+ Learners</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Award className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">Award Winning</span>
+              <span className="text-sm text-gray-600">Certified Courses</span>
             </div>
           </div>
         </div>
@@ -379,4 +375,4 @@ const JoinAsCustomer: React.FC = () => {
   );
 };
 
-export default JoinAsCustomer;
+export default JoinAsLearner;

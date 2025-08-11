@@ -7,10 +7,9 @@ interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  companyName?: string;
-  userType: 'customer' | 'company' | 'admin';
-  sponsorshipNumber?: string;
-  parentId?: string;
+  userType: 'learner' | 'tutor' | 'admin';
+  educationLevel?: string;
+  interests?: string[];
   isVerified: boolean;
   hasActivePlan: boolean;
   mobileVerified: boolean;
@@ -19,7 +18,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, userType: string) => Promise<void>;
-  register: (userData: any, userType: string) => Promise<string>;
+  register: (userData: any, userType: 'learner' | 'tutor') => Promise<string>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
@@ -163,17 +162,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Try to get company data if user is a company
-      let companyData = null;
-      if (userData?.tu_user_type === 'company') {
+      let tutorData = null;
+      if (userData?.tu_user_type === 'tutor') {
         try {
-          const { data: companyDataArray } = await supabase
-              .from('tbl_companies')
+          const { data: tutorDataArray } = await supabase
+              .from('tbl_tutors')
               .select('*')
-              .eq('tc_user_id', userId);
-          console.log('🏢 Company data retrieved:', companyDataArray?.length || 0, 'records');
-          companyData = companyDataArray?.[0];
-        } catch (companyRlsError) {
-          console.warn('RLS blocking companies table:', companyRlsError);
+              .eq('tt_user_id', userId);
+          console.log('👨‍🏫 Tutor data retrieved:', tutorDataArray?.length || 0, 'records');
+          tutorData = tutorDataArray?.[0];
+        } catch (tutorRlsError) {
+          console.warn('RLS blocking tutors table:', tutorRlsError);
         }
       }
 
@@ -200,10 +199,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: session?.user?.email || userData?.tu_email || 'unknown@example.com',
         firstName: profileData?.tup_first_name,
         lastName: profileData?.tup_last_name,
-        companyName: companyData?.tc_company_name,
-        userType: userData?.tu_user_type || 'customer',
-        sponsorshipNumber: profileData?.tup_sponsorship_number,
-        parentId: profileData?.tup_parent_account,
+        userType: userData?.tu_user_type || 'learner',
+        educationLevel: profileData?.tup_education_level,
+        interests: profileData?.tup_interests,
         isVerified: userData?.tu_is_verified || false,
         hasActivePlan: true, // Set to true for demo mode
         mobileVerified: userData?.tu_mobile_verified || false
@@ -340,9 +338,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Use the appropriate registration function based on user type
-      if (userType === 'customer') {
-        console.log('📝 Registering customer profile...');
-        const { error: regError } = await supabase.rpc('register_customer', {
+      if (userType === 'learner') {
+        console.log('📝 Registering learner profile...');
+        const { error: regError } = await supabase.rpc('register_learner', {
+          p_user_id: authData.user.id,
+          p_email: userData.email,
+          p_first_name: userData.firstName,
+          p_last_name: userData.lastName,
+          p_username: userData.userName,
+          p_mobile: userData.mobile,
+          p_gender: userData.gender
+        });
+
+        if (regError) {
+          console.error('Learner registration error:', regError);
+          throw new Error(regError.message);
+        }
+      } else if (userType === 'tutor') {
+        console.log('📝 Registering tutor profile...');
+        const { error: regError } = await supabase.rpc('register_tutor', {
           p_user_id: authData.user.id,
           p_email: userData.email,
           p_first_name: userData.firstName,
@@ -350,67 +364,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           p_username: userData.userName,
           p_mobile: userData.mobile,
           p_gender: userData.gender,
-          p_parent_account: userData.parentAccount
+          p_bio: userData.bio,
+          p_specializations: userData.specializations,
+          p_experience_years: userData.experienceYears,
+          p_education: userData.education,
+          p_hourly_rate: userData.hourlyRate
         });
 
         if (regError) {
-          console.error('Customer registration error:', regError);
-          throw new Error(regError.message);
-        }
-
-        // Add user to MLM tree if parent account is provided
-        if (userData.parentAccount) {
-          try {
-            console.log('🌳 Adding user to MLM tree with sponsor:', userData.parentAccount);
-
-            const { data: profileData, error: profileError } = await supabase
-                .from('tbl_user_profiles')
-                .select('tup_sponsorship_number')
-                .eq('tup_user_id', authData.user.id)
-                .single();
-
-            if (profileError) {
-              console.error('❌ Could not get sponsorship number for MLM tree placement:', profileError);
-              throw profileError;
-            }
-
-            if (profileData?.tup_sponsorship_number) {
-              const treeResult = await addUserToMLMTree(
-                  authData.user.id,
-                  profileData.tup_sponsorship_number,
-                  userData.parentAccount
-              );
-
-              if (treeResult?.success) {
-                console.log('✅ MLM tree placement successful');
-              } else {
-                console.error('❌ MLM tree placement failed:', treeResult);
-                throw new Error(treeResult?.error || 'MLM tree placement failed');
-              }
-            }
-          } catch (treeError) {
-            console.error('❌ MLM tree placement failed:', treeError);
-            console.warn('⚠️ Registration completed but MLM tree placement failed');
-          }
-        }
-      } else if (userType === 'company') {
-        console.log('📝 Registering company profile...');
-        const { error: regError } = await supabase.rpc('register_company', {
-          p_user_id: authData.user.id,
-          p_email: userData.email,
-          p_company_name: userData.companyName,
-          p_brand_name: userData.brandName,
-          p_business_type: userData.businessType,
-          p_business_category: userData.businessCategory,
-          p_registration_number: userData.registrationNumber,
-          p_gstin: userData.gstin,
-          p_website_url: userData.websiteUrl,
-          p_official_email: userData.officialEmail,
-          p_affiliate_code: userData.affiliateCode
-        });
-
-        if (regError) {
-          console.error('Company registration error:', regError);
+          console.error('Tutor registration error:', regError);
           throw new Error(regError.message);
         }
       }

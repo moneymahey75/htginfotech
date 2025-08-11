@@ -225,7 +225,7 @@ export const sessionManager = {
 export interface User {
   id: string
   email: string
-  tu_user_type: 'customer' | 'company' | 'admin'
+  tu_user_type: 'learner' | 'tutor' | 'admin'
   tu_is_verified: boolean
   tu_email_verified: boolean
   tu_mobile_verified: boolean
@@ -242,27 +242,82 @@ export interface UserProfile {
   tup_username?: string
   tup_mobile?: string
   tup_gender?: string
-  tup_sponsorship_number?: string
-  tup_parent_account?: string
+  tup_date_of_birth?: string
+  tup_education_level?: string
+  tup_interests?: string[]
+  tup_learning_goals?: string
+  tup_timezone?: string
   tup_created_at: string
   tup_updated_at: string
 }
 
-export interface Company {
+export interface Course {
   id: string
-  tc_user_id: string
-  tc_company_name: string
-  tc_brand_name?: string
-  tc_business_type?: string
-  tc_business_category?: string
-  tc_registration_number: string
-  tc_gstin: string
-  tc_website_url?: string
-  tc_official_email: string
-  tc_affiliate_code?: string
-  tc_verification_status: 'pending' | 'verified' | 'rejected'
+  tc_category_id: string
+  tc_title: string
+  tc_description?: string
+  tc_short_description?: string
+  tc_thumbnail_url?: string
+  tc_price: number
+  tc_pricing_type: 'free' | 'paid_days' | 'lifetime'
+  tc_access_days?: number
+  tc_difficulty_level: 'beginner' | 'intermediate' | 'advanced'
+  tc_duration_hours: number
+  tc_total_lessons: number
+  tc_learning_outcomes: string[]
+  tc_tags: string[]
+  tc_is_active: boolean
+  tc_featured: boolean
   tc_created_at: string
   tc_updated_at: string
+}
+
+export interface CourseCategory {
+  id: string
+  tcc_name: string
+  tcc_description?: string
+  tcc_icon?: string
+  tcc_color: string
+  tcc_is_active: boolean
+  tcc_sort_order: number
+  tcc_created_at: string
+  tcc_updated_at: string
+}
+
+export interface Tutor {
+  id: string
+  tt_user_id: string
+  tt_bio?: string
+  tt_specializations: string[]
+  tt_experience_years: number
+  tt_education?: string
+  tt_certifications: string[]
+  tt_hourly_rate: number
+  tt_availability: any
+  tt_languages: string[]
+  tt_rating: number
+  tt_total_reviews: number
+  tt_total_students: number
+  tt_is_verified: boolean
+  tt_is_active: boolean
+  tt_created_at: string
+  tt_updated_at: string
+}
+
+export interface CourseEnrollment {
+  id: string
+  tce_user_id: string
+  tce_course_id: string
+  tce_enrollment_date: string
+  tce_access_expires_at?: string
+  tce_payment_amount: number
+  tce_payment_status: 'pending' | 'completed' | 'failed' | 'refunded'
+  tce_progress_percentage: number
+  tce_completed_at?: string
+  tce_certificate_issued: boolean
+  tce_is_active: boolean
+  tce_created_at: string
+  tce_updated_at: string
 }
 
 export interface SubscriptionPlan {
@@ -277,18 +332,23 @@ export interface SubscriptionPlan {
   tsp_updated_at: string
 }
 
-export interface MLMTreeNode {
+export interface Session {
   id: string
-  tmt_user_id: string
-  tmt_parent_id?: string
-  tmt_left_child_id?: string
-  tmt_right_child_id?: string
-  tmt_level: number
-  tmt_position: 'left' | 'right' | 'root'
-  tmt_sponsorship_number: string
-  tmt_is_active: boolean
-  tmt_created_at: string
-  tmt_updated_at: string
+  ts_course_id: string
+  ts_tutor_id: string
+  ts_title: string
+  ts_description?: string
+  ts_session_type: 'live' | 'recorded'
+  ts_scheduled_at?: string
+  ts_duration_minutes: number
+  ts_meeting_url?: string
+  ts_recording_url?: string
+  ts_max_participants: number
+  ts_current_participants: number
+  ts_status: 'scheduled' | 'live' | 'completed' | 'cancelled'
+  ts_is_active: boolean
+  ts_created_at: string
+  ts_updated_at: string
 }
 
 export interface OTPVerification {
@@ -355,120 +415,90 @@ export const getSubscriptionPlans = async () => {
   return data
 }
 
-export const getUserProfile = async (userId: string) => {
+// Education platform API functions
+export const getCourseCategories = async () => {
   const { data, error } = await supabase
-      .from('tbl_user_profiles')
+      .from('tbl_course_categories')
       .select('*')
-      .eq('tup_user_id', userId)
-      .single()
+      .eq('tcc_is_active', true)
+      .order('tcc_sort_order')
 
   if (error) throw error
   return data
 }
 
-export const getMLMTreeNode = async (userId: string) => {
-  try {
-    const { data, error } = await supabase
-        .from('tbl_mlm_tree')
-        .select('*')
-        .eq('tmt_user_id', userId)
-        .single()
+export const getCourses = async (categoryId?: string, featured?: boolean) => {
+  let query = supabase
+    .from('tbl_courses')
+    .select(`
+      *,
+      tbl_course_categories (
+        tcc_name,
+        tcc_color,
+        tcc_icon
+      )
+    `)
+    .eq('tc_is_active', true)
+    .order('tc_created_at', { ascending: false })
 
-    if (error) throw error
-    return data
-  } catch (error) {
-    console.warn('Failed to get MLM tree node:', error);
-    return null;
+  if (categoryId) {
+    query = query.eq('tc_category_id', categoryId)
   }
+  
+  if (featured) {
+    query = query.eq('tc_featured', true)
+  }
+  const { data, error } = await query
+  if (error) throw error
+  return data
 }
 
-// Enhanced MLM tree functions with Redis integration
-export const addUserToMLMTreeWithRedis = async (
-    userId: string,
-    sponsorshipNumber: string,
-    sponsorSponsorshipNumber: string
-) => {
-  try {
-    console.log('🌳 Adding user to MLM tree with Redis optimization:', { userId, sponsorshipNumber, sponsorSponsorshipNumber });
+export const getCourseById = async (courseId: string) => {
+  const { data, error } = await supabase
+    .from('tbl_courses')
+    .select(`
+      *,
+      tbl_course_categories (
+        tcc_name,
+        tcc_color,
+        tcc_icon
+      ),
+      tbl_course_content (
+        tcc_id,
+        tcc_title,
+        tcc_content_type,
+        tcc_duration_minutes,
+        tcc_sort_order,
+        tcc_is_free
+      )
+    `)
+    .eq('tc_id', courseId)
+    .eq('tc_is_active', true)
+    .single()
 
-    // Check if Redis is available
-    const redisConnected = await mlmRedisManager.isConnected();
+  if (error) throw error
+  return data
+}
 
-    if (redisConnected) {
-      // Use Redis-optimized placement
-      return await addUserWithRedisOptimization(userId, sponsorshipNumber, sponsorSponsorshipNumber);
-    } else {
-      // Fallback to database-only placement with unlimited depth
-      return await addUserWithUnlimitedDepth(userId, sponsorshipNumber, sponsorSponsorshipNumber);
-    }
-  } catch (error) {
-    console.error('❌ MLM tree placement error:', error);
-    throw error;
-  }
-};
-
-// Redis-optimized placement
-const addUserWithRedisOptimization = async (
-    userId: string,
-    sponsorshipNumber: string,
-    sponsorSponsorshipNumber: string
-) => {
-  try {
-    // Get next available position from Redis queue
-    const availablePosition = await mlmRedisManager.getNextAvailablePosition(sponsorSponsorshipNumber);
-
-    if (availablePosition) {
-      // Use the pre-calculated position from Redis
-      const { data, error } = await supabase.rpc('place_user_at_position', {
-        p_user_id: userId,
-        p_sponsorship_number: sponsorshipNumber,
-        p_parent_node_id: availablePosition.parentNodeId,
-        p_position: availablePosition.position,
-        p_level: availablePosition.level
-      });
-
-      if (error) throw error;
-
-      // Update Redis cache with new node data
-      const newNodeData: NodeData = {
-        nodeId: data.node_id,
-        userId: userId,
-        parentId: availablePosition.parentNodeId,
-        leftChildId: null,
-        rightChildId: null,
-        level: availablePosition.level,
-        position: availablePosition.position,
-        sponsorshipNumber: sponsorshipNumber,
-        isActive: true
-      };
-
-      // Cache the new node and add its available positions
-      await mlmRedisManager.cacheNodeData(newNodeData);
-      await mlmRedisManager.addAvailablePositions(newNodeData);
-
-      return data;
-    } else {
-      // Fallback to database search if Redis queue is empty
-      return await addUserWithUnlimitedDepth(userId, sponsorshipNumber, sponsorSponsorshipNumber);
-    }
-  } catch (error) {
-    console.error('❌ Redis-optimized placement failed:', error);
-    // Fallback to database-only placement
-    return await addUserWithUnlimitedDepth(userId, sponsorshipNumber, sponsorSponsorshipNumber);
-  }
-};
-
-// Database-only placement with unlimited depth
-const addUserWithUnlimitedDepth = async (
-    userId: string,
-    sponsorshipNumber: string,
-    sponsorSponsorshipNumber: string
-) => {
+export const getUserEnrollments = async (userId: string) => {
   const { data, error } = await supabase.rpc('add_user_to_mlm_tree_unlimited', {
-    p_user_id: userId,
-    p_sponsorship_number: sponsorshipNumber,
-    p_sponsor_sponsorship_number: sponsorSponsorshipNumber
-  });
+    .from('tbl_course_enrollments')
+    .select(`
+      *,
+      tbl_courses (
+        tc_title,
+        tc_thumbnail_url,
+        tc_difficulty_level,
+        tc_duration_hours,
+        tbl_course_categories (
+          tcc_name,
+          tcc_color
+        )
+      )
+    `)
+    .eq('tce_user_id', userId)
+    .eq('tce_is_active', true)
+    .order('tce_created_at', { ascending: false })
 
   if (error) throw error;
   return data;
@@ -518,125 +548,72 @@ export const addUserToMLMTree = async (
   }
 };
 
-export const getMLMTreeStructure = async (userId: string, maxLevels: number = 5) => {
-  try {
-    const { data, error } = await supabase.rpc('get_mlm_tree_structure_v2', {
-      p_user_id: userId,
-      p_max_levels: maxLevels
-    });
-
-    if (error) {
-      console.warn('Failed to get MLM tree structure:', error);
-      return [];
-    }
-
-    return data;
-  } catch (error) {
-    console.warn('Failed to get MLM tree structure:', error);
-    return [];
-  }
+  if (error) throw error
+  return data
 }
 
-export const getTreeStatistics = async (userId: string) => {
-  try {
-    const { data, error } = await supabase.rpc('get_tree_statistics_v2', {
-      p_user_id: userId
-    });
-
-    if (error) {
-      console.warn('Failed to get tree statistics:', error);
-      return {
-        total_downline: 0,
-        left_side_count: 0,
-        right_side_count: 0,
-        direct_referrals: 0,
-        max_depth: 0,
-        active_members: 0
-      };
-    }
-
-    return data?.[0] || {
-      total_downline: 0,
-      left_side_count: 0,
-      right_side_count: 0,
-      direct_referrals: 0,
-      max_depth: 0,
-      active_members: 0
-    };
-  } catch (error) {
-    console.warn('Failed to get tree statistics:', error);
-    return {
-      total_downline: 0,
-      left_side_count: 0,
-      right_side_count: 0,
-      direct_referrals: 0,
-      max_depth: 0,
-      active_members: 0
-    };
-  }
-};
-
-// Enhanced tree statistics with Redis caching
-export const getTreeStatisticsWithRedis = async (userId: string) => {
-  try {
-    // Check if Redis is available
-    const redisConnected = await mlmRedisManager.isConnected();
-
-    if (redisConnected) {
-      // Try to get from Redis cache first
-      const cachedStats = await mlmRedisManager.getCachedTreeStats(userId);
-      if (cachedStats) {
-        console.log('✅ Tree stats loaded from Redis cache');
-        return cachedStats;
-      }
-    }
-
-    // Get from database
-    const stats = await getTreeStatistics(userId);
-
-    // Cache in Redis if available
-    if (redisConnected) {
-      await mlmRedisManager.cacheTreeStats(userId, stats);
-    }
-
-    return stats;
-  } catch (error) {
-    console.warn('Failed to get tree stats with Redis:', error);
-    return await getTreeStatistics(userId);
-  }
-};
-
-// Function to check if a sponsorship number exists
-export const checkSponsorshipNumberExists = async (sponsorshipNumber: string) => {
-  try {
-    const { data, error } = await supabase
-        .from('tbl_user_profiles')
-        .select('tup_sponsorship_number')
-        .eq('tup_sponsorship_number', sponsorshipNumber)
-        .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      throw error;
-    }
-
-    return !!data;
-  } catch (error) {
-    console.error('Failed to check sponsorship number:', error);
-    return false;
-  }
-};
-export const getSystemSettings = async () => {
+export const getTutors = async () => {
   const { data, error } = await supabase
+    .from('tbl_tutors')
+    .select(`
+      *,
+      tbl_users (
+        tu_email
+      ),
+      tbl_user_profiles (
+        tup_first_name,
+        tup_last_name
+      )
+    `)
+    .eq('tt_is_active', true)
+    .order('tt_rating', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export const getUserProfile = async (userId: string) => {
+  const { data, error } = await supabase
+      .from('tbl_user_profiles')
+      .select('*')
+      .eq('tup_user_id', userId)
+      .single()
+export const getSystemSettings = async () => {
+  if (error) throw error
+  return data
+}
+  const { data, error } = await supabase
+export const updateLearningProgress = async (
+  userId: string,
+  courseId: string,
+  contentId: string,
+  completed: boolean = true,
+  timeSpentMinutes: number = 0
+) => {
+  const { data, error } = await supabase.rpc('update_learning_progress', {
+    p_user_id: userId,
+    p_course_id: courseId,
+    p_content_id: contentId,
+    p_completed: completed,
+    p_time_spent_minutes: timeSpentMinutes
+  })
       .from('tbl_system_settings')
+  if (error) throw error
+  return data
+}
       .select('*')
 
   if (error) throw error
 
-  // Convert to key-value object
+}
   const settings: Record<string, any> = {}
   data.forEach(setting => {
     settings[setting.tss_setting_key] = setting.tss_setting_value
   })
 
-  return settings
-}
+export const enrollInCourse = async (userId: string, courseId: string, paymentAmount: number = 0) => {
+  const { data, error } = await supabase.rpc('enroll_in_course', {
+    p_user_id: userId,
+    p_course_id: courseId,
+    p_payment_amount: paymentAmount
+  })

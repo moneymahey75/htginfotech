@@ -5,7 +5,7 @@ import { sessionUtils } from '../../utils/sessionUtils';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  userType: 'customer' | 'company' | 'admin';
+  userType: 'learner' | 'tutor' | 'admin';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) => {
@@ -74,7 +74,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
   }
 
   // Check if customer needs to complete verification or payment (if required)
-  if (userType === 'customer' && user.userType === 'customer') {
+  if (userType === 'learner' && user.userType === 'learner') {
     // In demo mode, all users have active plans
     // You can add additional checks here if needed
   }

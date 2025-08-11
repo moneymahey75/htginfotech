@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, BookOpen } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
-const CustomerLogin: React.FC = () => {
+const LearnerLogin: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,8 +28,8 @@ const CustomerLogin: React.FC = () => {
     }
 
     try {
-      await login(formData.emailOrUsername, formData.password, 'customer');
-      navigate('/customer/dashboard');
+      await login(formData.emailOrUsername, formData.password, 'learner');
+      navigate('/learner/dashboard');
     } catch (err) {
       // Error is now handled by notification system
     } finally {
@@ -49,8 +49,11 @@ const CustomerLogin: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="bg-white p-8 rounded-2xl shadow-xl">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Customer Login</h2>
-            <p className="mt-2 text-gray-600">Access your MLM dashboard</p>
+            <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-indigo-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Learner Login</h2>
+            <p className="mt-2 text-gray-600">Access your learning dashboard</p>
           </div>
 
           {error && (
@@ -66,11 +69,7 @@ const CustomerLogin: React.FC = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  {formData.emailOrUsername.includes('@') ? (
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <User className="h-5 w-5 text-gray-400" />
-                  )}
+                  <Mail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="emailOrUsername"
@@ -147,7 +146,7 @@ const CustomerLogin: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Don't have an account?{' '}
-              <Link to="/customer/register" className="text-indigo-600 hover:text-indigo-500 font-medium">
+              <Link to="/learner/register" className="text-indigo-600 hover:text-indigo-500 font-medium">
                 Sign up here
               </Link>
             </p>
@@ -158,4 +157,4 @@ const CustomerLogin: React.FC = () => {
   );
 };
 
-export default CustomerLogin;
+export default LearnerLogin;

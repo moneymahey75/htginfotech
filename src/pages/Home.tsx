@@ -29,28 +29,29 @@ const Home: React.FC = () => {
       id: 1,
       image: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
       title: 'Build Your Network Empire',
-      subtitle: 'Join thousands of successful entrepreneurs',
-      description: 'Start your journey with our revolutionary binary tree MLM system and achieve financial freedom.',
-      cta: 'Start Your Journey',
-      ctaLink: '/customer/register'
+      title: 'Master New Skills Today',
+      subtitle: 'Learn from expert tutors worldwide',
+      description: 'Access thousands of courses in programming, science, mathematics, and more with personalized tutoring.',
+      cta: 'Start Learning',
+      ctaLink: '/learner/register'
     },
     {
       id: 2,
-      image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
-      title: 'Smart Blockchain Technology',
-      subtitle: 'Transparent & Secure Transactions',
-      description: 'Experience the power of blockchain-based payments with complete transparency and security.',
-      cta: 'Learn More',
-      ctaLink: '/subscription-plans'
+      image: 'https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
+      title: 'Expert Tutors Available',
+      subtitle: 'Get personalized guidance',
+      description: 'Connect with verified tutors for one-on-one sessions and accelerate your learning journey.',
+      cta: 'Find Tutors',
+      ctaLink: '/join-tutor'
     },
     {
       id: 3,
-      image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
-      title: 'Global Community',
-      subtitle: 'Connect with entrepreneurs worldwide',
-      description: 'Be part of a global network of ambitious individuals building their financial future together.',
-      cta: 'Join Community',
-      ctaLink: '/company/register'
+      image: 'https://images.pexels.com/photos/5212700/pexels-photo-5212700.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
+      title: 'Flexible Learning',
+      subtitle: 'Learn at your own pace',
+      description: 'Choose from free courses, time-limited access, or lifetime learning with certificates.',
+      cta: 'Browse Courses',
+      ctaLink: '/courses'
     }
   ];
 
@@ -172,20 +173,20 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
             <div className="group">
-              <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">50K+</div>
-              <div className="text-lg opacity-90">Active Members</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">10K+</div>
+              <div className="text-lg opacity-90">Active Learners</div>
             </div>
             <div className="group">
-              <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">$2M+</div>
-              <div className="text-lg opacity-90">Paid Out</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">500+</div>
+              <div className="text-lg opacity-90">Expert Tutors</div>
             </div>
             <div className="group">
-              <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">150+</div>
-              <div className="text-lg opacity-90">Countries</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">1000+</div>
+              <div className="text-lg opacity-90">Courses</div>
             </div>
             <div className="group">
               <div className="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">99.9%</div>
-              <div className="text-lg opacity-90">Uptime</div>
+              <div className="text-lg opacity-90">Success Rate</div>
             </div>
           </div>
         </div>
@@ -217,40 +218,40 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: Users,
-                title: 'Binary Tree System',
-                description: 'Fair and transparent binary compensation with automated left-first placement algorithm.',
+                icon: BookOpen,
+                title: 'Comprehensive Courses',
+                description: 'Access thousands of courses in programming, science, mathematics, and more subjects.',
                 color: 'from-emerald-500 to-teal-600',
                 bgColor: 'bg-emerald-50',
                 iconColor: 'text-emerald-600',
-                image: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               },
               {
-                icon: TrendingUp,
-                title: 'Real-time Analytics',
-                description: 'Advanced dashboard with comprehensive analytics to track your network growth and earnings.',
+                icon: Users,
+                title: 'Expert Tutors',
+                description: 'Learn from verified tutors with years of experience in their respective fields.',
                 color: 'from-cyan-500 to-blue-600',
                 bgColor: 'bg-cyan-50',
                 iconColor: 'text-cyan-600',
-                image: 'https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               },
               {
-                icon: Shield,
-                title: 'Enterprise Security',
-                description: 'Bank-grade security with multi-factor authentication and end-to-end encryption.',
+                icon: TrendingUp,
+                title: 'Progress Tracking',
+                description: 'Monitor your learning progress with detailed analytics and achievement tracking.',
                 color: 'from-violet-500 to-purple-600',
                 bgColor: 'bg-violet-50',
                 iconColor: 'text-violet-600',
-                image: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/590022/pexels-photo-590022.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               },
               {
                 icon: Award,
-                title: 'Smart Contracts',
-                description: 'Blockchain-powered payments with transparent and automated transaction processing.',
+                title: 'Certificates',
+                description: 'Earn verified certificates upon course completion to showcase your new skills.',
                 color: 'from-rose-500 to-pink-600',
                 bgColor: 'bg-rose-50',
                 iconColor: 'text-rose-600',
-                image: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/267885/pexels-photo-267885.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               }
             ].map((feature, index) => (
               <div key={index} className="group relative">
@@ -303,9 +304,9 @@ const Home: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {[
-              { name: "Sarah Johnson", earnings: "$50,000", period: "6 months", image: "https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop" },
-              { name: "Michael Chen", earnings: "$75,000", period: "8 months", image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop" },
-              { name: "Emma Davis", earnings: "$100,000", period: "1 year", image: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop" }
+              { name: "Sarah Johnson", achievement: "Full-Stack Developer", period: "6 months", image: "https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop" },
+              { name: "Michael Chen", achievement: "Data Scientist", period: "8 months", image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop" },
+              { name: "Emma Davis", achievement: "Physics Teacher", period: "1 year", image: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop" }
             ].map((story, index) => (
               <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                 <img 
@@ -314,19 +315,19 @@ const Home: React.FC = () => {
                   className="w-20 h-20 rounded-full mx-auto mb-4 object-cover"
                 />
                 <h3 className="text-xl font-bold mb-2">{story.name}</h3>
-                <p className="text-2xl font-bold text-green-400 mb-1">{story.earnings}</p>
-                <p className="text-gray-300">in {story.period}</p>
+                <p className="text-2xl font-bold text-green-400 mb-1">{story.achievement}</p>
+                <p className="text-gray-300">Completed in {story.period}</p>
               </div>
             ))}
           </div>
           
           <Link
-            to="/customer/register"
+            to="/learner/register"
             className="inline-flex items-center space-x-3 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-8 py-4 rounded-2xl font-bold hover:from-emerald-300 hover:to-teal-400 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <Rocket className="h-6 w-6" />
-            <span>Start Your Success Story</span>
+            <span>Start Learning Today</span>
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
@@ -352,24 +353,24 @@ const Home: React.FC = () => {
             {[
               {
                 step: '1',
-                title: 'Register & Verify',
-                description: 'Create your account with our secure registration process and verify your identity.',
+                title: 'Create Account',
+                description: 'Sign up as a learner or tutor and complete your profile with learning goals.',
                 color: 'from-emerald-500 to-teal-600',
-                image: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               },
               {
                 step: '2',
-                title: 'Choose Your Plan',
-                description: 'Select a subscription plan that aligns with your goals and investment capacity.',
+                title: 'Browse Courses',
+                description: 'Explore our extensive catalog of courses and choose what interests you most.',
                 color: 'from-cyan-500 to-blue-600',
-                image: 'https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               },
               {
                 step: '3',
-                title: 'Build & Earn',
-                description: 'Start building your network and earning through our transparent binary system.',
+                title: 'Start Learning',
+                description: 'Enroll in courses, get assigned a tutor, and begin your educational journey.',
                 color: 'from-violet-500 to-purple-600',
-                image: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                image: 'https://images.pexels.com/photos/5212700/pexels-photo-5212700.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               }
             ].map((step, index) => (
               <div key={index} className="text-center group relative">
@@ -414,30 +415,30 @@ const Home: React.FC = () => {
           </div>
           
           <h2 className="text-4xl md:text-6xl font-bold mb-6">
-            Your Financial Freedom Awaits
+            Your Learning Journey Awaits
           </h2>
           <p className="text-xl mb-12 text-gray-200 max-w-3xl mx-auto">
-            Join thousands of successful entrepreneurs who have chosen our platform to build their financial future. 
-            Start your journey today and unlock unlimited earning potential.
+            Join thousands of learners who have transformed their careers through our comprehensive education platform. 
+            Start your journey today and unlock unlimited learning potential.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
             <Link
-              to="/customer/register"
+              to="/learner/register"
              className="group bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-8 py-4 rounded-2xl font-bold hover:from-emerald-300 hover:to-teal-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <DollarSign className="h-6 w-6" />
-              <span>Start Earning Today</span>
+              <BookOpen className="h-6 w-6" />
+              <span>Start Learning Today</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              to="/subscription-plans"
+              to="/courses"
               className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-emerald-900 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
               <CheckCircle className="h-5 w-5" />
-              <span>View Pricing Plans</span>
+              <span>Browse Courses</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -450,15 +451,15 @@ const Home: React.FC = () => {
             </div>
             <div className="flex items-center justify-center space-x-2">
               <CheckCircle className="h-6 w-6" />
-              <span className="text-sm">Verified Platform</span>
+              <span className="text-sm">Verified Tutors</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Users className="h-6 w-6" />
-              <span className="text-sm">50K+ Members</span>
+              <span className="text-sm">10K+ Learners</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Award className="h-6 w-6" />
-              <span className="text-sm">Award Winning</span>
+              <span className="text-sm">Certified Courses</span>
             </div>
           </div>
         </div>

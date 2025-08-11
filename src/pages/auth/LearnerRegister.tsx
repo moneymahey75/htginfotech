@@ -2,17 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../contexts/AdminContext';
-import { sendOTP, checkSponsorshipNumberExists } from '../../lib/supabase';
-import { Eye, EyeOff, User, Mail, Phone, Users } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Phone, BookOpen, GraduationCap } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-const CustomerRegister: React.FC = () => {
+const LearnerRegister: React.FC = () => {
   const { register } = useAuth();
   const { settings } = useAdmin();
   const navigate = useNavigate();
@@ -23,8 +16,10 @@ const CustomerRegister: React.FC = () => {
     userName: '',
     email: '',
     mobile: '',
-    parentAccount: '',
     gender: '',
+    educationLevel: '',
+    interests: [] as string[],
+    learningGoals: '',
     password: '',
     confirmPassword: '',
     acceptTerms: false
@@ -33,15 +28,37 @@ const CustomerRegister: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [validatingReferral, setValidatingReferral] = useState(false);
-  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+
+  const educationLevels = [
+    'High School',
+    'Associate Degree',
+    'Bachelor\'s Degree',
+    'Master\'s Degree',
+    'PhD',
+    'Professional Certification',
+    'Self-taught',
+    'Other'
+  ];
+
+  const interestOptions = [
+    'Programming',
+    'Web Development',
+    'Data Science',
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'Business',
+    'Languages',
+    'Design',
+    'Marketing',
+    'Finance'
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
-
-    console.log('🚀 Starting customer registration process...');
 
     if (!recaptchaToken) {
       setError('Please complete the reCAPTCHA verification');
@@ -61,117 +78,48 @@ const CustomerRegister: React.FC = () => {
       return;
     }
 
-    if (settings.referralMandatory && !formData.parentAccount) {
-      setError('Referral account is mandatory');
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Validate referral code if provided
-    if (formData.parentAccount) {
-      console.log('🔍 Validating referral code:', formData.parentAccount);
-      try {
-        const isValidReferral = await checkSponsorshipNumberExists(formData.parentAccount);
-        if (!isValidReferral) {
-          setError('Invalid referral code. Please check and try again.');
-          setIsSubmitting(false);
-          return;
-        }
-        console.log('✅ Referral code is valid');
-      } catch (referralError) {
-        console.error('❌ Failed to validate referral code:', referralError);
-        setError('Unable to validate referral code at this time. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
     try {
-      console.log('📝 Calling register function with data:', {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        userName: formData.userName
-      });
-      
-      const userId = await register(formData, 'customer');
-      
-      console.log('✅ Registration successful, checking verification requirements...');
+      await register(formData, 'learner');
       
       if (settings.mobileVerificationRequired) {
-        console.log('📱 Mobile verification required, redirecting to OTP...');
-        // Send OTP immediately after registration
-        try {
-          console.log('📤 Sending mobile OTP for verification...');
-          await sendOTP(userId, formData.mobile, 'mobile');
-          console.log('✅ Mobile OTP sent successfully');
-        } catch (otpError) {
-          console.warn('⚠️ Failed to send OTP, but registration was successful:', otpError);
-          // Don't fail registration if OTP sending fails
-        }
         navigate('/verify-otp');
       } else {
-        console.log('💳 No mobile verification required, redirecting to subscription plans...');
-        navigate('/subscription-plans');
+        navigate('/courses');
       }
     } catch (err) {
-      console.error('❌ Registration error in component:', err);
-      // Error is now handled by notification system
+      // Error is handled by notification system
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
-    
-    // Reset referral validation when parent account changes
-    if (name === 'parentAccount') {
-      setReferralValid(null);
-    }
   };
 
-  // Function to validate referral code
-  const validateReferralCode = async (referralCode: string) => {
-    if (!referralCode.trim()) {
-      setReferralValid(null);
-      return;
-    }
-    
-    setValidatingReferral(true);
-    try {
-      const isValid = await checkSponsorshipNumberExists(referralCode);
-      setReferralValid(isValid);
-    } catch (error) {
-      console.error('Failed to validate referral code:', error);
-      setReferralValid(false);
-    } finally {
-      setValidatingReferral(false);
-    }
+  const handleInterestToggle = (interest: string) => {
+    setFormData(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest)
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }));
   };
-
-  // Debounced referral validation
-  React.useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (formData.parentAccount) {
-        validateReferralCode(formData.parentAccount);
-      }
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData.parentAccount]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white p-8 rounded-2xl shadow-xl">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Customer Registration</h2>
-            <p className="mt-2 text-gray-600">Join our MLM network and start earning</p>
+            <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-indigo-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Join as Learner</h2>
+            <p className="mt-2 text-gray-600">Start your learning journey today</p>
           </div>
 
           {error && (
@@ -292,53 +240,6 @@ const CustomerRegister: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="parentAccount" className="block text-sm font-medium text-gray-700 mb-2">
-                  Parent A/C {settings.referralMandatory ? '*' : '(Optional)'}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Users className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="parentAccount"
-                    name="parentAccount"
-                    type="text"
-                    required={settings.referralMandatory}
-                    value={formData.parentAccount}
-                    onChange={handleChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Referral ID"
-                  />
-                  {/* Validation indicator */}
-                  {formData.parentAccount && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      {validatingReferral ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                      ) : referralValid === true ? (
-                        <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      ) : referralValid === false ? (
-                        <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-                {formData.parentAccount && referralValid === false && (
-                  <p className="text-xs text-red-600 mt-1">Invalid referral code</p>
-                )}
-                {formData.parentAccount && referralValid === true && (
-                  <p className="text-xs text-green-600 mt-1">Valid referral code ✓</p>
-                )}
-              </div>
-
-              <div>
                 <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
                   Gender *
                 </label>
@@ -356,12 +257,72 @@ const CustomerRegister: React.FC = () => {
                   <option value="other">Other</option>
                 </select>
               </div>
+
+              <div>
+                <label htmlFor="educationLevel" className="block text-sm font-medium text-gray-700 mb-2">
+                  Education Level
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <GraduationCap className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    id="educationLevel"
+                    name="educationLevel"
+                    value={formData.educationLevel}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">Select education level</option>
+                    {educationLevels.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Learning Interests
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {interestOptions.map((interest) => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => handleInterestToggle(interest)}
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      formData.interests.includes(interest)
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="learningGoals" className="block text-sm font-medium text-gray-700 mb-2">
+                Learning Goals
+              </label>
+              <textarea
+                id="learningGoals"
+                name="learningGoals"
+                rows={3}
+                value={formData.learningGoals}
+                onChange={handleChange}
+                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="What do you hope to achieve through learning?"
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  New Password *
+                  Password *
                 </label>
                 <div className="relative">
                   <input
@@ -429,7 +390,7 @@ const CustomerRegister: React.FC = () => {
               />
               <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-700">
                 I accept the{' '}
-                <Link to="#" className="text-indigo-600 hover:text-indigo-500">
+                <Link to="/policies" className="text-indigo-600 hover:text-indigo-500">
                   Terms and Conditions
                 </Link>
               </label>
@@ -448,7 +409,7 @@ const CustomerRegister: React.FC = () => {
                   <span>Creating Account...</span>
                 </>
               ) : (
-                <span>Create Account</span>
+                <span>Create Learner Account</span>
               )}
             </button>
           </form>
@@ -456,8 +417,14 @@ const CustomerRegister: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Already have an account?{' '}
-              <Link to="/customer/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
+              <Link to="/learner/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
                 Sign in here
+              </Link>
+            </p>
+            <p className="text-gray-600 mt-2">
+              Want to teach?{' '}
+              <Link to="/tutor/register" className="text-green-600 hover:text-green-500 font-medium">
+                Join as Tutor
               </Link>
             </p>
           </div>
@@ -467,4 +434,4 @@ const CustomerRegister: React.FC = () => {
   );
 };
 
-export default CustomerRegister;
+export default LearnerRegister;

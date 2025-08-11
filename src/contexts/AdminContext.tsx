@@ -7,8 +7,8 @@ interface GeneralSettings {
   timezone: string;
   emailVerificationRequired: boolean;
   mobileVerificationRequired: boolean;
-  referralMandatory: boolean;
-  defaultParentAccount: string;
+  autoTutorAssignment: boolean;
+  maxStudentsPerTutor: number;
 }
 
 interface SMSGateway {
@@ -28,11 +28,11 @@ interface EmailSMTP {
 
 interface SubscriptionPlan {
   id: string;
-  name: string;
+  tsp_name: string;
   price: number;
-  duration: number;
-  features: string[];
-  isActive: boolean;
+  tsp_duration_days: number;
+  tsp_features: string[];
+  tsp_is_active: boolean;
 }
 
 interface AdminContextType {
@@ -58,14 +58,14 @@ export const useAdmin = () => {
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<GeneralSettings>({
-    siteName: 'HanakhaDeals',
+    siteName: 'EduMaster',
     logoUrl: 'https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
     dateFormat: 'DD/MM/YYYY',
     timezone: 'UTC',
     emailVerificationRequired: true,
     mobileVerificationRequired: true,
-    referralMandatory: false,
-    defaultParentAccount: 'admin-default'
+    autoTutorAssignment: true,
+    maxStudentsPerTutor: 20
   });
 
   const [smsGateway, setSMSGateway] = useState<SMSGateway>({
@@ -86,26 +86,26 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([
     {
       id: '1',
-      tsp_name: 'Basic Plan',
+      tsp_name: 'Basic Learning Plan',
       tsp_price: 99,
       tsp_duration_days: 30,
-      tsp_features: ['MLM Tree Access', 'Basic Dashboard', 'Email Support'],
+      tsp_features: ['Free Course Access', 'Basic Dashboard', 'Email Support'],
       tsp_is_active: true
     },
     {
       id: '2',
-      tsp_name: 'Premium Plan',
+      tsp_name: 'Premium Learning Plan',
       tsp_price: 199,
       tsp_duration_days: 30,
-      tsp_features: ['MLM Tree Access', 'Advanced Dashboard', 'Priority Support', 'Analytics'],
+      tsp_features: ['All Course Access', 'Advanced Dashboard', 'Priority Support', 'Progress Analytics'],
       tsp_is_active: true
     },
     {
       id: '3',
-      tsp_name: 'Enterprise Plan',
+      tsp_name: 'Pro Learning Plan',
       tsp_price: 399,
       tsp_duration_days: 30,
-      tsp_features: ['MLM Tree Access', 'Advanced Dashboard', 'Priority Support', 'Analytics', 'Custom Branding', 'API Access'],
+      tsp_features: ['All Course Access', 'Personal Tutor Assignment', '1-on-1 Sessions', 'Advanced Analytics', 'Certificate Generation'],
       tsp_is_active: true
     }
   ]);

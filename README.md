@@ -1,14 +1,15 @@
-# MLM Platform with Binary Tree Architecture
+# EduMaster - Online Learning Platform
 
-A comprehensive Multi-Level Marketing (MLM) platform built with React, TypeScript, and Supabase, featuring a binary tree compensation system.
+A comprehensive online learning platform built with React, TypeScript, and Supabase, featuring personalized tutoring and course management.
 
 ## Features
 
-- **Multi-User System**: Support for Customers, Companies, and Admins
-- **Binary Tree MLM Structure**: Automated left-first placement algorithm
-- **Authentication & Verification**: Email and SMS OTP verification
-- **Subscription Management**: Multiple subscription plans with payment processing
-- **Real-time Dashboard**: Analytics and network visualization
+- **Multi-User System**: Support for Learners, Tutors, and Admins
+- **Course Management**: Comprehensive course catalog with categories and pricing
+- **Tutor-Learner Matching**: Automated tutor assignment system
+- **Progress Tracking**: Detailed learning analytics and progress monitoring
+- **Session Management**: Live and recorded session support
+- **Certificate System**: Verified certificates upon course completion
 - **Responsive Design**: Mobile-first design with Tailwind CSS
 
 ## Database Structure
@@ -17,39 +18,46 @@ The platform uses Supabase (PostgreSQL) with the following main tables:
 
 ### Core Tables
 
-1. **users** - Main authentication table
-   - `id` (uuid, primary key)
-   - `email` (text, unique)
-   - `user_type` (customer/company/admin)
-   - `is_verified`, `email_verified`, `mobile_verified` (boolean)
+1. **tbl_users** - Main authentication table
+   - `tu_id` (uuid, primary key)
+   - `tu_email` (text, unique)
+   - `tu_user_type` (learner/tutor/admin)
+   - `tu_is_verified`, `tu_email_verified`, `tu_mobile_verified` (boolean)
 
-2. **user_profiles** - Extended user information
-   - `user_id` (foreign key to users)
-   - `first_name`, `last_name`, `username`
-   - `mobile`, `gender`, `sponsorship_number`
-   - `parent_account` (referral information)
+2. **tbl_user_profiles** - Extended user information
+   - `tup_user_id` (foreign key to users)
+   - `tup_first_name`, `tup_last_name`, `tup_username`
+   - `tup_mobile`, `tup_gender`, `tup_education_level`
+   - `tup_interests`, `tup_learning_goals`
 
-3. **companies** - Company-specific data
-   - `user_id` (foreign key to users)
-   - `company_name`, `brand_name`
-   - `registration_number`, `gstin`
-   - `verification_status`
+3. **tbl_course_categories** - Course subject categories
+   - `tcc_name`, `tcc_description`, `tcc_icon`
+   - `tcc_color`, `tcc_sort_order`
 
-4. **mlm_tree** - Binary tree structure
-   - `user_id`, `parent_id`
-   - `left_child_id`, `right_child_id`
-   - `level`, `position` (left/right/root)
-   - `sponsorship_number`
+4. **tbl_courses** - Course catalog
+   - `tc_title`, `tc_description`, `tc_thumbnail_url`
+   - `tc_price`, `tc_pricing_type` (free/paid_days/lifetime)
+   - `tc_difficulty_level`, `tc_duration_hours`
+   - `tc_learning_outcomes`, `tc_tags`
 
-5. **subscription_plans** - Available plans
-   - `name`, `price`, `duration_days`
-   - `features` (JSON array)
-   - `is_active`
+5. **tbl_tutors** - Tutor profiles
+   - `tt_user_id`, `tt_bio`, `tt_specializations`
+   - `tt_experience_years`, `tt_hourly_rate`
+   - `tt_rating`, `tt_total_students`
 
-6. **otp_verifications** - OTP management
-   - `user_id`, `otp_code`, `otp_type`
-   - `contact_info`, `expires_at`
-   - `is_verified`, `attempts`
+6. **tbl_course_enrollments** - Student enrollments
+   - `tce_user_id`, `tce_course_id`
+   - `tce_progress_percentage`, `tce_payment_status`
+   - `tce_access_expires_at`
+
+7. **tbl_tutor_assignments** - Tutor-learner assignments
+   - `tta_tutor_id`, `tta_learner_id`, `tta_course_id`
+   - `tta_assigned_by`, `tta_status`
+
+8. **tbl_sessions** - Live/recorded sessions
+   - `ts_course_id`, `ts_tutor_id`, `ts_title`
+   - `ts_scheduled_at`, `ts_duration_minutes`
+   - `ts_meeting_url`, `ts_recording_url`
 
 ### Database Access
 
@@ -61,7 +69,7 @@ To view the database structure:
    - Use "SQL Editor" to run custom queries
 
 2. **Database Schema**: 
-   - Check the migration file: `supabase/migrations/create_initial_schema.sql`
+   - Check the migration file: `supabase/migrations/create_education_platform_schema.sql`
    - Contains complete table definitions, relationships, and functions
 
 ## Setup Instructions
@@ -70,7 +78,7 @@ To view the database structure:
 
 1. Create a Supabase project at [supabase.com](https://supabase.com)
 2. Click "Connect to Supabase" button in the top right of this application
-3. The database schema will be automatically applied
+3. Run the education platform migration in SQL Editor
 
 ### 2. Environment Variables
 
@@ -79,11 +87,6 @@ Create a `.env` file in the root directory:
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Optional: Redis Configuration (for MLM tree optimization)
-VITE_REDIS_HOST=your_redis_host
-VITE_REDIS_PORT=6379
-VITE_REDIS_PASSWORD=your_redis_password
 ```
 
 ### 3. SMS & Email Gateway Configuration
@@ -104,68 +107,37 @@ The platform uses Supabase integrations for reliable email and SMS delivery:
 - Configure in Supabase Dashboard → Settings → Integrations → Twilio
 - Test SMS delivery through Supabase
 
-### 4. Production Gateway Setup
+### 4. Admin Panel Access
 
-Configure your production settings through both Admin Panel and Supabase Dashboard:
+Default admin credentials:
+- URL: `your-domain.com/backpanel/login`
+- Email: `admin@mlmplatform.com`
+- Password: `Admin@123456`
 
-1. **Access Admin Panel**: `/backpanel/login`
-   - Email: `admin@mlmplatform.com`
-   - Password: `Admin@123456`
-
-2. **Configure Email**: 
-   - Admin Panel → Settings → SMTP Settings (for reference)
-   - Supabase Dashboard → Settings → Integrations → Resend
-   - Add your Resend API key and configure sender domain
-
-3. **Configure SMS**: 
-   - Admin Panel → Settings → SMS Settings (for reference)
-   - Supabase Dashboard → Settings → Integrations → Twilio
-   - Add your Twilio credentials and phone number
-   - Test SMS delivery
-
-### 5. Resend.com Setup
-
-For Email delivery:
-1. Create account at [Resend.com](https://resend.com)
-2. Verify your domain (add DNS records)
-3. Get your API key from dashboard
-4. Configure in Supabase Dashboard → Settings → Integrations → Resend
-5. Test email delivery
-
-### 6. Twilio Setup
-
-For SMS functionality:
-1. Create free account at [Twilio.com](https://www.twilio.com)
-2. Verify your phone number
-3. Get $15.50 free trial credit
-4. Copy Account SID and Auth Token from Console
-5. Purchase a phone number (or use trial number for testing)
-6. Configure in Supabase Dashboard → Settings → Integrations → Twilio
-7. Test SMS delivery through Supabase
+**Important**: Change the default password after first login!
 
 ## Key Features
 
-### Binary Tree Algorithm
-- **Left-First Placement**: New users are automatically placed in the leftmost available position
-- **Breadth-First Search**: Ensures balanced tree growth
-- **Spillover System**: When a position is full, users spill to the next available spot
+### Course Management
+- **Multiple Categories**: Programming, Science, Mathematics, Languages, etc.
+- **Flexible Pricing**: Free courses, time-limited access, or lifetime purchases
+- **Content Types**: Videos, documents, quizzes, assignments, live sessions
 
-### OTP Verification System
-- **Email OTP**: 6-digit codes sent via SMTP
-- **SMS OTP**: 6-digit codes sent via Twilio
-- **Expiration**: 10-minute validity period
-- **Rate Limiting**: Prevents spam and abuse
+### Tutor System
+- **Expert Verification**: Thorough vetting process for tutor qualifications
+- **Flexible Scheduling**: Tutors set their own availability and rates
+- **Student Matching**: Automated assignment based on course and expertise
 
-### Subscription Management
-- **Multiple Plans**: Basic, Premium, Enterprise tiers
-- **Payment Integration**: Support for credit cards and crypto
-- **Auto-Renewal**: Subscription lifecycle management
+### Learning Experience
+- **Progress Tracking**: Detailed analytics on learning progress and time spent
+- **Certificates**: Verified certificates upon course completion
+- **Interactive Content**: Mix of self-paced and live learning options
 
 ### Admin Dashboard
-- **User Management**: View and manage all users
-- **System Settings**: Configure platform parameters
-- **Analytics**: Revenue, growth, and performance metrics
-- **Email Templates**: Customize system communications
+- **Course Management**: Add, edit, and organize course catalog
+- **Tutor Management**: Verify and manage tutor applications
+- **Student Analytics**: Monitor learning progress and platform usage
+- **System Settings**: Configure platform parameters and pricing
 
 ## API Endpoints
 
@@ -176,17 +148,16 @@ For SMS functionality:
 
 ### Database Functions
 
-1. **generate_sponsorship_number()**: Auto-generate unique sponsorship IDs
-2. **add_to_mlm_tree()**: Add users to binary tree with proper placement
-3. **generate_otp()**: Generate 6-digit OTP codes
+1. **enroll_in_course()**: Enroll students in courses with payment tracking
+2. **update_learning_progress()**: Track student progress through courses
+3. **assign_tutor_to_learner()**: Assign tutors to students for specific courses
 
 ## Security Features
 
 - **Row Level Security (RLS)**: Database-level access control
 - **JWT Authentication**: Secure session management
 - **Input Validation**: Comprehensive data validation
-- **Rate Limiting**: Protection against abuse
-- **Encryption**: Secure password hashing and data transmission
+- **Content Protection**: Secure access to paid course materials
 
 ## Development
 
@@ -203,15 +174,28 @@ npm run build
 
 ## Testing Credentials
 
-For testing the OTP functionality:
+For testing the platform:
 
-**Test Email**: Any valid email address (check console logs for OTP)
-**Test Mobile**: Any mobile number (check console logs for OTP)
-**Test OTP**: `123456` (hardcoded for testing)
+**Test Learner**: Any valid email address
+**Test Tutor**: Apply through tutor registration
+**Test Admin**: admin@mlmplatform.com / Admin@123456
+
+## Course Categories
+
+The platform supports various subject categories:
+
+- **Programming**: JavaScript, Python, Java, C++, .NET
+- **Web Development**: HTML/CSS, React, Node.js, PHP
+- **Data Science**: Analytics, Machine Learning, Statistics
+- **Mathematics**: Algebra, Calculus, Statistics
+- **Science**: Physics, Chemistry, Biology
+- **Languages**: English, Spanish, French, etc.
+- **Business**: Management, Marketing, Finance
+- **Design**: Graphic Design, UI/UX
 
 ## Support
 
-For technical support or questions about the database structure:
+For technical support or questions about the platform:
 1. Check the migration files in `supabase/migrations/`
 2. Review the API functions in `supabase/functions/`
 3. Examine the database schema in Supabase dashboard

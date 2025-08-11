@@ -63,9 +63,9 @@ const Footer: React.FC = () => {
             <h3 className="text-lg font-bold mb-6 text-white">Quick Links</h3>
             <ul className="space-y-3">
               {[
-                { to: "/join-customer", label: "Join as Customer" },
-                { to: "/join-company", label: "Join as Company" },
-                { to: "/subscription-plans", label: "Pricing Plans" },
+                { to: "/join-learner", label: "Join as Learner" },
+                { to: "/join-tutor", label: "Join as Tutor" },
+                { to: "/courses", label: "Course Catalog" },
                 { to: "/about", label: "About Us" }
               ].map((link, index) => (
                 <li key={index}>

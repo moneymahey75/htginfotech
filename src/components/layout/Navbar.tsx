@@ -40,10 +40,10 @@ const Navbar: React.FC = () => {
     switch (user.userType) {
       case 'admin':
         return '/admin/dashboard';
-      case 'company':
-        return '/company/dashboard';
-      case 'customer':
-        return '/customer/dashboard';
+      case 'tutor':
+        return '/tutor/dashboard';
+      case 'learner':
+        return '/learner/dashboard';
       default:
         return '/';
     }
@@ -84,118 +84,118 @@ const Navbar: React.FC = () => {
             
             {!user ? (
               <>
-                {/* Customer Dropdown */}
+                {/* Learner Dropdown */}
                 <div className="relative group">
                   <button 
                     className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200 font-medium"
-                    onMouseEnter={() => setIsCustomerDropdownOpen(true)}
-                    onMouseLeave={() => setIsCustomerDropdownOpen(false)}
+                    onMouseEnter={() => setIsLearnerDropdownOpen(true)}
+                    onMouseLeave={() => setIsLearnerDropdownOpen(false)}
                   >
-                    <User className="h-4 w-4" />
-                    <span>Customer</span>
+                    <BookOpen className="h-4 w-4" />
+                    <span>Learner</span>
                     <ChevronDown className="h-3 w-3" />
                   </button>
                   <div 
                     className={`absolute top-full left-0 mt-1 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-200 ${
-                      isCustomerDropdownOpen ? 'opacity-100 visible transform translate-y-0' : 'opacity-0 invisible transform -translate-y-2'
+                      isLearnerDropdownOpen ? 'opacity-100 visible transform translate-y-0' : 'opacity-0 invisible transform -translate-y-2'
                     }`}
-                    onMouseEnter={() => setIsCustomerDropdownOpen(true)}
-                    onMouseLeave={() => setIsCustomerDropdownOpen(false)}
+                    onMouseEnter={() => setIsLearnerDropdownOpen(true)}
+                    onMouseLeave={() => setIsLearnerDropdownOpen(false)}
                   >
                     <div className="p-2">
                       <Link
-                        to="/customer/login"
+                        to="/learner/login"
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all duration-200"
                       >
                         <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                          <User className="h-4 w-4 text-emerald-600" />
+                          <BookOpen className="h-4 w-4 text-emerald-600" />
                         </div>
                         <div>
-                          <div className="font-medium">Customer Login</div>
+                          <div className="font-medium">Learner Login</div>
                           <div className="text-xs text-gray-500">Access your account</div>
                         </div>
                       </Link>
                       <Link
-                        to="/customer/register"
+                        to="/learner/register"
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all duration-200"
                       >
                         <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                          <User className="h-4 w-4 text-teal-600" />
+                          <BookOpen className="h-4 w-4 text-teal-600" />
                         </div>
                         <div>
-                          <div className="font-medium">Customer Register</div>
-                          <div className="text-xs text-gray-500">Join our network</div>
+                          <div className="font-medium">Learner Register</div>
+                          <div className="text-xs text-gray-500">Start learning</div>
                         </div>
                       </Link>
                       <Link
-                        to="/join-customer"
+                        to="/join-learner"
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all duration-200"
                       >
                         <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
-                          <User className="h-4 w-4 text-cyan-600" />
+                          <BookOpen className="h-4 w-4 text-cyan-600" />
                         </div>
                         <div>
                           <div className="font-medium">Learn More</div>
-                          <div className="text-xs text-gray-500">Customer benefits</div>
+                          <div className="text-xs text-gray-500">Learner benefits</div>
                         </div>
                       </Link>
                     </div>
                   </div>
                 </div>
                 
-                {/* Company Dropdown */}
+                {/* Tutor Dropdown */}
                 <div className="relative group">
                   <button 
                     className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-green-600 hover:bg-green-50 transition-all duration-200 font-medium"
-                    onMouseEnter={() => setIsCompanyDropdownOpen(true)}
-                    onMouseLeave={() => setIsCompanyDropdownOpen(false)}
+                    onMouseEnter={() => setIsTutorDropdownOpen(true)}
+                    onMouseLeave={() => setIsTutorDropdownOpen(false)}
                   >
-                    <Building className="h-4 w-4" />
-                    <span>Company</span>
+                    <GraduationCap className="h-4 w-4" />
+                    <span>Tutor</span>
                     <ChevronDown className="h-3 w-3" />
                   </button>
                   <div 
                     className={`absolute top-full left-0 mt-1 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-200 ${
-                      isCompanyDropdownOpen ? 'opacity-100 visible transform translate-y-0' : 'opacity-0 invisible transform -translate-y-2'
+                      isTutorDropdownOpen ? 'opacity-100 visible transform translate-y-0' : 'opacity-0 invisible transform -translate-y-2'
                     }`}
-                    onMouseEnter={() => setIsCompanyDropdownOpen(true)}
-                    onMouseLeave={() => setIsCompanyDropdownOpen(false)}
+                    onMouseEnter={() => setIsTutorDropdownOpen(true)}
+                    onMouseLeave={() => setIsTutorDropdownOpen(false)}
                   >
                     <div className="p-2">
                       <Link
-                        to="/company/login"
+                        to="/tutor/login"
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-xl transition-all duration-200"
                       >
                         <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <Building className="h-4 w-4 text-green-600" />
+                          <GraduationCap className="h-4 w-4 text-green-600" />
                         </div>
                         <div>
-                          <div className="font-medium">Company Login</div>
-                          <div className="text-xs text-gray-500">Business dashboard</div>
+                          <div className="font-medium">Tutor Login</div>
+                          <div className="text-xs text-gray-500">Teaching dashboard</div>
                         </div>
                       </Link>
                       <Link
-                        to="/company/register"
+                        to="/tutor/register"
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-xl transition-all duration-200"
                       >
                         <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Building className="h-4 w-4 text-blue-600" />
+                          <GraduationCap className="h-4 w-4 text-blue-600" />
                         </div>
                         <div>
-                          <div className="font-medium">Company Register</div>
-                          <div className="text-xs text-gray-500">Join as business</div>
+                          <div className="font-medium">Tutor Register</div>
+                          <div className="text-xs text-gray-500">Apply to teach</div>
                         </div>
                       </Link>
                       <Link
-                        to="/join-company"
+                        to="/join-tutor"
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-xl transition-all duration-200"
                       >
                         <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                          <Building className="h-4 w-4 text-yellow-600" />
+                          <GraduationCap className="h-4 w-4 text-yellow-600" />
                         </div>
                         <div>
                           <div className="font-medium">Learn More</div>
-                          <div className="text-xs text-gray-500">Business benefits</div>
+                          <div className="text-xs text-gray-500">Tutor benefits</div>
                         </div>
                       </Link>
                     </div>
@@ -203,21 +203,25 @@ const Navbar: React.FC = () => {
                 </div>
                 
                 <Link
-                  to="/subscription-plans"
-                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 font-medium"
+                  to="/courses"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 font-medium"
                 >
-                  <span>Pricing</span>
+                  <span>Courses</span>
                 </Link>
               </>
             ) : (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
                   <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
+                    {user.userType === 'tutor' ? (
+                      <GraduationCap className="h-4 w-4 text-white" />
+                    ) : (
+                      <BookOpen className="h-4 w-4 text-white" />
+                    )}
                   </div>
                   <div className="text-sm">
                     <div className="font-medium text-gray-900">
-                      {user.firstName || user.companyName || 'Admin'}
+                      {user.firstName || 'User'}
                     </div>
                     <div className="text-xs text-gray-500 capitalize">{user.userType}</div>
                   </div>
@@ -270,103 +274,103 @@ const Navbar: React.FC = () => {
             {!user ? (
               <>
                 <div className="border-t border-gray-100 pt-3 mt-3">
-                  <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</p>
+                  <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Learner</p>
                   <Link
-                    to="/customer/login"
+                    to="/learner/login"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <User className="h-4 w-4 text-emerald-600" />
+                      <BookOpen className="h-4 w-4 text-emerald-600" />
                     </div>
                     <div>
-                      <div className="font-medium">Customer Login</div>
+                      <div className="font-medium">Learner Login</div>
                       <div className="text-xs text-gray-500">Access your account</div>
                     </div>
                   </Link>
                   <Link
-                    to="/customer/register"
+                    to="/learner/register"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                      <User className="h-4 w-4 text-teal-600" />
+                      <BookOpen className="h-4 w-4 text-teal-600" />
                     </div>
                     <div>
-                      <div className="font-medium">Customer Register</div>
-                      <div className="text-xs text-gray-500">Join our network</div>
+                      <div className="font-medium">Learner Register</div>
+                      <div className="text-xs text-gray-500">Start learning</div>
                     </div>
                   </Link>
                   <Link
-                    to="/join-customer"
+                    to="/join-learner"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
-                      <User className="h-4 w-4 text-cyan-600" />
+                      <BookOpen className="h-4 w-4 text-cyan-600" />
                     </div>
                     <div>
                       <div className="font-medium">Learn More</div>
-                      <div className="text-xs text-gray-500">Customer benefits</div>
+                      <div className="text-xs text-gray-500">Learner benefits</div>
                     </div>
                   </Link>
                 </div>
                 
                 <div className="border-t border-gray-100 pt-3 mt-3">
-                  <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Company</p>
+                  <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tutor</p>
                   <Link
-                    to="/company/login"
+                    to="/tutor/login"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Building className="h-4 w-4 text-green-600" />
+                      <GraduationCap className="h-4 w-4 text-green-600" />
                     </div>
                     <div>
-                      <div className="font-medium">Company Login</div>
-                      <div className="text-xs text-gray-500">Business dashboard</div>
+                      <div className="font-medium">Tutor Login</div>
+                      <div className="text-xs text-gray-500">Teaching dashboard</div>
                     </div>
                   </Link>
                   <Link
-                    to="/company/register"
+                    to="/tutor/register"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Building className="h-4 w-4 text-blue-600" />
+                      <GraduationCap className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
-                      <div className="font-medium">Company Register</div>
-                      <div className="text-xs text-gray-500">Join as business</div>
+                      <div className="font-medium">Tutor Register</div>
+                      <div className="text-xs text-gray-500">Apply to teach</div>
                     </div>
                   </Link>
                   <Link
-                    to="/join-company"
+                    to="/join-tutor"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Building className="h-4 w-4 text-yellow-600" />
+                      <GraduationCap className="h-4 w-4 text-yellow-600" />
                     </div>
                     <div>
                       <div className="font-medium">Learn More</div>
-                      <div className="text-xs text-gray-500">Business benefits</div>
+                      <div className="text-xs text-gray-500">Tutor benefits</div>
                     </div>
                   </Link>
                 </div>
                 
                 <div className="border-t border-gray-100 pt-3 mt-3">
                   <Link
-                    to="/subscription-plans"
+                    to="/courses"
                     className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <CreditCard className="h-4 w-4 text-indigo-600" />
+                      <BookOpen className="h-4 w-4 text-indigo-600" />
                     </div>
                     <div>
-                      <div className="font-medium">Pricing Plans</div>
-                      <div className="text-xs text-gray-500">View subscription options</div>
+                      <div className="font-medium">Course Catalog</div>
+                      <div className="text-xs text-gray-500">Browse all courses</div>
                     </div>
                   </Link>
                 </div>
@@ -379,7 +383,7 @@ const Navbar: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">
-                      {user.firstName || user.companyName || 'Admin'}
+                      {user.firstName || 'User'}
                     </div>
                     <div className="text-sm text-gray-500 capitalize">{user.userType}</div>
                   </div>

@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Phone, Lock, Building } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, GraduationCap } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
-const CompanyLogin: React.FC = () => {
+const TutorLogin: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    emailOrMobile: '',
+    emailOrUsername: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +28,8 @@ const CompanyLogin: React.FC = () => {
     }
 
     try {
-      await login(formData.emailOrMobile, formData.password, 'company');
-      navigate('/company/dashboard');
+      await login(formData.emailOrUsername, formData.password, 'tutor');
+      navigate('/tutor/dashboard');
     } catch (err) {
       // Error is now handled by notification system
     } finally {
@@ -44,18 +44,16 @@ const CompanyLogin: React.FC = () => {
     }));
   };
 
-  const isEmail = formData.emailOrMobile.includes('@');
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="bg-white p-8 rounded-2xl shadow-xl">
           <div className="text-center mb-8">
             <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Building className="h-8 w-8 text-green-600" />
+              <GraduationCap className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Company Login</h2>
-            <p className="mt-2 text-gray-600">Access your business dashboard</p>
+            <h2 className="text-3xl font-bold text-gray-900">Tutor Login</h2>
+            <p className="mt-2 text-gray-600">Access your teaching dashboard</p>
           </div>
 
           {error && (
@@ -66,26 +64,22 @@ const CompanyLogin: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="emailOrMobile" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address or Mobile Number
+              <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address or Username
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  {isEmail ? (
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Phone className="h-5 w-5 text-gray-400" />
-                  )}
+                  <Mail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="emailOrMobile"
-                  name="emailOrMobile"
+                  id="emailOrUsername"
+                  name="emailOrUsername"
                   type="text"
                   required
-                  value={formData.emailOrMobile}
+                  value={formData.emailOrUsername}
                   onChange={handleChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter email or mobile number"
+                  placeholder="Enter email or username"
                 />
               </div>
             </div>
@@ -151,9 +145,9 @@ const CompanyLogin: React.FC = () => {
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Don't have a company account?{' '}
-              <Link to="/company/register" className="text-green-600 hover:text-green-500 font-medium">
-                Register here
+              Don't have a tutor account?{' '}
+              <Link to="/tutor/register" className="text-green-600 hover:text-green-500 font-medium">
+                Apply here
               </Link>
             </p>
           </div>
@@ -163,4 +157,4 @@ const CompanyLogin: React.FC = () => {
   );
 };
 
-export default CompanyLogin;
+export default TutorLogin;
