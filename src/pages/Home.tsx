@@ -28,7 +28,6 @@ const Home: React.FC = () => {
     {
       id: 1,
       image: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
-      title: 'Build Your Network Empire',
       title: 'Master New Skills Today',
       subtitle: 'Learn from expert tutors worldwide',
       description: 'Access thousands of courses in programming, science, mathematics, and more with personalized tutoring.',

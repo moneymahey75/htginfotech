@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../contexts/AdminContext';
-import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, CreditCard } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, CreditCard, BookOpen, GraduationCap } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
