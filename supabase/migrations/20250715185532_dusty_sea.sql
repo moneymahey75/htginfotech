@@ -21,8 +21,6 @@ DROP TABLE IF EXISTS tbl_user_activity_logs CASCADE;
 DROP TABLE IF EXISTS tbl_otp_verifications CASCADE;
 DROP TABLE IF EXISTS tbl_payments CASCADE;
 DROP TABLE IF EXISTS tbl_user_subscriptions CASCADE;
-DROP TABLE IF EXISTS tbl_mlm_tree CASCADE;
-DROP TABLE IF EXISTS tbl_companies CASCADE;
 DROP TABLE IF EXISTS tbl_user_profiles CASCADE;
 DROP TABLE IF EXISTS tbl_users CASCADE;
 DROP TABLE IF EXISTS tbl_subscription_plans CASCADE;
@@ -61,39 +59,6 @@ CREATE TABLE tbl_user_profiles (
   tup_parent_account text,
   tup_created_at timestamptz DEFAULT now(),
   tup_updated_at timestamptz DEFAULT now()
-);
-
--- Companies table
-CREATE TABLE tbl_companies (
-  tc_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tc_user_id uuid REFERENCES tbl_users(tu_id) ON DELETE CASCADE,
-  tc_company_name text NOT NULL,
-  tc_brand_name text,
-  tc_business_type text,
-  tc_business_category text,
-  tc_registration_number text NOT NULL,
-  tc_gstin text NOT NULL,
-  tc_website_url text,
-  tc_official_email text NOT NULL,
-  tc_affiliate_code text,
-  tc_verification_status text DEFAULT 'pending' CHECK (tc_verification_status IN ('pending', 'verified', 'rejected')),
-  tc_created_at timestamptz DEFAULT now(),
-  tc_updated_at timestamptz DEFAULT now()
-);
-
--- MLM Tree structure
-CREATE TABLE tbl_mlm_tree (
-  tmt_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tmt_user_id uuid REFERENCES tbl_users(tu_id) ON DELETE CASCADE,
-  tmt_parent_id uuid REFERENCES tbl_mlm_tree(tmt_id),
-  tmt_left_child_id uuid REFERENCES tbl_mlm_tree(tmt_id),
-  tmt_right_child_id uuid REFERENCES tbl_mlm_tree(tmt_id),
-  tmt_level integer DEFAULT 0,
-  tmt_position text CHECK (tmt_position IN ('left', 'right', 'root')),
-  tmt_sponsorship_number text NOT NULL,
-  tmt_is_active boolean DEFAULT true,
-  tmt_created_at timestamptz DEFAULT now(),
-  tmt_updated_at timestamptz DEFAULT now()
 );
 
 -- Subscription plans
@@ -237,9 +202,6 @@ CREATE INDEX idx_tbl_users_email ON tbl_users(tu_email);
 CREATE INDEX idx_tbl_user_profiles_username ON tbl_user_profiles(tup_username) WHERE tup_username IS NOT NULL;
 CREATE INDEX idx_tbl_user_profiles_user_id ON tbl_user_profiles(tup_user_id);
 CREATE INDEX idx_tbl_user_profiles_sponsorship_number ON tbl_user_profiles(tup_sponsorship_number);
-CREATE INDEX idx_tbl_companies_user_id ON tbl_companies(tc_user_id);
-CREATE INDEX idx_tbl_mlm_tree_user_id ON tbl_mlm_tree(tmt_user_id);
-CREATE INDEX idx_tbl_mlm_tree_parent_id ON tbl_mlm_tree(tmt_parent_id);
 CREATE INDEX idx_tbl_subscription_plans_is_active ON tbl_subscription_plans(tsp_is_active);
 CREATE INDEX idx_tbl_user_subscriptions_user_id ON tbl_user_subscriptions(tus_user_id);
 CREATE INDEX idx_tbl_user_subscriptions_status ON tbl_user_subscriptions(tus_status);
@@ -254,8 +216,6 @@ CREATE INDEX idx_tbl_admin_sessions_admin_id ON tbl_admin_sessions(tas_admin_id)
 -- Enable Row Level Security
 ALTER TABLE tbl_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tbl_user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tbl_companies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tbl_mlm_tree ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tbl_subscription_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tbl_user_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tbl_payments ENABLE ROW LEVEL SECURITY;
@@ -293,18 +253,6 @@ CREATE POLICY "Users can update own profile" ON tbl_user_profiles
   FOR UPDATE TO authenticated
   USING (auth.uid() = tup_user_id);
 
--- RLS Policies for tbl_companies table
-CREATE POLICY "Companies can insert own data" ON tbl_companies
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = tc_user_id);
-
-CREATE POLICY "Companies can read own data" ON tbl_companies
-  FOR SELECT TO authenticated
-  USING (auth.uid() = tc_user_id);
-
-CREATE POLICY "Companies can update own data" ON tbl_companies
-  FOR UPDATE TO authenticated
-  USING (auth.uid() = tc_user_id);
 
 -- RLS Policies for tbl_subscription_plans table (public read for active plans)
 CREATE POLICY "Anyone can read active plans" ON tbl_subscription_plans
@@ -523,10 +471,6 @@ CREATE TRIGGER trigger_user_profiles_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_user_profiles_updated_at_column();
 
-CREATE TRIGGER trigger_companies_updated_at
-  BEFORE UPDATE ON tbl_companies
-  FOR EACH ROW
-  EXECUTE FUNCTION update_companies_updated_at_column();
 
 CREATE TRIGGER trigger_admin_users_updated_at
     BEFORE UPDATE ON tbl_admin_users
