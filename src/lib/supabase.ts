@@ -676,3 +676,38 @@ export const getCourses = async () => {
   if (error) throw error
   return data
 }
+
+export const getCourseById = async (courseId: string) => {
+  const { data, error } = await supabase
+    .from('tbl_courses')
+    .select(`
+      *,
+      tbl_course_categories (*),
+      tbl_course_content (*)
+    `)
+    .eq('tc_id', courseId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export const enrollInCourse = async (userId: string, courseId: string, amountPaid: number) => {
+  const { data, error } = await supabase
+    .from('tbl_course_enrollments')
+    .insert({
+      tce_user_id: userId,
+      tce_course_id: courseId,
+      tce_enrollment_date: new Date().toISOString(),
+      tce_progress_percentage: 0,
+      tce_completion_status: 'enrolled',
+      tce_payment_status: amountPaid > 0 ? 'paid' : 'free',
+      tce_amount_paid: amountPaid,
+      tce_is_active: true
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
