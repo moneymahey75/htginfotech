@@ -657,3 +657,12 @@ export const getUserEnrollments = async (userId: string) => {
   if (error) throw error
   return data
 }
+export const getCourseCategories = async () => {
+  const { data, error } = await supabase
+    .from('tbl_course_categories')
+    .select('*')
+    .order('tcc_name')
+
+  if (error) throw error
+  return data
+}
