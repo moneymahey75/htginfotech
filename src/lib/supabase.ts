@@ -666,3 +666,13 @@ export const getCourseCategories = async () => {
   if (error) throw error
   return data
 }
+
+export const getCourses = async () => {
+  const { data, error } = await supabase
+    .from('tbl_courses')
+    .select('*')
+    .order('tc_title')
+
+  if (error) throw error
+  return data
+}
