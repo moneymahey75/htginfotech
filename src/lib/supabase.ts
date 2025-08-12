@@ -640,3 +640,20 @@ export const getSystemSettings = async () => {
 
   return settings
 }
+
+export const getUserEnrollments = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('tbl_course_enrollments')
+    .select(`
+      *,
+      tbl_courses (
+        *,
+        tbl_course_categories (*)
+      )
+    `)
+    .eq('tce_user_id', userId)
+    .order('tce_created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
