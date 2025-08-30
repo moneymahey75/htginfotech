@@ -17,7 +17,8 @@ import {
   CheckCircle,
   Target,
   Rocket,
-  DollarSign
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
 
 const Home: React.FC = () => {
@@ -112,7 +113,7 @@ const Home: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   to={slides[currentSlide].ctaLink}
-                  className="group bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 text-white px-8 py-4 rounded-2xl font-semibold hover:from-emerald-600 hover:via-teal-700 hover:to-cyan-700 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                  className="group bg-gradient-to-r from-blue-500 via-indigo-600 to-blue-600 text-white px-8 py-4 rounded-2xl font-semibold hover:from-blue-600 hover:via-indigo-700 hover:to-blue-700 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 >
                   <span>{slides[currentSlide].cta}</span>
@@ -168,7 +169,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Stats Banner */}
-      <section className="py-16 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600">
+      <section className="py-16 bg-gradient-to-r from-blue-500 via-indigo-600 to-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
             <div className="group">
@@ -220,9 +221,9 @@ const Home: React.FC = () => {
                 icon: BookOpen,
                 title: 'Comprehensive Courses',
                 description: 'Access thousands of courses in programming, science, mathematics, and more subjects.',
-                color: 'from-emerald-500 to-teal-600',
-                bgColor: 'bg-emerald-50',
-                iconColor: 'text-emerald-600',
+                color: 'from-blue-500 to-indigo-600',
+                bgColor: 'bg-blue-50',
+                iconColor: 'text-blue-600',
                 image: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
               },
               {
@@ -322,7 +323,7 @@ const Home: React.FC = () => {
           
           <Link
             to="/learner/register"
-            className="inline-flex items-center space-x-3 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-8 py-4 rounded-2xl font-bold hover:from-emerald-300 hover:to-teal-400 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+            className="inline-flex items-center space-x-3 bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-8 py-4 rounded-2xl font-bold hover:from-blue-300 hover:to-indigo-400 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <Rocket className="h-6 w-6" />
@@ -445,19 +446,19 @@ const Home: React.FC = () => {
           {/* Trust Indicators */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-75">
             <div className="flex items-center justify-center space-x-2">
-              <Shield className="h-6 w-6" />
+              <Shield className="h-6 w-6 text-blue-400" />
               <span className="text-sm">SSL Secured</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <CheckCircle className="h-6 w-6" />
+              <CheckCircle className="h-6 w-6 text-blue-400" />
               <span className="text-sm">Verified Tutors</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <Users className="h-6 w-6" />
+              <Users className="h-6 w-6 text-blue-400" />
               <span className="text-sm">10K+ Learners</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <Award className="h-6 w-6" />
+              <Award className="h-6 w-6 text-blue-400" />
               <span className="text-sm">Certified Courses</span>
             </div>
           </div>

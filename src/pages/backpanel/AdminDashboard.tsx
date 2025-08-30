@@ -4,6 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
 import CustomerManagement from '../../components/admin/CustomerManagement';
+import LearnerManagement from '../../components/admin/LearnerManagement';
+import TutorManagement from '../../components/admin/TutorManagement';
+import CourseManagement from '../../components/admin/CourseManagement';
+import CourseCategoryManagement from '../../components/admin/CourseCategoryManagement';
+import SubscriptionManagement from '../../components/admin/SubscriptionManagement';
+import PaymentManagement from '../../components/admin/PaymentManagement';
 import SMTPSettings from '../../components/admin/SMTPSettings';
 import SMSSettings from '../../components/admin/SMSSettings';
 import AdminManagement from '../../components/admin/AdminManagement';
@@ -30,7 +36,10 @@ import {
   LogOut,
   Menu,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BookOpen,
+  GraduationCap,
+  Folder
 } from 'lucide-react';
 
 interface SubAdmin {
@@ -183,8 +192,10 @@ const AdminDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3, permission: null },
-    { id: 'users', label: 'Users', icon: Users, permission: 'users' },
-    { id: 'companies', label: 'Companies', icon: Building, permission: 'companies' },
+    { id: 'learners', label: 'Learners', icon: BookOpen, permission: 'users' },
+    { id: 'tutors', label: 'Tutors', icon: GraduationCap, permission: 'users' },
+    { id: 'courses', label: 'Courses', icon: BookOpen, permission: 'users' },
+    { id: 'categories', label: 'Course Categories', icon: Folder, permission: 'users' },
     { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard, permission: 'subscriptions' },
     { id: 'payments', label: 'Payments', icon: DollarSign, permission: 'payments' },
     { id: 'admins', label: 'Sub-Admins', icon: Shield, permission: 'admins' },
@@ -233,7 +244,7 @@ const AdminDashboard: React.FC = () => {
               <Shield className="h-5 w-5 text-white" />
             </div>
             {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0">
+              <div>
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {admin?.fullName}
                 </p>
@@ -290,8 +301,10 @@ const AdminDashboard: React.FC = () => {
               </h2>
               <p className="text-gray-600 mt-1">
                 {activeTab === 'overview' && 'System overview and statistics'}
-                {activeTab === 'users' && 'Manage customer accounts and profiles'}
-                {activeTab === 'companies' && 'Manage company registrations and verifications'}
+                {activeTab === 'learners' && 'Manage learner accounts and learning progress'}
+                {activeTab === 'tutors' && 'Manage tutor profiles and teaching activities'}
+                {activeTab === 'courses' && 'Manage courses, lessons, and content'}
+                {activeTab === 'categories' && 'Manage course categories and organization'}
                 {activeTab === 'subscriptions' && 'Manage subscription plans and pricing'}
                 {activeTab === 'payments' && 'View payment transactions and history'}
                 {activeTab === 'admins' && 'Manage sub-administrators and permissions'}
@@ -364,29 +377,29 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'users' && hasPermission('users', 'read') && (
-            <CustomerManagement />
+          {activeTab === 'learners' && hasPermission('users', 'read') && (
+            <LearnerManagement />
           )}
 
-          {activeTab === 'companies' && hasPermission('companies', 'read') && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Management</h3>
-              <p className="text-gray-600">Company management interface will be displayed here.</p>
-            </div>
+          {activeTab === 'tutors' && hasPermission('users', 'read') && (
+            <TutorManagement />
           )}
+
+          {activeTab === 'courses' && hasPermission('users', 'read') && (
+            <CourseManagement />
+          )}
+
+          {activeTab === 'categories' && hasPermission('users', 'read') && (
+            <CourseCategoryManagement />
+          )}
+
 
           {activeTab === 'subscriptions' && hasPermission('subscriptions', 'read') && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription Management</h3>
-              <p className="text-gray-600">Subscription management interface will be displayed here.</p>
-            </div>
+            <SubscriptionManagement />
           )}
 
           {activeTab === 'payments' && hasPermission('payments', 'read') && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Management</h3>
-              <p className="text-gray-600">Payment management interface will be displayed here.</p>
-            </div>
+            <PaymentManagement />
           )}
 
           {activeTab === 'admins' && hasPermission('admins', 'read') && (

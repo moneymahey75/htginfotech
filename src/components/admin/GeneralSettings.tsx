@@ -10,10 +10,12 @@ const GeneralSettings: React.FC = () => {
         logoUrl: settings.logoUrl,
         dateFormat: settings.dateFormat,
         timezone: settings.timezone,
-        defaultParentAccount: settings.defaultParentAccount
+        jobSeekerVideoUrl: settings.jobSeekerVideoUrl,
+        jobProviderVideoUrl: settings.jobProviderVideoUrl
     });
     const [saving, setSaving] = useState(false);
     const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         setFormData({
@@ -21,7 +23,8 @@ const GeneralSettings: React.FC = () => {
             logoUrl: settings.logoUrl,
             dateFormat: settings.dateFormat,
             timezone: settings.timezone,
-            defaultParentAccount: settings.defaultParentAccount
+            jobSeekerVideoUrl: settings.jobSeekerVideoUrl,
+            jobProviderVideoUrl: settings.jobProviderVideoUrl
         });
     }, [settings]);
 
@@ -37,7 +40,8 @@ const GeneralSettings: React.FC = () => {
                 { key: 'logo_url', value: JSON.stringify(formData.logoUrl) },
                 { key: 'date_format', value: JSON.stringify(formData.dateFormat) },
                 { key: 'timezone', value: JSON.stringify(formData.timezone) },
-                { key: 'default_parent_account', value: JSON.stringify(formData.defaultParentAccount) }
+                { key: 'job_seeker_video_url', value: JSON.stringify(formData.jobSeekerVideoUrl) },
+                { key: 'job_provider_video_url', value: JSON.stringify(formData.jobProviderVideoUrl) }
             ];
 
             for (const update of updates) {
@@ -59,9 +63,14 @@ const GeneralSettings: React.FC = () => {
             // Update context
             updateSettings(formData);
 
+            // Force a page refresh to update all components with new logo
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
             setSaveResult({
                 success: true,
-                message: 'General settings updated successfully!'
+                message: 'General settings updated successfully! Page will refresh to apply changes.'
             });
         } catch (error) {
             console.error('Failed to save settings:', error);
@@ -79,6 +88,99 @@ const GeneralSettings: React.FC = () => {
             ...prev,
             [e.target.name]: e.target.value
         }));
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setSaveResult({
+                success: false,
+                message: 'Please select a valid image file'
+            });
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setSaveResult({
+                success: false,
+                message: 'Image file size must be less than 5MB'
+            });
+            return;
+        }
+
+        setUploading(true);
+        setSaveResult(null);
+
+        try {
+            // Create a unique filename
+            const fileExt = file.name.split('.').pop();
+            const fileName = `logo-${Date.now()}.${fileExt}`;
+
+            // Upload to Supabase Storage
+            const { data, error } = await supabase.storage
+                .from('logos')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) {
+                // If storage bucket doesn't exist, create a public URL from the file
+                console.warn('Storage upload failed, using fallback method:', error);
+                
+                // Convert file to base64 data URL for preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target?.result as string;
+                    setFormData(prev => ({
+                        ...prev,
+                        logoUrl: dataUrl
+                    }));
+                    
+                    // Also update the admin context immediately
+                    updateSettings({ logoUrl: dataUrl });
+                    
+                    setSaveResult({
+                        success: true,
+                        message: 'Logo uploaded successfully! Click Save Settings to apply changes.'
+                    });
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('logos')
+                .getPublicUrl(fileName);
+
+            // Update form data with new URL
+            setFormData(prev => ({
+                ...prev,
+                logoUrl: publicUrl
+            }));
+
+            // Also update the admin context immediately
+            updateSettings({ logoUrl: publicUrl });
+
+            setSaveResult({
+                success: true,
+                message: 'Logo uploaded successfully! Click Save Settings to apply changes.'
+            });
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            setSaveResult({
+                success: false,
+                message: 'Failed to upload logo. Please try again.'
+            });
+        } finally {
+            setUploading(false);
+        }
     };
 
     return (
@@ -147,13 +249,33 @@ const GeneralSettings: React.FC = () => {
                                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder="https://example.com/logo.png"
                             />
-                            <button
-                                type="button"
-                                className="bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoUpload}
+                                className="hidden"
+                                id="logo-upload"
+                            />
+                            <label
+                                htmlFor="logo-upload"
+                                className={`px-4 py-3 rounded-lg transition-colors flex items-center space-x-2 cursor-pointer ${
+                                    uploading 
+                                        ? 'bg-gray-400 cursor-not-allowed' 
+                                        : 'bg-gray-600 hover:bg-gray-700'
+                                } text-white`}
                             >
-                                <Upload className="h-4 w-4" />
-                                <span>Upload</span>
-                            </button>
+                                {uploading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Uploading...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-4 w-4" />
+                                        <span>Upload</span>
+                                    </>
+                                )}
+                            </label>
                         </div>
                         {formData.logoUrl && (
                             <div className="mt-2">
@@ -208,20 +330,38 @@ const GeneralSettings: React.FC = () => {
                 </div>
 
                 <div>
-                    <label htmlFor="defaultParentAccount" className="block text-sm font-medium text-gray-700 mb-2">
-                        Default Parent Account
+                    <label htmlFor="jobSeekerVideoUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                        Job Seeker Video URL
                     </label>
                     <input
-                        type="text"
-                        id="defaultParentAccount"
-                        name="defaultParentAccount"
-                        value={formData.defaultParentAccount}
+                        type="url"
+                        id="jobSeekerVideoUrl"
+                        name="jobSeekerVideoUrl"
+                        value={formData.jobSeekerVideoUrl}
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Default parent account for orphaned users"
+                        placeholder="https://www.youtube.com/embed/VIDEO_ID"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                        Used when a user registers without a valid referral
+                        YouTube embed URL for the job seekers page
+                    </p>
+                </div>
+
+                <div>
+                    <label htmlFor="jobProviderVideoUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                        Job Provider Video URL
+                    </label>
+                    <input
+                        type="url"
+                        id="jobProviderVideoUrl"
+                        name="jobProviderVideoUrl"
+                        value={formData.jobProviderVideoUrl}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="https://www.youtube.com/embed/VIDEO_ID"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                        YouTube embed URL for the job providers page
                     </p>
                 </div>
 

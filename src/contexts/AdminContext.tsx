@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface GeneralSettings {
   siteName: string;
@@ -9,6 +10,8 @@ interface GeneralSettings {
   mobileVerificationRequired: boolean;
   autoTutorAssignment: boolean;
   maxStudentsPerTutor: number;
+  jobSeekerVideoUrl: string;
+  jobProviderVideoUrl: string;
 }
 
 interface SMSGateway {
@@ -58,14 +61,16 @@ export const useAdmin = () => {
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<GeneralSettings>({
-    siteName: 'EduMaster',
-    logoUrl: 'https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
+    siteName: 'HTG Infotech',
+    logoUrl: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
     dateFormat: 'DD/MM/YYYY',
     timezone: 'UTC',
     emailVerificationRequired: true,
     mobileVerificationRequired: true,
     autoTutorAssignment: true,
-    maxStudentsPerTutor: 20
+    maxStudentsPerTutor: 20,
+    jobSeekerVideoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    jobProviderVideoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   });
 
   const [smsGateway, setSMSGateway] = useState<SMSGateway>({
@@ -110,8 +115,72 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   ]);
 
+  // Load settings from database on initialization
+  React.useEffect(() => {
+    loadSettingsFromDatabase();
+  }, []);
+
+  const loadSettingsFromDatabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tbl_system_settings')
+        .select('tss_setting_key, tss_setting_value');
+
+      if (error) {
+        console.warn('Failed to load settings from database, using defaults:', error);
+        return;
+      }
+
+      const settingsMap = data?.reduce((acc: any, setting: any) => {
+        try {
+          // Handle both JSON strings and plain strings
+          let value = setting.tss_setting_value;
+          
+          // If the value starts and ends with quotes, it's a JSON string
+          if (typeof value === 'string' && value.startsWith('"') && value.endsWith('"')) {
+            acc[setting.tss_setting_key] = JSON.parse(value);
+          } else if (typeof value === 'string') {
+            // Try to parse as JSON first, if it fails, use as plain string
+            try {
+              acc[setting.tss_setting_key] = JSON.parse(value);
+            } catch {
+              // If JSON parsing fails, use the raw string value
+              acc[setting.tss_setting_key] = value;
+            }
+          } else {
+            // For non-string values (boolean, number, etc.)
+            acc[setting.tss_setting_key] = value;
+          }
+        } catch (parseError) {
+          console.warn('Failed to parse setting value:', setting.tss_setting_key, parseError);
+          // Use the raw value as fallback
+          acc[setting.tss_setting_key] = setting.tss_setting_value;
+        }
+        return acc;
+      }, {}) || {};
+
+      // Update settings with database values
+      setSettings(prev => ({
+        ...prev,
+        siteName: settingsMap.site_name || prev.siteName,
+        logoUrl: settingsMap.logo_url || prev.logoUrl,
+        dateFormat: settingsMap.date_format || prev.dateFormat,
+        timezone: settingsMap.timezone || prev.timezone,
+        emailVerificationRequired: settingsMap.email_verification_required ?? prev.emailVerificationRequired,
+        mobileVerificationRequired: settingsMap.mobile_verification_required ?? prev.mobileVerificationRequired,
+        jobSeekerVideoUrl: settingsMap.job_seeker_video_url || prev.jobSeekerVideoUrl,
+        jobProviderVideoUrl: settingsMap.job_provider_video_url || prev.jobProviderVideoUrl
+      }));
+
+      console.log('✅ Settings loaded from database:', settingsMap);
+    } catch (error) {
+      console.error('Error loading settings from database:', error);
+    }
+  };
+
   const updateSettings = (newSettings: Partial<GeneralSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
+    // Trigger a re-render by updating the context
   };
 
   const updateSMSGateway = (gateway: SMSGateway) => {

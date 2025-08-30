@@ -5,7 +5,7 @@ import { sessionUtils } from '../../utils/sessionUtils';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  userType: 'learner' | 'tutor' | 'admin';
+  userType: 'learner' | 'tutor' | 'job_seeker' | 'job_provider' | 'admin';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) => {
@@ -56,7 +56,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
     console.log('🔒 No user found, redirecting to login');
     // Clear any stale session data
     sessionUtils.clearAllSessions();
-    return <Navigate to={`/${userType}/login`} replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // Check if user type matches the required type
@@ -70,11 +70,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
   if (!sessionInfo.isValid) {
     console.log('🔒 Invalid session detected, redirecting to login');
     sessionUtils.clearAllSessions();
-    return <Navigate to={`/${userType}/login`} replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Check if customer needs to complete verification or payment (if required)
-  if (userType === 'learner' && user.userType === 'learner') {
+  // Check if user needs to complete verification or payment (if required)
+  if ((userType === 'learner' || userType === 'job_seeker') && (user.userType === 'learner' || user.userType === 'job_seeker')) {
     // In demo mode, all users have active plans
     // You can add additional checks here if needed
   }

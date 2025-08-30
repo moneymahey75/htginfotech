@@ -348,7 +348,7 @@ const JoinAsTutor: React.FC = () => {
             </Link>
             <Link
               to="/contact"
-              className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-green-600 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
+              className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
             >
               <Globe className="h-5 w-5" />
               <span>Contact Us</span>

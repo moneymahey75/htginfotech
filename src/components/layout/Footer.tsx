@@ -17,7 +17,11 @@ const Footer: React.FC = () => {
                 <img
                   src={settings.logoUrl}
                   alt={settings.siteName}
-                  className="h-12 w-12 rounded-xl object-cover shadow-lg"
+                  className="h-12 w-50 object-cover shadow-lg"
+                  onError={(e) => {
+                    // Fallback to default logo if image fails to load
+                    (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop';
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-xl"></div>
               </div>
@@ -25,14 +29,13 @@ const Footer: React.FC = () => {
                 <span className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 </span>
                 <span className="text-2xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
-                  {settings.siteName}
                 </span>
-                <p className="text-sm text-gray-400">Premium MLM Platform</p>
+                
               </div>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
-              The ultimate MLM platform with binary tree architecture, designed for sustainable growth and transparent earnings. 
-              Join thousands of successful entrepreneurs building their financial future.
+              Leading technology solutions provider specializing in education platforms, job portals, and innovative software development. 
+              Empowering businesses and individuals through cutting-edge technology.
             </p>
             
             {/* Contact Info */}
@@ -133,7 +136,7 @@ const Footer: React.FC = () => {
                 © {new Date().getFullYear()} {settings.siteName}. All rights reserved.
               </p>
               <p className="text-gray-500 text-xs mt-1">
-                Built with ❤️ for the MLM community
+                Built with ❤️ for innovation and excellence
               </p>
             </div>
           </div>

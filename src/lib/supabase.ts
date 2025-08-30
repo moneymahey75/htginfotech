@@ -242,27 +242,9 @@ export interface UserProfile {
   tup_username?: string
   tup_mobile?: string
   tup_gender?: string
-  tup_sponsorship_number?: string
   tup_parent_account?: string
   tup_created_at: string
   tup_updated_at: string
-}
-
-export interface Company {
-  id: string
-  tc_user_id: string
-  tc_company_name: string
-  tc_brand_name?: string
-  tc_business_type?: string
-  tc_business_category?: string
-  tc_registration_number: string
-  tc_gstin: string
-  tc_website_url?: string
-  tc_official_email: string
-  tc_affiliate_code?: string
-  tc_verification_status: 'pending' | 'verified' | 'rejected'
-  tc_created_at: string
-  tc_updated_at: string
 }
 
 export interface SubscriptionPlan {
@@ -275,20 +257,6 @@ export interface SubscriptionPlan {
   tsp_is_active: boolean
   tsp_created_at: string
   tsp_updated_at: string
-}
-
-export interface MLMTreeNode {
-  id: string
-  tmt_user_id: string
-  tmt_parent_id?: string
-  tmt_left_child_id?: string
-  tmt_right_child_id?: string
-  tmt_level: number
-  tmt_position: 'left' | 'right' | 'root'
-  tmt_sponsorship_number: string
-  tmt_is_active: boolean
-  tmt_created_at: string
-  tmt_updated_at: string
 }
 
 export interface OTPVerification {
@@ -606,22 +574,37 @@ export const getTreeStatisticsWithRedis = async (userId: string) => {
   }
 };
 
-// Function to check if a sponsorship number exists
-export const checkSponsorshipNumberExists = async (sponsorshipNumber: string) => {
+// Safe activity logging function
+export const logUserActivity = async (
+  userId: string,
+  activityType: 'login' | 'logout' | 'registration' | 'password_reset' | 'profile_update',
+  metadata?: any
+): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-        .from('tbl_user_profiles')
-        .select('tup_sponsorship_number')
-        .eq('tup_sponsorship_number', sponsorshipNumber)
-        .single();
+    // Use the safe logging function from the database
+    const { data, error } = await supabase.rpc('safe_log_user_activity', {
+      p_user_id: userId,
+      p_activity_type: activityType,
+      p_ip_address: 'unknown',
+      p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      p_login_time: activityType === 'login' ? new Date().toISOString() : null,
+      p_logout_time: activityType === 'logout' ? new Date().toISOString() : null
+    });
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      throw error;
+    if (error) {
+      console.warn('Failed to log user activity:', error.message);
+      return false;
     }
 
-    return !!data;
+    if (data && !data.success) {
+      console.warn('Activity logging failed:', data.error);
+      return false;
+    }
+
+    console.log('✅ User activity logged successfully');
+    return true;
   } catch (error) {
-    console.error('Failed to check sponsorship number:', error);
+    console.warn('Exception during activity logging:', error);
     return false;
   }
 };

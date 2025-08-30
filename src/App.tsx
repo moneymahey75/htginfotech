@@ -9,10 +9,8 @@ import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
-import LearnerLogin from './pages/auth/LearnerLogin';
-import LearnerRegister from './pages/auth/LearnerRegister';
-import TutorLogin from './pages/auth/TutorLogin';
-import TutorRegister from './pages/auth/TutorRegister';
+import UnifiedLogin from './pages/auth/UnifiedLogin';
+import UnifiedRegister from './pages/auth/UnifiedRegister';
 import LearnerDashboard from './pages/dashboard/LearnerDashboard';
 import TutorDashboard from './pages/dashboard/TutorDashboard';
 import BackpanelLogin from './pages/backpanel/AdminLogin';
@@ -30,6 +28,8 @@ import SitePolicies from './pages/SitePolicies';
 import FAQ from './pages/FAQ';
 import JoinAsLearner from './pages/JoinAsLearner';
 import JoinAsTutor from './pages/JoinAsTutor';
+import JobSeekers from './pages/JobSeekers';
+import JobProviders from './pages/JobProviders';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute';
 
@@ -81,24 +81,47 @@ function App() {
                           <Route path="/about" element={<AboutUs />} />
                           <Route path="/policies" element={<SitePolicies />} />
                           <Route path="/faq" element={<FAQ />} />
-                          <Route path="/join-learner" element={<JoinAsLearner />} />
-                          <Route path="/join-tutor" element={<JoinAsTutor />} />
+                          <Route path="/job-seekers" element={<JobSeekers />} />
+                          <Route path="/job-providers" element={<JobProviders />} />
+                          <Route path="/tutors" element={<JoinAsTutor />} />
+                          <Route path="/learners" element={<JoinAsLearner />} />
                           
-                          {/* Learner Routes */}
-                          <Route path="/learner/login" element={<LearnerLogin />} />
-                          <Route path="/learner/register" element={<LearnerRegister />} />
+                          {/* Unified Auth Routes */}
+                          <Route path="/login" element={<UnifiedLogin />} />
+                          <Route path="/register" element={<UnifiedRegister />} />
+                          
+                          {/* Dashboard Routes */}
                           <Route path="/learner/dashboard" element={
                             <ProtectedRoute userType="learner">
                               <LearnerDashboard />
                             </ProtectedRoute>
                           } />
                           
-                          {/* Tutor Routes */}
-                          <Route path="/tutor/login" element={<TutorLogin />} />
-                          <Route path="/tutor/register" element={<TutorRegister />} />
                           <Route path="/tutor/dashboard" element={
                             <ProtectedRoute userType="tutor">
                               <TutorDashboard />
+                            </ProtectedRoute>
+                          } />
+                          
+                          <Route path="/job-seeker/dashboard" element={
+                            <ProtectedRoute userType="job_seeker">
+                              <div className="min-h-screen bg-gray-50 py-8">
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                  <h1 className="text-3xl font-bold text-gray-900">Job Seeker Dashboard</h1>
+                                  <p className="text-gray-600 mt-2">Manage your job search and applications</p>
+                                </div>
+                              </div>
+                            </ProtectedRoute>
+                          } />
+                          
+                          <Route path="/job-provider/dashboard" element={
+                            <ProtectedRoute userType="job_provider">
+                              <div className="min-h-screen bg-gray-50 py-8">
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                  <h1 className="text-3xl font-bold text-gray-900">Job Provider Dashboard</h1>
+                                  <p className="text-gray-600 mt-2">Manage your job postings and candidates</p>
+                                </div>
+                              </div>
                             </ProtectedRoute>
                           } />
                           

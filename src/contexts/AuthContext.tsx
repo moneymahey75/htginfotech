@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, addUserToMLMTree } from '../lib/supabase';
+import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, addUserToMLMTree, logUserActivity } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 
 interface User {
@@ -7,7 +7,7 @@ interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  userType: 'learner' | 'tutor' | 'admin';
+  userType: 'learner' | 'tutor' | 'job_seeker' | 'job_provider' | 'admin';
   educationLevel?: string;
   interests?: string[];
   isVerified: boolean;
@@ -15,10 +15,16 @@ interface User {
   mobileVerified: boolean;
 }
 
+interface LoginResult {
+  success: boolean;
+  user: User;
+  error?: string;
+}
+
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, userType: string) => Promise<void>;
-  register: (userData: any, userType: 'learner' | 'tutor') => Promise<string>;
+  login: (email: string, password: string, userType: string) => Promise<LoginResult>;
+  register: (userData: any, userType: string) => Promise<string>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
@@ -209,14 +215,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('✅ User data compiled:', user);
       setUser(user);
+      return user;
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
       // Don't throw error, just set user to null
       setUser(null);
+      return null;
     }
   };
 
-  const login = async (emailOrUsername: string, password: string, userType: string) => {
+  const login = async (emailOrUsername: string, password: string, userType: string): Promise<LoginResult> => {
     setLoading(true);
     try {
       console.log('🔍 Attempting login for:', emailOrUsername);
@@ -268,24 +276,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Log login activity
       try {
-        await supabase
-            .from('tbl_user_activity_logs')
-            .insert({
-              tual_user_id: authData.user.id,
-              tual_activity_type: 'login',
-              tual_ip_address: 'unknown',
-              tual_user_agent: navigator.userAgent,
-              tual_login_time: new Date().toISOString()
-            });
+        await logUserActivity(authData.user.id, 'login');
       } catch (logError) {
         console.warn('Failed to log login activity:', logError);
       }
 
       // Fetch user data explicitly
-      await fetchUserData(authData.user.id);
+      const userData = await fetchUserData(authData.user.id);
+
+      if (!userData) {
+        throw new Error('Failed to fetch user data');
+      }
 
       notification.showSuccess('Login Successful!', 'Welcome back!');
 
+      return {
+        success: true,
+        user: userData
+      };
     } catch (error: any) {
       console.error('❌ Login error:', error);
       const errorMessage = error?.message || 'Login failed';
@@ -295,7 +303,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionManager.removeSession();
       setUser(null);
 
-      throw new Error(errorMessage);
+      return {
+        success: false,
+        user: {} as User,
+        error: errorMessage
+      };
     } finally {
       setLoading(false);
     }
@@ -337,58 +349,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessionManager.saveSession(authData.session);
       }
 
-      // Use the appropriate registration function based on user type
-      if (userType === 'learner') {
-        console.log('📝 Registering learner profile...');
-        const { error: regError } = await supabase.rpc('register_learner', {
-          p_user_id: authData.user.id,
-          p_email: userData.email,
-          p_first_name: userData.firstName,
-          p_last_name: userData.lastName,
-          p_username: userData.userName,
-          p_mobile: userData.mobile,
-          p_gender: userData.gender
-        });
+      // Use unified registration function
+      console.log('📝 Registering user profile...');
+      const { data: regResult, error: regError } = await supabase.rpc('register_user', {
+        p_user_id: authData.user.id,
+        p_email: userData.email,
+        p_first_name: userData.firstName,
+        p_middle_name: userData.middleName || '',
+        p_last_name: userData.lastName,
+        p_username: userData.userName,
+        p_mobile: userData.phoneNumber || userData.mobile || '',
+        p_user_type: userType
+      });
 
-        if (regError) {
-          console.error('Learner registration error:', regError);
-          throw new Error(regError.message);
-        }
-      } else if (userType === 'tutor') {
-        console.log('📝 Registering tutor profile...');
-        const { error: regError } = await supabase.rpc('register_tutor', {
-          p_user_id: authData.user.id,
-          p_email: userData.email,
-          p_first_name: userData.firstName,
-          p_last_name: userData.lastName,
-          p_username: userData.userName,
-          p_mobile: userData.mobile,
-          p_gender: userData.gender,
-          p_bio: userData.bio,
-          p_specializations: userData.specializations,
-          p_experience_years: userData.experienceYears,
-          p_education: userData.education,
-          p_hourly_rate: userData.hourlyRate
-        });
-
-        if (regError) {
-          console.error('Tutor registration error:', regError);
-          throw new Error(regError.message);
-        }
+      if (regError) {
+        console.error('User registration error:', regError);
+        throw new Error(regError.message);
       }
 
-      // Log registration activity
-      await supabase
-          .from('tbl_user_activity_logs')
-          .insert({
-            tual_user_id: authData.user.id,
-            tual_activity_type: 'registration',
-            tual_ip_address: 'unknown',
-            tual_user_agent: navigator.userAgent,
-            tual_login_time: new Date().toISOString()
-          });
+      // Check if the function returned an error
+      if (regResult && !regResult.success) {
+        console.error('Registration function returned error:', regResult);
+        throw new Error(regResult.error || 'Registration failed');
+      }
 
-      console.log('✅ Registration completed successfully');
+      console.log('✅ Registration function result:', regResult);
+
+      // Log registration activity
+      try {
+        await logUserActivity(authData.user.id, 'registration');
+      } catch (logError) {
+        console.warn('Failed to log registration activity:', logError);
+      }
+
+      console.log('✅ Registration completed successfully:', regResult);
       notification.showSuccess('Registration Successful!', 'Your account has been created successfully.');
 
       // Fetch user data immediately after successful registration
@@ -413,25 +407,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setLoading(true);
     const currentUserId = user?.id;
 
     try {
       // Log logout activity before signing out
       if (user) {
-        supabase
-            .from('tbl_user_activity_logs')
-            .insert({
-              tual_user_id: user.id,
-              tual_activity_type: 'logout',
-              tual_ip_address: 'unknown',
-              tual_user_agent: navigator.userAgent,
-              tual_logout_time: new Date().toISOString()
-            })
-            .then(({ error }) => {
-              if (error) console.warn('Failed to log logout activity:', error);
-            });
+        try {
+          await logUserActivity(user.id, 'logout');
+        } catch (logError) {
+          console.warn('Failed to log logout activity:', logError);
+        }
       }
 
       // Clear all session data

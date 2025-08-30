@@ -342,7 +342,7 @@ const JoinAsLearner: React.FC = () => {
             </Link>
             <Link
               to="/courses"
-              className="group border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-2xl font-semibold hover:bg-indigo-50 transition-all duration-300 flex items-center justify-center space-x-3"
+              className="group border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-2xl font-semibold hover:bg-blue-50 transition-all duration-300 flex items-center justify-center space-x-3"
             >
               <CheckCircle className="h-5 w-5" />
               <span>Browse Courses</span>

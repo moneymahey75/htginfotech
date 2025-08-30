@@ -1,6 +1,6 @@
-# EduMaster - Online Learning Platform
+# HTG Infotech - Online Learning Platform
 
-A comprehensive online learning platform built with React, TypeScript, and Supabase, featuring personalized tutoring and course management.
+A comprehensive online learning platform built with React, TypeScript, and Supabase, featuring personalized tutoring and course management by HTG Infotech.
 
 ## Features
 
