@@ -17,7 +17,7 @@ const Footer: React.FC = () => {
                 <img
                   src={settings.logoUrl}
                   alt={settings.siteName}
-                  className="h-12 w-50 object-cover shadow-lg"
+                  className="h-20 w-100 object-cover"
                   onError={(e) => {
                     // Fallback to default logo if image fails to load
                     (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop';
