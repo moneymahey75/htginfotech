@@ -63,7 +63,7 @@ const UnifiedRegister: React.FC = () => {
 
     try {
       await register(formData, formData.userType as any);
-
+      
       // Navigate based on user type
       switch (formData.userType) {
         case 'learner':

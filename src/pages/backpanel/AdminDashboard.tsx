@@ -3,7 +3,7 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNavigate } from 'react-router-dom';
 import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
-import CustomerManagement from '../../components/admin/CustomerManagement';
+import SliderManagement from '../../components/admin/SliderManagement';
 import LearnerManagement from '../../components/admin/LearnerManagement';
 import TutorManagement from '../../components/admin/TutorManagement';
 import CourseManagement from '../../components/admin/CourseManagement';
@@ -39,6 +39,7 @@ import {
   ChevronRight,
   BookOpen,
   GraduationCap,
+  Image as ImageIcon,
   Folder
 } from 'lucide-react';
 
@@ -199,6 +200,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard, permission: 'subscriptions' },
     { id: 'payments', label: 'Payments', icon: DollarSign, permission: 'payments' },
     { id: 'admins', label: 'Sub-Admins', icon: Shield, permission: 'admins' },
+    { id: 'sliders', label: 'Home Sliders', icon: ImageIcon, permission: 'content' },
     { id: 'settings', label: 'Settings', icon: Settings, permission: 'settings' }
   ];
 
@@ -308,6 +310,7 @@ const AdminDashboard: React.FC = () => {
                 {activeTab === 'subscriptions' && 'Manage subscription plans and pricing'}
                 {activeTab === 'payments' && 'View payment transactions and history'}
                 {activeTab === 'admins' && 'Manage sub-administrators and permissions'}
+                {activeTab === 'sliders' && 'Manage home page sliders'}
                 {activeTab === 'settings' && 'Configure system settings and preferences'}
               </p>
             </div>
@@ -404,6 +407,10 @@ const AdminDashboard: React.FC = () => {
 
           {activeTab === 'admins' && hasPermission('admins', 'read') && (
             <AdminManagement />
+          )}
+
+          {activeTab === 'sliders' && hasPermission('content', 'read') && (
+              <SliderManagement />
           )}
 
           {activeTab === 'settings' && hasPermission('settings', 'read') && (

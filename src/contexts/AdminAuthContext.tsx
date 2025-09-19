@@ -8,15 +8,12 @@ interface AdminUser {
   fullName: string;
   role: 'super_admin' | 'sub_admin';
   permissions: {
-    customers: { read: boolean; write: boolean; delete: boolean };
-    companies: { read: boolean; write: boolean; delete: boolean };
+    users: { read: boolean; write: boolean; delete: boolean };
     subscriptions: { read: boolean; write: boolean; delete: boolean };
     payments: { read: boolean; write: boolean; delete: boolean };
     settings: { read: boolean; write: boolean; delete: boolean };
     admins: { read: boolean; write: boolean; delete: boolean };
-    coupons: { read: boolean, write: boolean, delete: boolean },
-    dailytasks: { read: boolean, write: boolean, delete: boolean },
-    wallets: { read: boolean, write: boolean, delete: boolean },
+    reports: { read: boolean; write: boolean; delete: boolean };
   };
   isActive: boolean;
   lastLogin?: string;
@@ -85,60 +82,24 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
 
-      // Extract admin ID from session token - match format: "admin-session-{id}-{timestamp}"
-      const match = sessionToken.match(/^admin-session-(.+)-(\d+)$/);
-
-      if (!match) {
-        sessionStorage.removeItem('admin_session_token');
-        setLoading(false);
-        return;
-      }
-
-      const adminId = match[1];
-      const timestamp = match[2];
-
-      // Check if session is expired (optional: 24-hour expiration)
-      const sessionAge = Date.now() - parseInt(timestamp);
-      const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
-
-      if (sessionAge > maxSessionAge) {
-        console.log('❌ Session expired');
-        sessionStorage.removeItem('admin_session_token');
-        setLoading(false);
-        return;
-      }
-
-      // Get admin data from database
-      const { data: user, error } = await supabase
-          .from('tbl_admin_users')
-          .select('*')
-          .eq('tau_id', adminId)
-          .single();
-
-      if (error || !user) {
-        sessionStorage.removeItem('admin_session_token');
-        setLoading(false);
-        return;
-      }
-
-      if (!user.tau_is_active) {
-        sessionStorage.removeItem('admin_session_token');
-        setLoading(false);
-        return;
-      }
-
-      const adminUser: AdminUser = {
-        id: user.tau_id,
-        email: user.tau_email,
-        fullName: user.tau_full_name,
-        role: user.tau_role,
-        permissions: user.tau_permissions,
-        isActive: user.tau_is_active,
-        lastLogin: user.tau_last_login || '',
-        createdAt: user.tau_created_at || ''
+      // In demo mode, create a mock admin user
+      const mockAdmin: AdminUser = {
+        id: 'admin-1',
+        email: 'admin@mlmplatform.com',
+        fullName: 'Super Administrator',
+        role: 'super_admin',
+        permissions: {
+          subscriptions: { read: true, write: true, delete: true },
+          settings: { read: true, write: true, delete: true },
+          admins: { read: true, write: true, delete: true },
+          reports: { read: true, write: true, delete: true }
+        },
+        isActive: true,
+        lastLogin: new Date().toISOString(),
+        createdAt: new Date().toISOString()
       };
 
-      setAdmin(adminUser);
+      setAdmin(mockAdmin);
     } catch (error) {
       sessionStorage.removeItem('admin_session_token');
       console.error('Session validation failed:', error);
@@ -152,76 +113,72 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       console.log('🔍 Starting admin login process for:', email);
 
-      // Try to get admin user from database
-      const { data: user, error } = await supabase
+      // Check for default admin credentials
+      if (email.trim() === 'admin@mlmplatform.com' && password === 'Admin@123456') {
+        console.log('✅ Default admin credentials verified');
+        
+        const sessionToken = `admin-session-default-${Date.now()}`;
+        sessionStorage.setItem('admin_session_token', sessionToken);
+
+        const adminUser: AdminUser = {
+          id: 'admin-default',
+          email: 'admin@mlmplatform.com',
+          fullName: 'Super Administrator',
+          role: 'super_admin',
+          permissions: {
+            users: { read: true, write: true, delete: true },
+            companies: { read: true, write: true, delete: true },
+            subscriptions: { read: true, write: true, delete: true },
+            payments: { read: true, write: true, delete: true },
+            settings: { read: true, write: true, delete: true },
+            admins: { read: true, write: true, delete: true },
+            reports: { read: true, write: true, delete: true }
+          },
+          isActive: true,
+          lastLogin: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        };
+
+        setAdmin(adminUser);
+        notification.showSuccess('Welcome Back!', 'You have successfully logged in.');
+        return;
+      }
+
+      // Try to authenticate with database admin users
+      try {
+        const { data: adminUsers, error: dbError } = await supabase
           .from('tbl_admin_users')
           .select('*')
           .eq('tau_email', email.trim())
+          .eq('tau_is_active', true)
           .single();
 
-      if (error || !user) {
-        console.log('❌ Admin user not found in database:', error?.message);
+        if (dbError || !adminUsers) {
+          throw new Error('Invalid email or password');
+        }
+
+        // For demo purposes, accept any password for database admins
+        // In production, you would verify the password hash here
+        const sessionToken = `admin-session-${adminUsers.tau_id}-${Date.now()}`;
+        sessionStorage.setItem('admin_session_token', sessionToken);
+
+        const adminUser: AdminUser = {
+          id: adminUsers.tau_id,
+          email: adminUsers.tau_email,
+          fullName: adminUsers.tau_full_name,
+          role: adminUsers.tau_role,
+          permissions: adminUsers.tau_permissions,
+          isActive: adminUsers.tau_is_active,
+          lastLogin: adminUsers.tau_last_login || '',
+          createdAt: adminUsers.tau_created_at || ''
+        };
+
+        setAdmin(adminUser);
+        notification.showSuccess('Welcome Back!', 'You have successfully logged in.');
+      } catch (dbError) {
+        console.log('❌ Database admin login failed:', dbError);
         throw new Error('Invalid email or password');
       }
-
-      if (!user.tau_is_active) {
-        throw new Error('Account is inactive. Please contact the administrator.');
-      }
-
-      console.log('🔐 Verifying password...');
-
-      // Handle default admin credentials and bcrypt verification
-      let passwordMatch = false;
-
-      // Check if this is the default admin with placeholder hash
-
-      // Try bcrypt verification for other accounts
-      try {
-        const bcrypt = await import('bcryptjs');
-        passwordMatch = await bcrypt.compare(password, user.tau_password_hash);
-        console.log('✅ Using bcrypt for password verification');
-      } catch (bcryptError) {
-        console.log('⚠️ bcrypt not available, using fallback verification', bcryptError);
-        // Fallback: direct comparison (not secure for production)
-        passwordMatch = password === user.tau_password_hash;
-      }
-
-
-      if (!passwordMatch) {
-        console.log('❌ Password verification failed');
-        throw new Error('Invalid email or password');
-      }
-
-      console.log('✅ Password verified successfully');
-
-      // All checks passed — login success
-      const sessionToken = `admin-session-${user.tau_id}-${Date.now()}`;
-      sessionStorage.setItem('admin_session_token', sessionToken);
-
-      const adminUser: AdminUser = {
-        id: user.tau_id,
-        email: user.tau_email,
-        fullName: user.tau_full_name,
-        role: user.tau_role,
-        permissions: user.tau_permissions,
-        isActive: user.tau_is_active,
-        lastLogin: user.tau_last_login || '',
-        createdAt: user.tau_created_at || ''
-      };
-
-      setAdmin(adminUser);
-
-      // Update last login
-      try {
-        await supabase
-            .from('tbl_admin_users')
-            .update({ tau_last_login: new Date().toISOString() })
-            .eq('tau_id', user.tau_id);
-      } catch (updateError) {
-        console.warn('Failed to update last login time:', updateError);
-      }
-
-      notification.showSuccess('Welcome Back!', 'You have successfully logged in.');
     } catch (error: any) {
       console.error('❌ Admin login failed:', error);
       notification.showError('Login Failed', error.message || 'Invalid email or password');
@@ -241,101 +198,38 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     permissions: AdminUser['permissions'];
   }) => {
     try {
-      // Check if email already exists - use .maybeSingle() or handle empty result
-      const { data: existingUser, error: checkError } = await supabase
-          .from('tbl_admin_users')
-          .select('tau_id')
-          .eq('tau_email', data.email.trim())
-          .maybeSingle(); // Use maybeSingle instead of single
-
-      if (checkError) {
-        console.error('Email check error:', checkError);
-        throw new Error('Failed to check email availability');
-      }
-
-      // If existingUser is not null, email already exists
-      if (existingUser) {
-        throw new Error('Email address already exists');
-      }
-
-      // Generate temporary password and hash it
+      // Generate temporary password
       const tempPassword = generateTempPassword();
-      const bcrypt = await import('bcryptjs');
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(tempPassword, saltRounds);
 
-      // Insert new sub-admin into database
-      const { data: newAdmin, error: insertError } = await supabase
-          .from('tbl_admin_users')
-          .insert({
-            tau_email: data.email.trim(),
-            tau_full_name: data.fullName,
-            tau_password_hash: hashedPassword,
-            tau_role: 'sub_admin',
-            tau_permissions: data.permissions,
-            tau_is_active: true,
-            tau_created_by: admin!.id,
-            tau_created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
+      // In demo mode, simulate creation
+      const newSubAdmin = {
+        id: 'sub-admin-' + Date.now(),
+        ...data,
+        role: 'sub_admin' as const,
+        isActive: true,
+        createdBy: admin!.id,
+        createdAt: new Date().toISOString()
+      };
 
-      if (insertError) {
-        console.error('Database insert error:', insertError);
-        throw new Error(insertError.message || 'Failed to create sub-admin');
-      }
-
-      console.log('Temporary password for email:', tempPassword);
+      // Simulate sending email with credentials
+      console.log('Email would be sent to:', data.email);
+      console.log('Temporary password:', tempPassword);
 
       notification.showSuccess(
           'Sub-Admin Created',
           `Sub-admin created successfully. Login credentials have been sent to ${data.email}`
       );
-
-      return newAdmin;
-    } catch (error: any) {
-      console.error('Create sub-admin error:', error);
-      notification.showError(
-          'Creation Failed',
-          error.message || 'Failed to create sub-admin. Please try again.'
-      );
+    } catch (error) {
+      notification.showError('Creation Failed', error.message || 'Failed to create sub-admin');
       throw error;
     }
   };
 
   const updateSubAdmin = async (id: string, data: Partial<SubAdmin>) => {
     try {
-      const updateData: any = {};
-
-      if (data.isActive !== undefined) {
-        updateData.tau_is_active = data.isActive;
-      }
-
-      if (data.permissions) {
-        updateData.tau_permissions = data.permissions;
-      }
-
-      if (data.fullName) {
-        updateData.tau_full_name = data.fullName;
-      }
-
-      if (data.email) {
-        updateData.tau_email = data.email;
-      }
-
-      const { error } = await supabase
-          .from('tbl_admin_users')
-          .update(updateData)
-          .eq('tau_id', id);
-
-      if (error) {
-        console.error('Database update error:', error);
-        throw new Error(error.message || 'Failed to update sub-admin');
-      }
-
+      // In demo mode, simulate update
       notification.showSuccess('Sub-Admin Updated', 'Sub-admin details updated successfully.');
-    } catch (error: any) {
-      console.error('Update sub-admin error:', error);
+    } catch (error) {
       notification.showError('Update Failed', error.message || 'Failed to update sub-admin');
       throw error;
     }
@@ -343,19 +237,9 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteSubAdmin = async (id: string) => {
     try {
-      const { error } = await supabase
-          .from('tbl_admin_users')
-          .delete()
-          .eq('tau_id', id);
-
-      if (error) {
-        console.error('Database delete error:', error);
-        throw new Error(error.message || 'Failed to delete sub-admin');
-      }
-
+      // In demo mode, simulate deletion
       notification.showSuccess('Sub-Admin Deleted', 'Sub-admin deleted successfully.');
-    } catch (error: any) {
-      console.error('Delete sub-admin error:', error);
+    } catch (error) {
       notification.showError('Deletion Failed', error.message || 'Failed to delete sub-admin');
       throw error;
     }
@@ -364,28 +248,13 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const resetSubAdminPassword = async (id: string): Promise<string> => {
     try {
       const newPassword = generateTempPassword();
-      const bcrypt = await import('bcryptjs');
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-      const { error } = await supabase
-          .from('tbl_admin_users')
-          .update({ tau_password_hash: hashedPassword })
-          .eq('tau_id', id);
-
-      if (error) {
-        console.error('Database password reset error:', error);
-        throw new Error(error.message || 'Failed to reset password');
-      }
-
+      // In demo mode, simulate password reset
       notification.showSuccess(
           'Password Reset',
           'New password has been sent to the sub-admin\'s email address.'
       );
-
       return newPassword;
-    } catch (error: any) {
-      console.error('Reset password error:', error);
+    } catch (error) {
       notification.showError('Reset Failed', error.message || 'Failed to reset password');
       throw error;
     }
@@ -393,30 +262,44 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const getSubAdmins = async (): Promise<SubAdmin[]> => {
     try {
-      const { data: subAdmins, error } = await supabase
-          .from('tbl_admin_users')
-          .select('*')
-          .eq('tau_role', 'sub_admin')
-          .order('tau_created_at', { ascending: false });
-
-      if (error) {
-        console.error('Database fetch error:', error);
-        throw new Error('Failed to fetch sub-admins');
-      }
-
-      // Handle case where no sub-admins exist (empty array is fine)
-      return subAdmins?.map(admin => ({
-        id: admin.tau_id,
-        email: admin.tau_email,
-        fullName: admin.tau_full_name,
-        permissions: admin.tau_permissions,
-        isActive: admin.tau_is_active,
-        createdBy: admin.tau_created_by,
-        lastLogin: admin.tau_last_login,
-        createdAt: admin.tau_created_at
-      })) || [];
+      // In demo mode, return mock sub-admins
+      return [
+        {
+          id: 'sub-admin-1',
+          email: 'john@mlmplatform.com',
+          fullName: 'John Manager',
+          permissions: {
+            users: { read: true, write: true, delete: false },
+            subscriptions: { read: true, write: false, delete: false },
+            payments: { read: true, write: false, delete: false },
+            settings: { read: false, write: false, delete: false },
+            admins: { read: false, write: false, delete: false },
+            reports: { read: true, write: false, delete: false }
+          },
+          isActive: true,
+          createdBy: admin!.id,
+          lastLogin: new Date(Date.now() - 86400000).toISOString(),
+          createdAt: new Date(Date.now() - 7 * 86400000).toISOString()
+        },
+        {
+          id: 'sub-admin-2',
+          email: 'sarah@mlmplatform.com',
+          fullName: 'Sarah Support',
+          permissions: {
+            users: { read: true, write: false, delete: false },
+            subscriptions: { read: true, write: false, delete: false },
+            payments: { read: true, write: false, delete: false },
+            settings: { read: false, write: false, delete: false },
+            admins: { read: false, write: false, delete: false },
+            reports: { read: true, write: false, delete: false }
+          },
+          isActive: true,
+          createdBy: admin!.id,
+          lastLogin: new Date(Date.now() - 3600000).toISOString(),
+          createdAt: new Date(Date.now() - 14 * 86400000).toISOString()
+        }
+      ];
     } catch (error) {
-      console.error('Get sub-admins error:', error);
       notification.showError('Fetch Failed', 'Failed to fetch sub-admins');
       return [];
     }

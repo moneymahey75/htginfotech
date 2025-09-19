@@ -203,8 +203,7 @@ CREATE TABLE tbl_reviews_ratings (
 );
 
 -- Update user_profiles to remove MLM-specific fields and add learner fields
-ALTER TABLE tbl_user_profiles
-  SET (autovacuum_enabled = true)
+ALTER TABLE tbl_user_profiles 
 DROP COLUMN IF EXISTS tup_sponsorship_number,
 DROP COLUMN IF EXISTS tup_parent_account;
 

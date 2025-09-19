@@ -15,15 +15,9 @@ interface User {
   mobileVerified: boolean;
 }
 
-interface LoginResult {
-  success: boolean;
-  user: User;
-  error?: string;
-}
-
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, userType: string) => Promise<LoginResult>;
+  login: (email: string, password: string, userType: string) => Promise<void>;
   register: (userData: any, userType: string) => Promise<string>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
@@ -215,16 +209,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('✅ User data compiled:', user);
       setUser(user);
-      return user;
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
       // Don't throw error, just set user to null
       setUser(null);
-      return null;
     }
   };
 
-  const login = async (emailOrUsername: string, password: string, userType: string): Promise<LoginResult> => {
+  const login = async (emailOrUsername: string, password: string, userType: string) => {
     setLoading(true);
     try {
       console.log('🔍 Attempting login for:', emailOrUsername);
@@ -282,18 +274,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Fetch user data explicitly
-      const userData = await fetchUserData(authData.user.id);
-
-      if (!userData) {
-        throw new Error('Failed to fetch user data');
-      }
+      await fetchUserData(authData.user.id);
 
       notification.showSuccess('Login Successful!', 'Welcome back!');
 
-      return {
-        success: true,
-        user: userData
-      };
+      // Navigate based on user type
+      if (user?.userType) {
+        switch (user.userType) {
+          case 'learner':
+            navigate('/learner/dashboard');
+            break;
+          case 'tutor':
+            navigate('/tutor/dashboard');
+            break;
+          case 'job_seeker':
+            navigate('/job-seeker/dashboard');
+            break;
+          case 'job_provider':
+            navigate('/job-provider/dashboard');
+            break;
+          case 'admin':
+            navigate('/admin/dashboard');
+            break;
+          default:
+            navigate('/');
+        }
+      }
     } catch (error: any) {
       console.error('❌ Login error:', error);
       const errorMessage = error?.message || 'Login failed';
@@ -303,11 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionManager.removeSession();
       setUser(null);
 
-      return {
-        success: false,
-        user: {} as User,
-        error: errorMessage
-      };
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
