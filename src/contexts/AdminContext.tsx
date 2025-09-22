@@ -62,15 +62,15 @@ export const useAdmin = () => {
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<GeneralSettings>({
     siteName: 'HTG Infotech',
-    logoUrl: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
+    logoUrl: '',
     dateFormat: 'DD/MM/YYYY',
     timezone: 'UTC',
     emailVerificationRequired: true,
     mobileVerificationRequired: true,
     autoTutorAssignment: true,
     maxStudentsPerTutor: 20,
-    jobSeekerVideoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    jobProviderVideoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    jobSeekerVideoUrl: '',
+    jobProviderVideoUrl: ''
   });
 
   const [smsGateway, setSMSGateway] = useState<SMSGateway>({

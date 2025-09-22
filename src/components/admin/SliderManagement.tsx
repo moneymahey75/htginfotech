@@ -7,6 +7,7 @@ interface Slider {
     ts_id: string;
     ts_title: string;
     ts_subtitle?: string | null;
+    ts_description?: string | null;
     ts_image_url: string;
     ts_button_text?: string | null;
     ts_button_link?: string | null;
@@ -30,6 +31,7 @@ const SliderManagement: React.FC = () => {
     const [showSliderDetails, setShowSliderDetails] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [activeTab, setActiveTab] = useState('details');
+    const [isCreating, setIsCreating] = useState(false);
     const notification = useNotification();
 
     useEffect(() => {
@@ -70,7 +72,8 @@ const SliderManagement: React.FC = () => {
     const filteredSliders = sliders.filter(slider => {
         const matchesSearch =
             (slider.ts_title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (slider.ts_subtitle?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+            (slider.ts_subtitle?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (slider.ts_description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
         const matchesStatus =
             statusFilter === 'all' ||
@@ -85,6 +88,15 @@ const SliderManagement: React.FC = () => {
         setShowSliderDetails(true);
         setActiveTab('details');
         setEditMode(false);
+        setIsCreating(false);
+    };
+
+    const handleCreateSlider = () => {
+        setSelectedSlider(null);
+        setEditMode(true);
+        setShowSliderDetails(true);
+        setActiveTab('details');
+        setIsCreating(true);
     };
 
     const handleDeleteSlider = async (sliderId: string) => {
@@ -179,14 +191,14 @@ const SliderManagement: React.FC = () => {
         return (
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="text-center py-12">
-                    <ImageIcon className="h-12 w-12 text-red-400 mx-auto mb-4" /> {/* ← Fixed: ImageIcon */}
+                    <ImageIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Sliders</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
                     <button
                         onClick={loadSliders}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
                     >
-                        <ImageIcon className="h-4 w-4" /> {/* ← Fixed: ImageIcon */}
+                        <ImageIcon className="h-4 w-4" />
                         <span>Retry</span>
                     </button>
                 </div>
@@ -194,7 +206,7 @@ const SliderManagement: React.FC = () => {
         );
     }
 
-    if (showSliderDetails && selectedSlider) {
+    if (showSliderDetails) {
         return (
             <SliderDetails
                 slider={selectedSlider}
@@ -202,12 +214,14 @@ const SliderManagement: React.FC = () => {
                     setShowSliderDetails(false);
                     setSelectedSlider(null);
                     setEditMode(false);
+                    setIsCreating(false);
                 }}
                 onUpdate={loadSliders}
                 editMode={editMode}
                 setEditMode={setEditMode}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
+                isCreating={isCreating}
             />
         );
     }
@@ -218,7 +232,7 @@ const SliderManagement: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
                         <div className="bg-blue-100 p-3 rounded-lg">
-                            <ImageIcon className="h-6 w-6 text-blue-600" /> {/* ← Fixed: ImageIcon */}
+                            <ImageIcon className="h-6 w-6 text-blue-600" />
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">Slider Management</h3>
@@ -261,12 +275,7 @@ const SliderManagement: React.FC = () => {
 
                     <div>
                         <button
-                            onClick={() => {
-                                setSelectedSlider(null);
-                                setEditMode(true);
-                                setShowSliderDetails(true);
-                                setActiveTab('details');
-                            }}
+                            onClick={handleCreateSlider}
                             className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                         >
                             <Plus className="h-4 w-4" />
@@ -416,7 +425,7 @@ const SliderManagement: React.FC = () => {
 
             {filteredSliders.length === 0 && (
                 <div className="text-center py-12">
-                    <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" /> {/* ← Fixed: ImageIcon */}
+                    <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No sliders found</h3>
                     <p className="text-gray-600">
                         {searchTerm || statusFilter !== 'all'
@@ -439,29 +448,76 @@ const SliderDetails: React.FC<{
     setEditMode: (mode: boolean) => void;
     activeTab: string;
     setActiveTab: (tab: string) => void;
-}> = ({ slider, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab }) => {
+    isCreating: boolean;
+}> = ({ slider, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, isCreating }) => {
     const [loading, setLoading] = useState(false);
     const [editData, setEditData] = useState({
-        ts_title: slider?.ts_title || '',
-        ts_subtitle: slider?.ts_subtitle || '',
-        ts_image_url: slider?.ts_image_url || '',
-        ts_button_text: slider?.ts_button_text || '',
-        ts_button_link: slider?.ts_button_link || '',
-        ts_button2_text: slider?.ts_button2_text || '',
-        ts_button2_link: slider?.ts_button2_link || '',
-        ts_sort_order: slider?.ts_sort_order || 0,
-        ts_is_active: slider?.ts_is_active ?? true,
+        ts_title: '',
+        ts_subtitle: '',
+        ts_description: '',
+        ts_image_url: '',
+        ts_button_text: '',
+        ts_button_link: '',
+        ts_button2_text: '',
+        ts_button2_link: '',
+        ts_sort_order: 1,
+        ts_is_active: true,
     });
     const notification = useNotification();
 
+    useEffect(() => {
+        if (slider) {
+            setEditData({
+                ts_title: slider.ts_title || '',
+                ts_subtitle: slider.ts_subtitle || '',
+                ts_description: slider.ts_description || '',
+                ts_image_url: slider.ts_image_url || '',
+                ts_button_text: slider.ts_button_text || '',
+                ts_button_link: slider.ts_button_link || '',
+                ts_button2_text: slider.ts_button2_text || '',
+                ts_button2_link: slider.ts_button2_link || '',
+                ts_sort_order: slider.ts_sort_order || 1,
+                ts_is_active: slider.ts_is_active ?? true,
+            });
+        } else if (isCreating) {
+            // Initialize with default values for new slider
+            setEditData({
+                ts_title: '',
+                ts_subtitle: '',
+                ts_description: '',
+                ts_image_url: '',
+                ts_button_text: '',
+                ts_button_link: '',
+                ts_button2_text: '',
+                ts_button2_link: '',
+                ts_sort_order: 1,
+                ts_is_active: true,
+            });
+        }
+    }, [slider, isCreating]);
+
     const handleSave = async () => {
+        // Validate required fields
+        if (!editData.ts_title.trim()) {
+            notification.showError('Validation Error', 'Title is required');
+            return;
+        }
+
+        if (!editData.ts_image_url.trim()) {
+            notification.showError('Validation Error', 'Image URL is required');
+            return;
+        }
+
         setLoading(true);
         try {
             if (slider) {
                 // Update existing slider
                 const { error } = await supabase
                     .from('tbl_sliders')
-                    .update(editData)
+                    .update({
+                        ...editData,
+                        ts_updated_at: new Date().toISOString()
+                    })
                     .eq('ts_id', slider.ts_id);
 
                 if (error) throw error;
@@ -470,7 +526,11 @@ const SliderDetails: React.FC<{
                 // Create new slider
                 const { error } = await supabase
                     .from('tbl_sliders')
-                    .insert([editData]);
+                    .insert([{
+                        ...editData,
+                        ts_created_at: new Date().toISOString(),
+                        ts_updated_at: new Date().toISOString()
+                    }]);
 
                 if (error) throw error;
                 notification.showSuccess('Slider Created', 'New slider has been created successfully');
@@ -496,8 +556,31 @@ const SliderDetails: React.FC<{
         }));
     };
 
+    const handleCancel = () => {
+        if (isCreating) {
+            onBack();
+        } else {
+            setEditMode(false);
+            // Reset form data to original values
+            if (slider) {
+                setEditData({
+                    ts_title: slider.ts_title || '',
+                    ts_subtitle: slider.ts_subtitle || '',
+                    ts_description: slider.ts_description || '',
+                    ts_image_url: slider.ts_image_url || '',
+                    ts_button_text: slider.ts_button_text || '',
+                    ts_button_link: slider.ts_button_link || '',
+                    ts_button2_text: slider.ts_button2_text || '',
+                    ts_button2_link: slider.ts_button2_link || '',
+                    ts_sort_order: slider.ts_sort_order || 1,
+                    ts_is_active: slider.ts_is_active ?? true,
+                });
+            }
+        }
+    };
+
     const tabs = [
-        { id: 'details', label: 'Slider Details', icon: ImageIcon }, // ← Fixed: ImageIcon
+        { id: 'details', label: 'Slider Details', icon: ImageIcon },
         { id: 'preview', label: 'Preview', icon: Eye },
     ];
 
@@ -515,9 +598,11 @@ const SliderDetails: React.FC<{
                         </button>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                                {slider ? slider.ts_title : 'Create New Slider'}
+                                {isCreating ? 'Create New Slider' : slider?.ts_title || 'Slider Details'}
                             </h3>
-                            <p className="text-gray-600">Slider Details & Management</p>
+                            <p className="text-gray-600">
+                                {isCreating ? 'Add a new slider to your homepage' : 'Slider Details & Management'}
+                            </p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -531,27 +616,10 @@ const SliderDetails: React.FC<{
                                             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 disabled:bg-green-300"
                                         >
                                             <Save className="h-4 w-4" />
-                                            <span>{loading ? 'Saving...' : 'Save Changes'}</span>
+                                            <span>{loading ? 'Saving...' : isCreating ? 'Create Slider' : 'Save Changes'}</span>
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                if (slider) {
-                                                    setEditMode(false);
-                                                    setEditData({
-                                                        ts_title: slider.ts_title,
-                                                        ts_subtitle: slider.ts_subtitle || '',
-                                                        ts_image_url: slider.ts_image_url,
-                                                        ts_button_text: slider.ts_button_text || '',
-                                                        ts_button_link: slider.ts_button_link || '',
-                                                        ts_button2_text: slider.ts_button2_text || '',
-                                                        ts_button2_link: slider.ts_button2_link || '',
-                                                        ts_sort_order: slider.ts_sort_order,
-                                                        ts_is_active: slider.ts_is_active,
-                                                    });
-                                                } else {
-                                                    onBack();
-                                                }
-                                            }}
+                                            onClick={handleCancel}
                                             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
                                         >
                                             <X className="h-4 w-4" />
@@ -559,13 +627,15 @@ const SliderDetails: React.FC<{
                                         </button>
                                     </div>
                                 ) : (
-                                    <button
-                                        onClick={() => setEditMode(true)}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        <span>Edit Slider</span>
-                                    </button>
+                                    !isCreating && (
+                                        <button
+                                            onClick={() => setEditMode(true)}
+                                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            <span>Edit Slider</span>
+                                        </button>
+                                    )
                                 )}
                             </>
                         )}
@@ -579,10 +649,11 @@ const SliderDetails: React.FC<{
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
+                                disabled={tab.id === 'preview' && isCreating && !editData.ts_image_url}
                                 className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                                     activeTab === tab.id
                                         ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 disabled:text-gray-300'
                                 }`}
                             >
                                 <tab.icon className="h-4 w-4" />
@@ -614,9 +685,10 @@ const SliderDetails: React.FC<{
                                                 onChange={handleChange}
                                                 required
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter slider title"
                                             />
                                         ) : (
-                                            <p className="text-gray-900 mt-1">{slider?.ts_title}</p>
+                                            <p className="text-gray-900 mt-1">{slider?.ts_title || 'Not provided'}</p>
                                         )}
                                     </div>
                                     <div>
@@ -628,9 +700,25 @@ const SliderDetails: React.FC<{
                                                 onChange={handleChange}
                                                 rows={3}
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter subtitle (optional)"
                                             />
                                         ) : (
                                             <p className="text-gray-900 mt-1">{slider?.ts_subtitle || 'Not provided'}</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500">Description</label>
+                                        {editMode ? (
+                                            <textarea
+                                                name="ts_description"
+                                                value={editData.ts_description}
+                                                onChange={handleChange}
+                                                rows={3}
+                                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter description (optional)"
+                                            />
+                                        ) : (
+                                            <p className="text-gray-900 mt-1">{slider?.ts_description || 'Not provided'}</p>
                                         )}
                                     </div>
                                     <div>
@@ -650,9 +738,33 @@ const SliderDetails: React.FC<{
                                                     <Upload className="h-4 w-4" />
                                                     <span>Enter a valid image URL</span>
                                                 </div>
+                                                {editData.ts_image_url && (
+                                                    <div className="mt-3">
+                                                        <img
+                                                            src={editData.ts_image_url}
+                                                            alt="Preview"
+                                                            className="h-20 w-32 object-cover rounded-lg border"
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00IDE2TDQgMTdMMTcgMTdMMTcgMTZMNCAxNloiIGZpbGw9IiM5QzlEOUQiLz4KPHBhdGggZD0iTTQgMTNMMTAgMTNMMTAgMTBMMTQgMTBMMTQgMTNMMjAgMTNMMjAgOEwxMiAzTDQgOFYxM1oiIGZpbGw9IiM5QzlEOUQiLz4KPC9zdmc+';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
-                                            <p className="text-gray-900 mt-1 truncate">{slider?.ts_image_url}</p>
+                                            <div className="mt-1">
+                                                <p className="text-gray-900 truncate mb-2">{slider?.ts_image_url || 'Not provided'}</p>
+                                                {slider?.ts_image_url && (
+                                                    <img
+                                                        src={slider.ts_image_url}
+                                                        alt="Slider preview"
+                                                        className="h-20 w-32 object-cover rounded-lg border"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00IDE2TDQgMTdMMTcgMTdMMTcgMTZMNCAxNloiIGZpbGw9IiM5QzlEOUQiLz4KPHBhdGggZD0iTTQgMTNMMTAgMTNMMTAgMTBMMTQgMTBMMTQgMTNMMjAgMTNMMjAgOEwxMiAzTDQgOFYxM1oiIGZpbGw9IiM5QzlEOUQiLz4KPC9zdmc+';
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -744,38 +856,61 @@ const SliderDetails: React.FC<{
                                                 name="ts_sort_order"
                                                 value={editData.ts_sort_order}
                                                 onChange={handleChange}
-                                                min="0"
+                                                min="1"
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         ) : (
-                                            <p className="text-gray-900 mt-1">{slider?.ts_sort_order}</p>
+                                            <p className="text-gray-900 mt-1">{slider?.ts_sort_order || 1}</p>
                                         )}
                                     </div>
-                                    {editMode && (
-                                        <div className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                name="ts_is_active"
-                                                checked={editData.ts_is_active}
-                                                onChange={handleChange}
-                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                            />
-                                            <label className="ml-2 block text-sm text-gray-700">Active (Visible on homepage)</label>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500">Status</label>
+                                        {editMode ? (
+                                            <div className="flex items-center mt-2">
+                                                <input
+                                                    type="checkbox"
+                                                    name="ts_is_active"
+                                                    checked={editData.ts_is_active}
+                                                    onChange={handleChange}
+                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                                <label className="ml-2 block text-sm text-gray-700">Active (Visible on homepage)</label>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-1">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                    slider?.ts_is_active
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {slider?.ts_is_active ? (
+                                                        <>
+                                                            <CheckCircle className="h-3 w-3 mr-1" />
+                                                            Active
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <AlertCircle className="h-3 w-3 mr-1" />
+                                                            Inactive
+                                                        </>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {activeTab === 'preview' && slider && (
+                {activeTab === 'preview' && (
                     <div className="bg-gray-900 rounded-lg p-8">
                         <div className="relative h-96 rounded-lg overflow-hidden">
                             {/* Background Image */}
                             <div
                                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                                style={{ backgroundImage: `url(${slider.ts_image_url})` }}
+                                style={{ backgroundImage: `url(${editMode ? editData.ts_image_url : slider?.ts_image_url})` }}
                             ></div>
 
                             {/* Overlay */}
@@ -784,31 +919,47 @@ const SliderDetails: React.FC<{
                             {/* Content */}
                             <div className="relative z-10 h-full flex items-center justify-center p-8">
                                 <div className="text-white text-center max-w-2xl">
-                                    <h2 className="text-4xl font-bold mb-4">{slider.ts_title}</h2>
-                                    {slider.ts_subtitle && (
-                                        <p className="text-xl mb-8 opacity-90">{slider.ts_subtitle}</p>
+                                    <h2 className="text-4xl font-bold mb-4">
+                                        {editMode ? editData.ts_title || 'Enter a title' : slider?.ts_title || 'No title'}
+                                    </h2>
+                                    {(editMode ? editData.ts_subtitle : slider?.ts_subtitle) && (
+                                        <p className="text-xl mb-4 opacity-90">
+                                            {editMode ? editData.ts_subtitle : slider?.ts_subtitle}
+                                        </p>
+                                    )}
+                                    {(editMode ? editData.ts_description : slider?.ts_description) && (
+                                        <p className="text-lg mb-8 opacity-90">
+                                            {editMode ? editData.ts_description : slider?.ts_description}
+                                        </p>
                                     )}
                                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                        {slider.ts_button_text && (
+                                        {(editMode ? editData.ts_button_text : slider?.ts_button_text) && (
                                             <a
-                                                href={slider.ts_button_link || '#'}
+                                                href={(editMode ? editData.ts_button_link : slider?.ts_button_link) || '#'}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                                                onClick={(e) => e.preventDefault()}
                                             >
-                                                {slider.ts_button_text}
+                                                {editMode ? editData.ts_button_text : slider?.ts_button_text}
                                             </a>
                                         )}
-                                        {slider.ts_button2_text && (
+                                        {(editMode ? editData.ts_button2_text : slider?.ts_button2_text) && (
                                             <a
-                                                href={slider.ts_button2_link || '#'}
+                                                href={(editMode ? editData.ts_button2_link : slider?.ts_button2_link) || '#'}
                                                 className="bg-transparent hover:bg-white/10 text-white font-bold border-2 border-white py-3 px-6 rounded-lg transition-colors"
+                                                onClick={(e) => e.preventDefault()}
                                             >
-                                                {slider.ts_button2_text}
+                                                {editMode ? editData.ts_button2_text : slider?.ts_button2_text}
                                             </a>
                                         )}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {!editData.ts_image_url && editMode && (
+                            <div className="text-center text-gray-400 mt-4">
+                                <p>Add an image URL to see the preview</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
@@ -17,13 +17,13 @@ const Footer: React.FC = () => {
                 <img
                   src={settings.logoUrl}
                   alt={settings.siteName}
-                  className="h-12 w-50 object-cover shadow-lg"
+                  className="h-20 w-100 object-cover shadow-lg"
                   onError={(e) => {
                     // Fallback to default logo if image fails to load
                     (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop';
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-xl"></div>
+
               </div>
               <div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
@@ -34,8 +34,10 @@ const Footer: React.FC = () => {
               </div>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
-              Leading technology solutions provider specializing in education platforms, job portals, and innovative software development. 
-              Empowering businesses and individuals through cutting-edge technology.
+              HTG Infotech is your gateway to growth - a non-stop platform connecting learners, trainer, job seekers, and job providers.
+              We bridge the gap between education and opportunities, empowering you to learn, get hired, build teams, and share knowledge
+              - all in one place.
+              <Fragment></Fragment>
             </p>
             
             {/* Contact Info */}
@@ -44,7 +46,7 @@ const Footer: React.FC = () => {
                 <div className="bg-emerald-600 p-2 rounded-lg">
                   <Mail className="h-4 w-4" />
                 </div>
-                <span>support@mlmplatform.com</span>
+                <span>htgcareer@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-300">
                 <div className="bg-teal-600 p-2 rounded-lg">
@@ -66,9 +68,11 @@ const Footer: React.FC = () => {
             <h3 className="text-lg font-bold mb-6 text-white">Quick Links</h3>
             <ul className="space-y-3">
               {[
-                { to: "/join-learner", label: "Join as Learner" },
-                { to: "/join-tutor", label: "Join as Tutor" },
-                { to: "/courses", label: "Course Catalog" },
+                { to: "/learners", label: "Join as Learner" },
+                { to: "/tutors", label: "Join as Tutor" },
+                { to: "/job-seekers", label: "Job Seeker" },
+                { to: "/job-providers", label: "Job Provider" },
+                { to: "/courses", label: "All Courses" },
                 { to: "/about", label: "About Us" }
               ].map((link, index) => (
                 <li key={index}>
@@ -134,9 +138,6 @@ const Footer: React.FC = () => {
             <div className="text-center md:text-right">
               <p className="text-gray-400 text-sm">
                 © {new Date().getFullYear()} {settings.siteName}. All rights reserved.
-              </p>
-              <p className="text-gray-500 text-xs mt-1">
-                Built with ❤️ for innovation and excellence
               </p>
             </div>
           </div>
