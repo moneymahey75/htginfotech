@@ -300,7 +300,10 @@ const Home: React.FC = () => {
                 Why Choose <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">{settings.siteName}</span>?
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Experience the future of MLM with our cutting-edge platform designed for maximum growth and transparency.
+                Upskill → Grow → Succeed
+              </p>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Whether you're a learner, tutor, job seeker, or job provider, our platform connects you with the right opportunities and skills to succeed.
               </p>
             </div>
 
@@ -513,7 +516,7 @@ const Home: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
               <Link
-                  to="/learner/register"
+                  to="/courses"
                   className="group bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-8 py-4 rounded-2xl font-bold hover:from-emerald-300 hover:to-teal-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               >

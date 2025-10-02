@@ -61,7 +61,7 @@ const SitePolicies: React.FC = () => {
                   <section>
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h3>
                     <p className="text-gray-600 mb-4">
-                      By accessing and using our MLM platform, you accept and agree to be bound by the terms and provision of this agreement. 
+                      By accessing and using our HTG Infotech platform, you accept and agree to be bound by the terms and provision of this agreement.
                       If you do not agree to abide by the above, please do not use this service.
                     </p>
                   </section>
@@ -77,9 +77,9 @@ const SitePolicies: React.FC = () => {
                   </section>
 
                   <section>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">3. MLM Participation</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">3. HTG Participation</h3>
                     <ul className="list-disc list-inside text-gray-600 space-y-2">
-                      <li>Participation in our MLM program requires active subscription to one of our plans</li>
+                      <li>Participation in our HTG program requires active subscription to one of our plans</li>
                       <li>Earnings are based on your network activity and subscription level</li>
                       <li>We do not guarantee specific income levels or results</li>
                       <li>All promotional activities must comply with applicable laws and regulations</li>
@@ -310,7 +310,7 @@ const SitePolicies: React.FC = () => {
                           <CheckCircle className="h-5 w-5 text-green-600" />
                           <h4 className="font-semibold text-green-900">FTC Compliance</h4>
                         </div>
-                        <p className="text-green-800 text-sm">Full compliance with Federal Trade Commission guidelines for MLM businesses.</p>
+                        <p className="text-green-800 text-sm">Full compliance with Federal Trade Commission guidelines for HTG businesses.</p>
                       </div>
                       <div className="bg-blue-50 p-6 rounded-lg">
                         <div className="flex items-center space-x-2 mb-3">
@@ -353,7 +353,7 @@ const SitePolicies: React.FC = () => {
                         If you become aware of any potential compliance violations, please report them immediately:
                       </p>
                       <ul className="list-disc list-inside text-red-800 space-y-1">
-                        <li>Email: compliance@mlmplatform.com</li>
+                        <li>Email: compliance@htginfotech.com</li>
                         <li>Phone: +1 (555) 123-4567</li>
                         <li>Anonymous reporting portal available</li>
                       </ul>

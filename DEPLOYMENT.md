@@ -12,10 +12,10 @@ git init
 git add .
 
 # Initial commit
-git commit -m "Initial commit: MLM Platform with Binary Tree Architecture"
+git commit -m "Initial commit: HTG Infotech for Learner, Tutor, Job Seeker, and Job Provider Platform"
 
 # Add remote repository
-git remote add origin https://github.com/yourusername/mlm-platform.git
+git remote add origin https://github.com/yourusername/htg-platform.git
 
 # Push to GitHub
 git push -u origin main
@@ -90,12 +90,6 @@ supabase functions deploy verify-otp
    - Auth Token: From Twilio Console
    - From Number: Your Twilio phone number
 
-### 6. Admin Panel Access
-
-Default admin credentials:
-- URL: `your-domain.com/backpanel/login`
-- Email: `admin@mlmplatform.com`
-- Password: `Admin@123456`
 
 **Important**: Change the default password after first login!
 

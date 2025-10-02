@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, addUserToMLMTree, logUserActivity } from '../lib/supabase';
+import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserActivity } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 
 interface User {

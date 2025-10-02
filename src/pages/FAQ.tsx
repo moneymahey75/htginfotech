@@ -17,16 +17,16 @@ const FAQ: React.FC = () => {
   const faqs = {
     general: [
       {
-        question: "What is MLM and how does your platform work?",
-        answer: "MLM (Multi-Level Marketing) is a business model where you earn money through direct sales and by recruiting others to join your network. Our platform uses a binary tree system where each member can have two direct recruits, creating a balanced and fair compensation structure. You earn commissions from your personal sales and bonuses from your team's performance."
+        question: "What is HTG Infotech and how does your platform work?",
+        answer: "HTG Infotech is a learning, teaching, job seeker and job provider model where you earn money through direct sales and by recruiting others to join your network. Our platform uses a binary tree system where each member can have two direct recruits, creating a balanced and fair compensation structure. You earn commissions from your personal sales and bonuses from your team's performance."
       },
       {
         question: "How much money can I make?",
-        answer: "Earnings vary greatly depending on your effort, dedication, and ability to build and maintain a network. We do not guarantee specific income levels. Success in MLM requires consistent work, effective marketing, and strong relationship-building skills. Some members earn modest supplemental income while others build substantial businesses."
+        answer: "Earnings vary greatly depending on your effort, dedication, and ability to build and maintain a network. We do not guarantee specific income levels. Success in HTG Infotech requires consistent work, effective marketing, and strong relationship-building skills. Some members earn modest supplemental income while others build substantial businesses."
       },
       {
         question: "Is this a pyramid scheme?",
-        answer: "No, our platform is a legitimate MLM business that focuses on actual product sales and services. Unlike pyramid schemes, we have real products/services, sustainable compensation plans, and comply with all FTC regulations. Members earn money primarily through sales, not just recruitment."
+        answer: "No, our platform is a legitimate learning business that focuses on actual product sales and services. Unlike pyramid schemes, we have real products/services, sustainable compensation plans, and comply with all FTC regulations. Members earn money primarily through sales, not just recruitment."
       },
       {
         question: "What countries do you operate in?",
@@ -80,7 +80,7 @@ const FAQ: React.FC = () => {
       },
       {
         question: "What should I do if I suspect unauthorized access?",
-        answer: "Immediately change your password and contact our security team at security@mlmplatform.com. We'll investigate the issue, secure your account, and provide guidance on additional security measures. Monitor your account activity regularly and report any suspicious transactions."
+        answer: "Immediately change your password and contact our security team at security@htginfotech.com. We'll investigate the issue, secure your account, and provide guidance on additional security measures. Monitor your account activity regularly and report any suspicious transactions."
       },
       {
         question: "How do you protect against fraud?",
@@ -102,7 +102,7 @@ const FAQ: React.FC = () => {
       },
       {
         question: "How do I report a technical bug?",
-        answer: "Report bugs through our support portal or email tech-support@mlmplatform.com. Include details about your browser, device, steps to reproduce the issue, and any error messages. Screenshots are helpful. We prioritize bug fixes based on severity and user impact."
+        answer: "Report bugs through our support portal or email tech-support@htginfotech.com. Include details about your browser, device, steps to reproduce the issue, and any error messages. Screenshots are helpful. We prioritize bug fixes based on severity and user impact."
       }
     ]
   };
@@ -131,7 +131,7 @@ const FAQ: React.FC = () => {
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Frequently Asked Questions</h1>
           <p className="text-xl md:text-2xl text-indigo-100 max-w-3xl mx-auto mb-8">
-            Find quick answers to common questions about our MLM platform.
+            Find quick answers to common questions about our HTG Infotech platform.
           </p>
           
           {/* Search Bar */}
@@ -241,7 +241,7 @@ const FAQ: React.FC = () => {
                   Contact Support
                 </a>
                 <a
-                  href="mailto:support@mlmplatform.com"
+                  href="mailto:support@htginfotech.com"
                   className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-indigo-600 transition-colors"
                 >
                   Email Us

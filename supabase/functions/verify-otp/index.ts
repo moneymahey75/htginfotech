@@ -258,7 +258,7 @@ async function sendWelcomeEmail(userId: string, supabase: any) {
         <div class="container">
           <div class="header">
             <h1>🎉 Welcome to ${siteName}!</h1>
-            <p>Your MLM journey starts here</p>
+            <p>Your Leearning/Teaching journey starts here</p>
           </div>
           <div class="content">
             <h2 style="color: #495057;">Hello ${firstName}!</h2>

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { mlmRedisManager, AvailablePosition, NodeData } from './redis';
+import { mlmRedisManager, NodeData } from './redis';
 
 // Use fallback values for demo purposes when environment variables are not available
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://demo.supabase.co'

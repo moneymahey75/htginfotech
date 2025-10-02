@@ -25,7 +25,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "MLM Platform <onboarding@resend.dev>",
+        from: "HTG Infotech <onboarding@resend.dev>",
         to: to,
         subject: subject,
         html: html,

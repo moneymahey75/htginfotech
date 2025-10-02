@@ -65,7 +65,7 @@ const AboutUs: React.FC = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Founded in 2020 by a team of entrepreneurs and technology experts who experienced 
-              the challenges of traditional MLM systems firsthand.
+              the challenges of traditional learning systems firsthand.
             </p>
           </div>
 

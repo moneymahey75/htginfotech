@@ -107,12 +107,6 @@ The platform uses Supabase integrations for reliable email and SMS delivery:
 - Configure in Supabase Dashboard → Settings → Integrations → Twilio
 - Test SMS delivery through Supabase
 
-### 4. Admin Panel Access
-
-Default admin credentials:
-- URL: `your-domain.com/backpanel/login`
-- Email: `admin@mlmplatform.com`
-- Password: `Admin@123456`
 
 **Important**: Change the default password after first login!
 
@@ -178,7 +172,6 @@ For testing the platform:
 
 **Test Learner**: Any valid email address
 **Test Tutor**: Apply through tutor registration
-**Test Admin**: admin@mlmplatform.com / Admin@123456
 
 ## Course Categories
 
