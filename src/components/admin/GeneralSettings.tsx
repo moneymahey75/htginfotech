@@ -34,7 +34,6 @@ const GeneralSettings: React.FC = () => {
         setSaveResult(null);
 
         try {
-            // Update settings in database
             const updates = [
                 { key: 'site_name', value: JSON.stringify(formData.siteName) },
                 { key: 'logo_url', value: JSON.stringify(formData.logoUrl) },
@@ -50,7 +49,7 @@ const GeneralSettings: React.FC = () => {
                     .upsert({
                         tss_setting_key: update.key,
                         tss_setting_value: update.value,
-                        tss_description: `${update.key.replace('_', ' ')} setting`
+                        tss_description: `${update.key.replace(/_/g, ' ')} setting`
                     }, {
                         onConflict: 'tss_setting_key'
                     });
@@ -63,14 +62,9 @@ const GeneralSettings: React.FC = () => {
             // Update context
             updateSettings(formData);
 
-            // Force a page refresh to update all components with new logo
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-
             setSaveResult({
                 success: true,
-                message: 'General settings updated successfully! Page will refresh to apply changes.'
+                message: 'General settings updated successfully!'
             });
         } catch (error) {
             console.error('Failed to save settings:', error);
@@ -131,7 +125,7 @@ const GeneralSettings: React.FC = () => {
             if (error) {
                 // If storage bucket doesn't exist, create a public URL from the file
                 console.warn('Storage upload failed, using fallback method:', error);
-                
+
                 // Convert file to base64 data URL for preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -140,10 +134,7 @@ const GeneralSettings: React.FC = () => {
                         ...prev,
                         logoUrl: dataUrl
                     }));
-                    
-                    // Also update the admin context immediately
-                    updateSettings({ logoUrl: dataUrl });
-                    
+
                     setSaveResult({
                         success: true,
                         message: 'Logo uploaded successfully! Click Save Settings to apply changes.'
@@ -163,9 +154,6 @@ const GeneralSettings: React.FC = () => {
                 ...prev,
                 logoUrl: publicUrl
             }));
-
-            // Also update the admin context immediately
-            updateSettings({ logoUrl: publicUrl });
 
             setSaveResult({
                 success: true,
@@ -210,8 +198,8 @@ const GeneralSettings: React.FC = () => {
                         <span className={`text-sm font-medium ${
                             saveResult.success ? 'text-green-800' : 'text-red-800'
                         }`}>
-              {saveResult.message}
-            </span>
+                            {saveResult.message}
+                        </span>
                     </div>
                 </div>
             )}
@@ -259,8 +247,8 @@ const GeneralSettings: React.FC = () => {
                             <label
                                 htmlFor="logo-upload"
                                 className={`px-4 py-3 rounded-lg transition-colors flex items-center space-x-2 cursor-pointer ${
-                                    uploading 
-                                        ? 'bg-gray-400 cursor-not-allowed' 
+                                    uploading
+                                        ? 'bg-gray-400 cursor-not-allowed'
                                         : 'bg-gray-600 hover:bg-gray-700'
                                 } text-white`}
                             >

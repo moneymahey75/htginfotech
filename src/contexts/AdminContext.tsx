@@ -14,6 +14,35 @@ interface GeneralSettings {
   maxStudentsPerTutor: number;
   jobSeekerVideoUrl: string;
   jobProviderVideoUrl: string;
+
+  // Contact Information
+  primaryPhone: string;
+  primaryPhoneTagline: string;
+  secondaryPhone: string;
+  secondaryPhoneTagline: string;
+  primaryEmail: string;
+  primaryEmailTagline: string;
+  supportEmail: string;
+  supportEmailTagline: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  businessHours: string;
+
+  // Social Media Links
+  facebookUrl: string;
+  instagramUrl: string;
+  linkedinUrl: string;
+  twitterUrl: string;
+  youtubeUrl: string;
+  whatsappNumber: string;
+
+  // Additional Links
+  websiteUrl: string;
+  blogUrl: string;
+
   // Username validation settings
   usernameMinLength: number;
   usernameMaxLength: number;
@@ -76,7 +105,6 @@ export const useAdmin = () => {
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
-  // Default settings with username validation
   const defaultSettings: GeneralSettings = {
     siteName: 'HTG Infotech',
     logoUrl: '',
@@ -90,6 +118,35 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     maxStudentsPerTutor: 20,
     jobSeekerVideoUrl: '',
     jobProviderVideoUrl: '',
+
+    // Contact Information defaults
+    primaryPhone: '',
+    primaryPhoneTagline: '',
+    secondaryPhone: '',
+    secondaryPhoneTagline: '',
+    primaryEmail: '',
+    primaryEmailTagline: ''
+,   supportEmail: '',
+    supportEmailTagline: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+    businessHours: '',
+
+    // Social Media defaults
+    facebookUrl: '',
+    instagramUrl: '',
+    linkedinUrl: '',
+    twitterUrl: '',
+    youtubeUrl: '',
+    whatsappNumber: '',
+
+    // Additional Links defaults
+    websiteUrl: '',
+    blogUrl: '',
+
     // Username validation defaults
     usernameMinLength: 8,
     usernameMaxLength: 30,
@@ -146,7 +203,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   ]);
 
-  // Load settings from database
   const loadSettingsFromDatabase = async () => {
     try {
       setLoading(true);
@@ -166,7 +222,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try {
             let value = setting.tss_setting_value;
 
-            // Handle JSON parsing
             if (typeof value === 'string') {
               try {
                 value = JSON.parse(value);
@@ -183,7 +238,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return acc;
         }, {});
 
-        // Update settings with database values, maintaining defaults for missing values
         setSettings({
           siteName: settingsMap.site_name || defaultSettings.siteName,
           logoUrl: settingsMap.logo_url || defaultSettings.logoUrl,
@@ -198,7 +252,31 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           jobSeekerVideoUrl: settingsMap.job_seeker_video_url || defaultSettings.jobSeekerVideoUrl,
           jobProviderVideoUrl: settingsMap.job_provider_video_url || defaultSettings.jobProviderVideoUrl,
 
-          // Username validation settings
+          primaryPhone: settingsMap.primary_phone || defaultSettings.primaryPhone,
+          primaryPhoneTagline: settingsMap.primary_phone_tagline || defaultSettings.primaryPhoneTagline,
+          secondaryPhone: settingsMap.secondary_phone || defaultSettings.secondaryPhone,
+          secondaryPhoneTagline: settingsMap.secondary_phone || defaultSettings.secondaryPhoneTagline,
+          primaryEmail: settingsMap.primary_email || defaultSettings.primaryEmail,
+          primaryEmailTagline: settingsMap.primary_email_tagline || defaultSettings.primaryEmailTagline,
+          supportEmail: settingsMap.support_email || defaultSettings.supportEmail,
+          supportEmailTagline: settingsMap.support_email_tagline || defaultSettings.supportEmailTagline,
+          address: settingsMap.address || defaultSettings.address,
+          city: settingsMap.city || defaultSettings.city,
+          state: settingsMap.state || defaultSettings.state,
+          zipCode: settingsMap.zip_code || defaultSettings.zipCode,
+          country: settingsMap.country || defaultSettings.country,
+          businessHours: settingsMap.business_hours || defaultSettings.businessHours,
+
+          facebookUrl: settingsMap.facebook_url || defaultSettings.facebookUrl,
+          instagramUrl: settingsMap.instagram_url || defaultSettings.instagramUrl,
+          linkedinUrl: settingsMap.linkedin_url || defaultSettings.linkedinUrl,
+          twitterUrl: settingsMap.twitter_url || defaultSettings.twitterUrl,
+          youtubeUrl: settingsMap.youtube_url || defaultSettings.youtubeUrl,
+          whatsappNumber: settingsMap.whatsapp_number || defaultSettings.whatsappNumber,
+
+          websiteUrl: settingsMap.website_url || defaultSettings.websiteUrl,
+          blogUrl: settingsMap.blog_url || defaultSettings.blogUrl,
+
           usernameMinLength: settingsMap.username_min_length ?? defaultSettings.usernameMinLength,
           usernameMaxLength: settingsMap.username_max_length ?? defaultSettings.usernameMaxLength,
           usernameAllowSpaces: settingsMap.username_allow_spaces ?? defaultSettings.usernameAllowSpaces,
@@ -223,7 +301,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Load settings on mount
   React.useEffect(() => {
     loadSettingsFromDatabase();
   }, []);

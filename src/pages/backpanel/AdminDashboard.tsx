@@ -3,6 +3,7 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNavigate } from 'react-router-dom';
 import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
+import ContactSocialSettings from '../../components/admin/ContactSocialSettings';
 import SliderManagement from '../../components/admin/SliderManagement';
 import LearnerManagement from '../../components/admin/LearnerManagement';
 import TutorManagement from '../../components/admin/TutorManagement';
@@ -213,6 +214,7 @@ const AdminDashboard: React.FC = () => {
   const settingsTabs = [
     { id: 'general', label: 'General Settings', icon: Globe },
     { id: 'registration', label: 'Registration Settings', icon: UserCheck },
+    { id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck },
     { id: 'smtp', label: 'Email Settings', icon: FileText },
     { id: 'sms', label: 'SMS Settings', icon: FileText }
   ];
@@ -444,6 +446,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex-1 p-6">
                   {settingsTab === 'general' && <GeneralSettings />}
                   {settingsTab === 'registration' && <RegistrationSettings />}
+                  {settingsTab === 'contactsocial' && <ContactSocialSettings />}
                   {settingsTab === 'smtp' && <SMTPSettings />}
                   {settingsTab === 'sms' && <SMSSettings />}
                 </div>

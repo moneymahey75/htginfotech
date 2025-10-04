@@ -242,16 +242,16 @@ const AboutUs: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="/customer/register"
+              href="/register"
               className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-indigo-700 transition-colors"
             >
-              Join as Customer
+              Join as Learner
             </a>
             <a
-              href="/company/register"
+              href="/register"
               className="border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-2xl font-semibold hover:bg-indigo-50 transition-colors"
             >
-              Join as Company
+              Join as Tutor
             </a>
           </div>
         </div>
