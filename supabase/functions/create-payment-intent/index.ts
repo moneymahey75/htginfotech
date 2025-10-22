@@ -37,12 +37,12 @@ Deno.serve(async (req: Request) => {
         }
 
         const stripe = new Stripe(stripeConfig.tsc_secret_key, {
-            apiVersion: "2024-12-18.acacia",
+            apiVersion: "2024-11-20.acacia",
         });
 
         const { data: course, error: courseError } = await supabase
             .from("tbl_courses")
-            .select("tc_title, tc_price")
+            .select("tc_id, tc_title, tc_price")
             .eq("tc_id", courseId)
             .single();
 
@@ -68,27 +68,13 @@ Deno.serve(async (req: Request) => {
                 courseName: course.tc_title,
             },
             description: `Payment for course: ${course.tc_title}`,
+            automatic_payment_methods: {
+                enabled: true,
+            },
         };
 
-        if (splits && splits.length > 0) {
-            const transferData = [];
-
-            for (const split of splits) {
-                const splitAmount = Math.round(
-                    (amountInCents * parseFloat(split.split_percentage)) / 100,
-                );
-                transferData.push({
-                    amount: splitAmount,
-                    destination: split.stripe_account_id,
-                });
-            }
-
-            paymentIntentData.transfer_data = {
-                destination: splits[0].stripe_account_id,
-            };
-
-            paymentIntentData.on_behalf_of = splits[0].stripe_account_id;
-        }
+        // Note: Stripe Connect transfers would be handled separately after payment succeeds
+        // For now, we're just tracking the split configuration in our database
 
         const paymentIntent = await stripe.paymentIntents.create(
             paymentIntentData,
@@ -135,7 +121,6 @@ Deno.serve(async (req: Request) => {
             JSON.stringify({
                 clientSecret: paymentIntent.client_secret,
                 paymentIntentId: paymentIntent.id,
-                paymentId: payment?.tp_id,
             }),
             {
                 headers: {

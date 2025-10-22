@@ -31,6 +31,28 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         loadStripe();
     }, []);
 
+    useEffect(() => {
+        if (clientSecret && stripe && !elements) {
+            // Give React time to render the payment-element div
+            const timer = setTimeout(() => {
+                try {
+                    const paymentContainer = document.getElementById('payment-element');
+                    if (paymentContainer) {
+                        const elementsInstance = stripe.elements({ clientSecret });
+                        const paymentElement = elementsInstance.create('payment');
+                        paymentElement.mount('#payment-element');
+                        setElements(elementsInstance);
+                    }
+                } catch (err: any) {
+                    console.error('Error mounting payment element:', err);
+                    setError('Failed to load payment form. Please try again.');
+                }
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [clientSecret, stripe, elements]);
+
     const loadStripe = async () => {
         try {
             const { data: config } = await supabase
@@ -62,6 +84,12 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             setLoading(true);
             setError(null);
 
+            if (!stripe) {
+                setError('Payment system is still loading. Please wait...');
+                setLoading(false);
+                return;
+            }
+
             const { data, error: functionError } = await supabase.functions.invoke('create-payment-intent', {
                 body: {
                     courseId,
@@ -74,13 +102,8 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
             setClientSecret(data.clientSecret);
             setPaymentIntentId(data.paymentIntentId);
+            // The useEffect will handle mounting the payment element
 
-            if (stripe) {
-                const elementsInstance = stripe.elements({ clientSecret: data.clientSecret });
-                const paymentElement = elementsInstance.create('payment');
-                paymentElement.mount('#payment-element');
-                setElements(elementsInstance);
-            }
         } catch (err: any) {
             console.error('Error creating payment intent:', err);
             setError(err.message || 'Failed to initialize payment');
@@ -100,7 +123,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         setError(null);
 
         try {
-            const { error: submitError } = await stripe.confirmPayment({
+            const { error: submitError, paymentIntent: confirmedPaymentIntent } = await stripe.confirmPayment({
                 elements,
                 redirect: 'if_required',
             });
@@ -111,20 +134,35 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
                 return;
             }
 
+            // Use the confirmed payment intent ID or fall back to the original
+            const finalPaymentIntentId = confirmedPaymentIntent?.id || paymentIntentId;
+
+            console.log('Payment confirmed by Stripe, verifying with backend...', {
+                paymentIntentId: finalPaymentIntentId,
+                status: confirmedPaymentIntent?.status
+            });
+
             const { data, error: confirmError } = await supabase.functions.invoke('confirm-payment', {
                 body: {
-                    paymentIntentId,
+                    paymentIntentId: finalPaymentIntentId,
                     userId,
                     courseId,
                 },
             });
 
-            if (confirmError) throw confirmError;
+            if (confirmError) {
+                console.error('Confirm error:', confirmError);
+                throw confirmError;
+            }
 
-            if (data.success) {
+            console.log('Backend verification response:', data);
+
+            if (data && data.success) {
                 onSuccess();
             } else {
-                setError('Payment was not successful. Please try again.');
+                const errorMsg = data?.error || data?.details || 'Payment was not successful. Please try again.';
+                console.error('Payment confirmation failed:', data);
+                setError(errorMsg);
             }
         } catch (err: any) {
             console.error('Payment error:', err);

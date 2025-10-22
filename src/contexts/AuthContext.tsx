@@ -283,33 +283,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Failed to log login activity:', logError);
       }
 
-      // Fetch user data explicitly
+      // Fetch user data explicitly and wait for it to complete
       await fetchUserData(authData.user.id);
 
       notification.showSuccess('Login Successful!', 'Welcome back!');
 
-      // Navigate based on user type
-      if (user?.userType) {
-        switch (user.userType) {
-          case 'learner':
-            navigate('/learner/dashboard');
-            break;
-          case 'tutor':
-            navigate('/tutor/dashboard');
-            break;
-          case 'job_seeker':
-            navigate('/job-seeker/dashboard');
-            break;
-          case 'job_provider':
-            navigate('/job-provider/dashboard');
-            break;
-          case 'admin':
-            navigate('/admin/dashboard');
-            break;
-          default:
-            navigate('/');
-        }
-      }
+      // Return success - navigation will be handled by the component
+      console.log('✅ Login completed successfully');
     } catch (error: any) {
       console.error('❌ Login error:', error);
 

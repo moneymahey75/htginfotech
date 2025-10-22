@@ -23,6 +23,8 @@ Deno.serve(async (req: Request) => {
 
         const { paymentIntentId, userId, courseId } = await req.json();
 
+        console.log("Confirm payment request:", { paymentIntentId, userId, courseId });
+
         if (!paymentIntentId || !userId || !courseId) {
             throw new Error(
                 "Missing required fields: paymentIntentId, userId, courseId",
@@ -35,16 +37,20 @@ Deno.serve(async (req: Request) => {
             .single();
 
         if (configError || !stripeConfig) {
+            console.error("Stripe config error:", configError);
             throw new Error("Stripe configuration not found");
         }
 
         const stripe = new Stripe(stripeConfig.tsc_secret_key, {
-            apiVersion: "2024-12-18.acacia",
+            apiVersion: "2024-11-20.acacia",
         });
 
+        console.log("Retrieving payment intent from Stripe:", paymentIntentId);
         const paymentIntent = await stripe.paymentIntents.retrieve(
             paymentIntentId,
         );
+
+        console.log("Payment intent status:", paymentIntent.status);
 
         if (paymentIntent.status === "succeeded") {
             const { data: payment, error: paymentUpdateError } = await supabase
@@ -134,9 +140,12 @@ Deno.serve(async (req: Request) => {
         }
     } catch (error) {
         console.error("Error confirming payment:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
+
         return new Response(
             JSON.stringify({
                 error: error.message || "Failed to confirm payment",
+                details: error.toString(),
             }),
             {
                 status: 400,

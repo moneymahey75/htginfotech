@@ -99,36 +99,52 @@ const StripeConnectSettings: React.FC = () => {
 
     const saveConfig = async () => {
         try {
+            let result;
             if (config) {
-                await supabase.from('tbl_stripe_config').update(formData).eq('tsc_id', config.tsc_id);
+                result = await supabase.from('tbl_stripe_config').update(formData).eq('tsc_id', config.tsc_id);
             } else {
-                await supabase.from('tbl_stripe_config').insert(formData);
+                result = await supabase.from('tbl_stripe_config').insert(formData);
             }
+
+            if (result.error) {
+                throw result.error;
+            }
+
+            alert('Configuration saved successfully!');
+
             setEditing(false);
             loadData();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save config:', error);
-            alert('Failed to save configuration');
+            alert(`Failed to save configuration: ${error.message || 'Unknown error'}`);
         }
     };
 
     const saveAccount = async () => {
+        let result;
         try {
             if (editingAccount) {
-                await supabase.from('tbl_stripe_connect_accounts').update(accountForm).eq('tsca_id', editingAccount);
+                result = await supabase.from('tbl_stripe_connect_accounts').update(accountForm).eq('tsca_id', editingAccount);
             } else {
-                await supabase.from('tbl_stripe_connect_accounts').insert({
+                result = await supabase.from('tbl_stripe_connect_accounts').insert({
                     ...accountForm,
                     tsca_is_active: true
                 });
             }
+
+            if (result.error) {
+                throw result.error;
+            }
+
+            alert('Account saved successfully!');
+
             setAddingAccount(false);
             setEditingAccount(null);
             setAccountForm({ tsca_account_name: '', tsca_stripe_account_id: '', tsca_default_split_percentage: 0 });
             loadData();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save account:', error);
-            alert('Failed to save account');
+            alert(`Failed to save account: ${error.message || 'Unknown error'}`);
         }
     };
 
@@ -145,17 +161,24 @@ const StripeConnectSettings: React.FC = () => {
 
     const saveSplit = async () => {
         try {
-            await supabase.from('tbl_payment_splits').insert({
+            const { error } = await supabase.from('tbl_payment_splits').insert({
                 ...splitForm,
                 tps_course_id: splitForm.tps_course_id || null,
                 tps_is_active: true
             });
+
+            if (error) {
+                throw error;
+            }
+
+            alert('Payment split saved successfully!');
+
             setAddingSplit(false);
             setSplitForm({ tps_course_id: '', tps_stripe_account_id: '', tps_split_percentage: 0 });
             loadData();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save split:', error);
-            alert('Failed to save payment split');
+            alert(`Failed to save payment split: ${error.message || 'Unknown error'}`);
         }
     };
 

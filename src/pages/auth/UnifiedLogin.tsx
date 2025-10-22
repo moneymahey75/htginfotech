@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle, RefreshCw } from 'lucide-r
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
 const UnifiedLogin: React.FC = () => {
-  const { login, resendConfirmationEmail } = useAuth();
+  const { login, resendConfirmationEmail, user } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
@@ -18,12 +18,72 @@ const UnifiedLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [showEmailConfirmationError, setShowEmailConfirmationError] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState('');
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+
+  // Redirect if user is already logged in (but not during the login process)
+  React.useEffect(() => {
+    if (user && !isSubmitting && !justLoggedIn) {
+      console.log('ℹ️ User already logged in, redirecting...');
+      switch (user.userType) {
+        case 'learner':
+          navigate('/learner/dashboard', { replace: true });
+          break;
+        case 'tutor':
+          navigate('/tutor/dashboard', { replace: true });
+          break;
+        case 'job_seeker':
+          navigate('/job-seeker/dashboard', { replace: true });
+          break;
+        case 'job_provider':
+          navigate('/job-provider/dashboard', { replace: true });
+          break;
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true });
+          break;
+        default:
+          navigate('/', { replace: true });
+      }
+    }
+  }, [user, isSubmitting, justLoggedIn, navigate]);
+
+  // Navigate to appropriate dashboard when user logs in
+  React.useEffect(() => {
+    if (user && justLoggedIn) {
+      console.log('✅ User logged in, navigating to dashboard:', user.userType);
+
+      // Small delay to ensure state is fully updated
+      const timer = setTimeout(() => {
+        switch (user.userType) {
+          case 'learner':
+            navigate('/learner/dashboard', { replace: true });
+            break;
+          case 'tutor':
+            navigate('/tutor/dashboard', { replace: true });
+            break;
+          case 'job_seeker':
+            navigate('/job-seeker/dashboard', { replace: true });
+            break;
+          case 'job_provider':
+            navigate('/job-provider/dashboard', { replace: true });
+            break;
+          case 'admin':
+            navigate('/admin/dashboard', { replace: true });
+            break;
+          default:
+            navigate('/', { replace: true });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, justLoggedIn, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setShowEmailConfirmationError(false);
     setIsSubmitting(true);
+    setJustLoggedIn(false);
 
     if (!recaptchaToken) {
       setError('Please complete the reCAPTCHA verification');
@@ -33,7 +93,9 @@ const UnifiedLogin: React.FC = () => {
 
     try {
       await login(formData.emailOrUsername, formData.password, 'any');
-      // Navigation will be handled by the login function based on user type
+      // Set flag to trigger navigation in useEffect
+      console.log('🎉 Login successful, setting justLoggedIn flag...');
+      setJustLoggedIn(true);
     } catch (err: any) {
       // Check if it's the email confirmation error
       if (err.message === 'EMAIL_NOT_CONFIRMED') {
@@ -44,7 +106,6 @@ const UnifiedLogin: React.FC = () => {
         // Other errors are handled by notification system
         setError(err.message || 'Login failed. Please try again.');
       }
-    } finally {
       setIsSubmitting(false);
     }
   };
