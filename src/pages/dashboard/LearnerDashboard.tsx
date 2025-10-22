@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserEnrollments } from '../../lib/supabase';
 import PaymentHistory from '../../components/learner/PaymentHistory';
@@ -236,9 +237,14 @@ const LearnerDashboard: React.FC = () => {
                     <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No courses enrolled yet</h3>
                     <p className="text-gray-600 mb-6">Start your learning journey by enrolling in a course</p>
-                    <button className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors">
-                      Browse Courses
-                    </button>
+                    <Link
+                        to="/courses"
+                        className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-indigo-900 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
+                    >
+                      <button className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+                        Browse Courses
+                      </button>
+                    </Link>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
