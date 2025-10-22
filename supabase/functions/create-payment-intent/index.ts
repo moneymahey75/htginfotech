@@ -27,28 +27,32 @@ Deno.serve(async (req: Request) => {
             throw new Error("Missing required fields: courseId, userId, amount");
         }
 
-        const { data: stripeConfig, error: configError } = await supabase
+        const { data: stripeConfigArray, error: configError } = await supabase
             .from("tbl_stripe_config")
             .select("*")
-            .single();
+            .limit(1);
 
-        if (configError || !stripeConfig) {
+        if (configError || !stripeConfigArray || stripeConfigArray.length === 0) {
             throw new Error("Stripe configuration not found");
         }
+
+        const stripeConfig = stripeConfigArray[0];
 
         const stripe = new Stripe(stripeConfig.tsc_secret_key, {
             apiVersion: "2024-11-20.acacia",
         });
 
-        const { data: course, error: courseError } = await supabase
+        const { data: courseArray, error: courseError } = await supabase
             .from("tbl_courses")
             .select("tc_id, tc_title, tc_price")
             .eq("tc_id", courseId)
-            .single();
+            .limit(1);
 
-        if (courseError || !course) {
+        if (courseError || !courseArray || courseArray.length === 0) {
             throw new Error("Course not found");
         }
+
+        const course = courseArray[0];
 
         const { data: splits } = await supabase.rpc(
             "get_payment_splits_for_course",
@@ -73,14 +77,12 @@ Deno.serve(async (req: Request) => {
             },
         };
 
-        // Note: Stripe Connect transfers would be handled separately after payment succeeds
-        // For now, we're just tracking the split configuration in our database
-
         const paymentIntent = await stripe.paymentIntents.create(
             paymentIntentData,
         );
 
-        const { data: payment, error: paymentError } = await supabase
+        // Create payment record with all correct column names
+        const { data: paymentArray, error: paymentError } = await supabase
             .from("tbl_payments")
             .insert({
                 tp_user_id: userId,
@@ -96,13 +98,16 @@ Deno.serve(async (req: Request) => {
                     splits: splits || [],
                 },
             })
-            .select()
-            .single();
+            .select();
 
         if (paymentError) {
             console.error("Error creating payment record:", paymentError);
+            throw paymentError;
         }
 
+        const payment = paymentArray?.[0];
+
+        // Create payment split transactions if splits exist
         if (splits && splits.length > 0 && payment) {
             for (const split of splits) {
                 const splitAmount = (parseFloat(amount) * parseFloat(split.split_percentage)) / 100;
@@ -134,6 +139,7 @@ Deno.serve(async (req: Request) => {
         return new Response(
             JSON.stringify({
                 error: error.message || "Failed to create payment intent",
+                details: error.toString(),
             }),
             {
                 status: 400,

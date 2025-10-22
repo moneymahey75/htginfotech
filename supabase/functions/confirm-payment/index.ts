@@ -31,15 +31,18 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const { data: stripeConfig, error: configError } = await supabase
+        // Get Stripe config
+        const { data: stripeConfigArray, error: configError } = await supabase
             .from("tbl_stripe_config")
             .select("*")
-            .single();
+            .limit(1);
 
-        if (configError || !stripeConfig) {
+        if (configError || !stripeConfigArray || stripeConfigArray.length === 0) {
             console.error("Stripe config error:", configError);
             throw new Error("Stripe configuration not found");
         }
+
+        const stripeConfig = stripeConfigArray[0];
 
         const stripe = new Stripe(stripeConfig.tsc_secret_key, {
             apiVersion: "2024-11-20.acacia",
@@ -53,48 +56,81 @@ Deno.serve(async (req: Request) => {
         console.log("Payment intent status:", paymentIntent.status);
 
         if (paymentIntent.status === "succeeded") {
-            const { data: payment, error: paymentUpdateError } = await supabase
+            // Update payment record
+            const { data: paymentArray, error: paymentUpdateError } = await supabase
                 .from("tbl_payments")
                 .update({
                     tp_payment_status: "completed",
                     tp_stripe_charge_id: paymentIntent.charges?.data[0]?.id || null,
-                    tp_receipt_url:
-                        paymentIntent.charges?.data[0]?.receipt_url || null,
+                    tp_receipt_url: paymentIntent.charges?.data[0]?.receipt_url || null,
                 })
                 .eq("tp_stripe_payment_intent_id", paymentIntentId)
-                .select()
-                .single();
+                .select();
 
             if (paymentUpdateError) {
                 console.error("Error updating payment record:", paymentUpdateError);
                 throw paymentUpdateError;
             }
 
+            if (!paymentArray || paymentArray.length === 0) {
+                throw new Error("Payment record not found");
+            }
+
+            const payment = paymentArray[0];
+
+            // Update payment splits
             await supabase
                 .from("tbl_payment_split_transactions")
                 .update({ tpst_status: "completed" })
                 .eq("tpst_payment_id", payment.tp_id);
 
-            const { data: existingEnrollment } = await supabase
+            // Check for existing enrollment
+            const { data: existingEnrollmentArray } = await supabase
                 .from("tbl_course_enrollments")
                 .select("*")
                 .eq("tce_user_id", userId)
                 .eq("tce_course_id", courseId)
-                .maybeSingle();
+                .limit(1);
+
+            const existingEnrollment = existingEnrollmentArray && existingEnrollmentArray.length > 0
+                ? existingEnrollmentArray[0]
+                : null;
 
             if (!existingEnrollment) {
+                // Get course details for expiry calculation
+                const { data: courseArray } = await supabase
+                    .from("tbl_courses")
+                    .select("tc_pricing_type, tc_access_days")
+                    .eq("tc_id", courseId)
+                    .limit(1);
+
+                const course = courseArray?.[0];
+                let expiryDate = null;
+
+                if (course?.tc_pricing_type === "paid_days" && course?.tc_access_days) {
+                    const enrollmentDate = new Date();
+                    expiryDate = new Date(enrollmentDate);
+                    expiryDate.setDate(expiryDate.getDate() + course.tc_access_days);
+                }
+
+                const enrollmentData: any = {
+                    tce_user_id: userId,
+                    tce_course_id: courseId,
+                    tce_enrollment_date: new Date().toISOString(),
+                    tce_progress_percentage: 0,
+                    tce_completion_status: "enrolled",
+                    tce_payment_status: "completed",
+                    tce_amount_paid: payment.tp_amount,
+                    tce_is_active: true,
+                };
+
+                if (expiryDate) {
+                    enrollmentData.tce_access_expires_at = expiryDate.toISOString();
+                }
+
                 const { error: enrollError } = await supabase
                     .from("tbl_course_enrollments")
-                    .insert({
-                        tce_user_id: userId,
-                        tce_course_id: courseId,
-                        tce_enrollment_date: new Date().toISOString(),
-                        tce_progress_percentage: 0,
-                        tce_completion_status: "enrolled",
-                        tce_payment_status: "paid",
-                        tce_amount_paid: payment.tp_amount,
-                        tce_is_active: true,
-                    });
+                    .insert(enrollmentData);
 
                 if (enrollError) {
                     console.error("Error creating enrollment:", enrollError);
@@ -140,7 +176,6 @@ Deno.serve(async (req: Request) => {
         }
     } catch (error) {
         console.error("Error confirming payment:", error);
-        console.error("Error details:", JSON.stringify(error, null, 2));
 
         return new Response(
             JSON.stringify({

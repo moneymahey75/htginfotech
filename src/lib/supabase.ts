@@ -727,22 +727,52 @@ export const getCourseById = async (courseId: string) => {
   return data
 }
 
-export const enrollInCourse = async (userId: string, courseId: string, amountPaid: number) => {
-  const { data, error } = await supabase
-    .from('tbl_course_enrollments')
-    .insert({
+export const enrollInCourse = async (userId: string, courseId: string, amount: number) => {
+  try {
+    // Get course details to determine pricing type
+    const { data: courseArray } = await supabase
+        .from('tbl_courses')
+        .select('tc_pricing_type, tc_access_days')
+        .eq('tc_id', courseId)
+        .limit(1);
+
+    const course = courseArray?.[0];
+    let expiryDate = null;
+
+    if (course?.tc_pricing_type === "paid_days" && course?.tc_access_days) {
+      const enrollmentDate = new Date();
+      expiryDate = new Date(enrollmentDate);
+      expiryDate.setDate(expiryDate.getDate() + course.tc_access_days);
+    }
+
+    const enrollmentData: any = {
       tce_user_id: userId,
       tce_course_id: courseId,
       tce_enrollment_date: new Date().toISOString(),
       tce_progress_percentage: 0,
-      tce_completion_status: 'enrolled',
-      tce_payment_status: amountPaid > 0 ? 'paid' : 'free',
-      tce_amount_paid: amountPaid,
-      tce_is_active: true
-    })
-    .select()
-    .single()
+      tce_completion_status: "enrolled",
+      tce_payment_status: amount > 0 ? "completed" : "completed", // Use "completed" for free courses too
+      tce_amount_paid: amount,
+      tce_is_active: true,
+    };
 
-  if (error) throw error
-  return data
-}
+    if (expiryDate) {
+      enrollmentData.tce_access_expires_at = expiryDate.toISOString();
+    }
+
+    const { data, error } = await supabase
+        .from('tbl_course_enrollments')
+        .insert(enrollmentData)
+        .select();
+
+    if (error) {
+      console.error('Enrollment error:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to enroll in course:', error);
+    throw error;
+  }
+};
