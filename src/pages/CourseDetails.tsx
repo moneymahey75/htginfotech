@@ -95,8 +95,8 @@ const CourseDetails: React.FC = () => {
         alert('Successfully enrolled in the course!');
         navigate('/learner/dashboard');
       } else {
-        // Redirect to payment page
-        navigate('/payment', { 
+        // Redirect to course payment page
+        navigate('/course/payment', {
           state: { 
             courseId: course.tc_id,
             amount: course.tc_price,

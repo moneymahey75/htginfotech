@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserEnrollments } from '../../lib/supabase';
+import PaymentHistory from '../../components/learner/PaymentHistory';
 import { 
   BookOpen, 
   TrendingUp, 
@@ -11,7 +12,8 @@ import {
   User,
   BarChart3,
   CheckCircle,
-  Star
+  Star,
+  Receipt
 } from 'lucide-react';
 
 interface Enrollment {
@@ -154,6 +156,7 @@ const LearnerDashboard: React.FC = () => {
                 { id: 'overview', label: 'Overview', icon: BarChart3 },
                 { id: 'courses', label: 'My Courses', icon: BookOpen },
                 { id: 'progress', label: 'Progress', icon: TrendingUp },
+                { id: 'payments', label: 'Payment History', icon: Receipt },
                 { id: 'schedule', label: 'Schedule', icon: Calendar },
                 { id: 'tutor', label: 'My Tutor', icon: User }
               ].map((tab) => (
@@ -292,6 +295,10 @@ const LearnerDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'payments' && (
+                <PaymentHistory />
             )}
 
             {activeTab === 'progress' && (

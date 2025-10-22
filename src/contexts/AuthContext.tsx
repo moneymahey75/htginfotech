@@ -24,6 +24,7 @@ interface AuthContextType {
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyOTP: (otp: string) => Promise<void>;
   sendOTPToUser: (userId: string, contactInfo: string, otpType: 'email' | 'mobile') => Promise<any>;
+  resendConfirmationEmail: (email: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -255,6 +256,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (authError) {
+        // Check if the error is related to email confirmation
+        if (authError.message?.toLowerCase().includes('email not confirmed') ||
+            authError.message?.toLowerCase().includes('confirm your email') ||
+            authError.status === 400) {
+          // Throw a specific error that includes the email for resending
+          const confirmError = new Error('EMAIL_NOT_CONFIRMED');
+          (confirmError as any).email = actualEmail;
+          throw confirmError;
+        }
         throw new Error(authError.message);
       }
 
@@ -302,6 +312,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       console.error('❌ Login error:', error);
+
+      // Check if it's the email confirmation error
+      if (error.message === 'EMAIL_NOT_CONFIRMED') {
+        throw error; // Re-throw to be handled by the UI component
+      }
+
       const errorMessage = error?.message || 'Login failed';
       notification.showError('Login Failed', errorMessage);
 
@@ -312,6 +328,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendConfirmationEmail = async (email: string) => {
+    try {
+      console.log('📧 Resending confirmation email to:', email);
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      notification.showSuccess(
+          'Confirmation Email Sent',
+          'Please check your email inbox and spam folder for the confirmation link.'
+      );
+    } catch (error: any) {
+      console.error('❌ Failed to resend confirmation email:', error);
+      notification.showError(
+          'Resend Failed',
+          error?.message || 'Failed to resend confirmation email'
+      );
+      throw error;
     }
   };
 
@@ -526,6 +572,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetPassword,
     verifyOTP,
     sendOTPToUser,
+    resendConfirmationEmail,
     loading
   };
 

@@ -10,10 +10,11 @@ import TutorManagement from '../../components/admin/TutorManagement';
 import CourseManagement from '../../components/admin/CourseManagement';
 import CourseCategoryManagement from '../../components/admin/CourseCategoryManagement';
 import SubscriptionManagement from '../../components/admin/SubscriptionManagement';
-import PaymentManagement from '../../components/admin/PaymentManagement';
 import SMTPSettings from '../../components/admin/SMTPSettings';
 import SMSSettings from '../../components/admin/SMSSettings';
 import AdminManagement from '../../components/admin/AdminManagement';
+import StripeConnectSettings from '../../components/admin/StripeConnectSettings';
+import AdminPaymentHistory from '../../components/admin/PaymentHistory';
 import {
   Users,
   Building,
@@ -214,6 +215,7 @@ const AdminDashboard: React.FC = () => {
   const settingsTabs = [
     { id: 'general', label: 'General Settings', icon: Globe },
     { id: 'registration', label: 'Registration Settings', icon: UserCheck },
+    { id: 'stripe', label: 'Stripe Connect', icon: CreditCard },
     { id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck },
     { id: 'smtp', label: 'Email Settings', icon: FileText },
     { id: 'sms', label: 'SMS Settings', icon: FileText }
@@ -404,7 +406,7 @@ const AdminDashboard: React.FC = () => {
           )}
 
           {activeTab === 'payments' && hasPermission('payments', 'read') && (
-            <PaymentManagement />
+             <AdminPaymentHistory />
           )}
 
           {activeTab === 'admins' && hasPermission('admins', 'read') && (
@@ -446,6 +448,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex-1 p-6">
                   {settingsTab === 'general' && <GeneralSettings />}
                   {settingsTab === 'registration' && <RegistrationSettings />}
+                  {settingsTab === 'stripe' && <StripeConnectSettings />}
                   {settingsTab === 'contactsocial' && <ContactSocialSettings />}
                   {settingsTab === 'smtp' && <SMTPSettings />}
                   {settingsTab === 'sms' && <SMSSettings />}

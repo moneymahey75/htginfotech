@@ -1,4 +1,4 @@
-import React from 'react';
+//import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
@@ -22,6 +22,7 @@ import VerifyOTP from './pages/auth/VerifyOTP';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
 import Payment from './pages/Payment';
+import CoursePayment from './pages/CoursePayment';
 import ContactUs from './pages/ContactUs';
 import AboutUs from './pages/AboutUs';
 import SitePolicies from './pages/SitePolicies';
@@ -128,6 +129,8 @@ function App() {
                           {/* Course Routes */}
                           <Route path="/courses" element={<Courses />} />
                           <Route path="/courses/:courseId" element={<CourseDetails />} />
+
+                          <Route path="/course/payment" element={<CoursePayment />} />
                           
                           {/* Shared Routes */}
                           <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -167,7 +167,7 @@ const Navbar: React.FC = () => {
                         className="h-8 w-8 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
                         onError={(e) => {
                           // Fallback to loading GIF with proper sizing
-                          (e.target as HTMLImageElement).src = '/public/images/loader-1.gif';
+                          (e.target as HTMLImageElement).src = '/images/loader-1.gif';
                           (e.target as HTMLImageElement).className = 'h-20 w-100 object-contain animate-pulse';
                         }}
                     />
