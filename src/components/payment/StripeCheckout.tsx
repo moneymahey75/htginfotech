@@ -98,7 +98,12 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
                 },
             });
 
-            if (functionError) throw functionError;
+            if (functionError) {
+                console.error('Function error:', functionError);
+                throw functionError;
+            }
+
+            console.log('Payment intent created:', data);
 
             setClientSecret(data.clientSecret);
             setPaymentIntentId(data.paymentIntentId);

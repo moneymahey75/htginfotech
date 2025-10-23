@@ -14,12 +14,16 @@ const CoursePayment: React.FC = () => {
     const { courseId, amount, courseName } = location.state || {};
 
     useEffect(() => {
+        console.log('CoursePayment - Current user:', user);
+
         if (!user) {
-            navigate('/learner/login');
+            console.log('No user found, redirecting to login');
+            navigate('/login');
             return;
         }
 
         if (!courseId || !amount) {
+            console.log('Missing course data, redirecting to courses');
             navigate('/courses');
         }
     }, [user, courseId, amount, navigate]);
@@ -83,6 +87,8 @@ const CoursePayment: React.FC = () => {
     if (!user || !courseId || !amount) {
         return null;
     }
+
+    console.log('Rendering StripeCheckout with userId:', user.id);
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4">
