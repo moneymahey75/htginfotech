@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  Users, 
-  TrendingUp, 
+import VideoManager from '../../components/tutor/VideoManager';
+import {
+  Users,
+  TrendingUp,
   DollarSign,
   Calendar,
   BookOpen,
@@ -131,7 +132,7 @@ const TutorDashboard: React.FC = () => {
               {[
                 { id: 'overview', label: 'Overview', icon: TrendingUp },
                 { id: 'students', label: 'My Students', icon: Users },
-                { id: 'sessions', label: 'Sessions', icon: Video },
+                { id: 'videos', label: 'Videos', icon: Video },
                 { id: 'schedule', label: 'Schedule', icon: Calendar },
                 { id: 'earnings', label: 'Earnings', icon: DollarSign },
                 { id: 'profile', label: 'Profile', icon: Award }
@@ -200,6 +201,10 @@ const TutorDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeTab === 'videos' && (
+              <VideoManager />
             )}
 
             {activeTab === 'students' && (

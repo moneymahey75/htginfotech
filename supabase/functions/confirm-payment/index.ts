@@ -128,13 +128,57 @@ Deno.serve(async (req: Request) => {
                     enrollmentData.tce_access_expires_at = expiryDate.toISOString();
                 }
 
-                const { error: enrollError } = await supabase
+                const { data: newEnrollment, error: enrollError } = await supabase
                     .from("tbl_course_enrollments")
-                    .insert(enrollmentData);
+                    .insert(enrollmentData)
+                    .select()
+                    .single();
 
                 if (enrollError) {
                     console.error("Error creating enrollment:", enrollError);
                     throw enrollError;
+                }
+
+                // Get learner and course details for notification
+                const { data: learner } = await supabase
+                    .from("tbl_users")
+                    .select(`
+                        tu_email,
+                        tbl_user_profiles (
+                            tup_first_name,
+                            tup_last_name
+                        )
+                    `)
+                    .eq("tu_id", userId)
+                    .single();
+
+                const { data: courseDetails } = await supabase
+                    .from("tbl_courses")
+                    .select("tc_title")
+                    .eq("tc_id", courseId)
+                    .single();
+
+                // Send enrollment notification to admins
+                if (newEnrollment && learner && courseDetails) {
+                    try {
+                        const profile = (learner as any).tbl_user_profiles?.[0];
+                        const learnerName = profile
+                            ? `${profile.tup_first_name || ""} ${profile.tup_last_name || ""}`.trim()
+                            : "";
+
+                        await supabase.functions.invoke("send-enrollment-notification", {
+                            body: {
+                                enrollmentId: newEnrollment.tce_id,
+                                learnerEmail: (learner as any).tu_email,
+                                learnerName: learnerName,
+                                courseName: courseDetails.tc_title,
+                            },
+                        });
+                        console.log("Enrollment notification sent successfully");
+                    } catch (notifError) {
+                        console.error("Error sending enrollment notification:", notifError);
+                        // Don't fail the payment if notification fails
+                    }
                 }
             }
 

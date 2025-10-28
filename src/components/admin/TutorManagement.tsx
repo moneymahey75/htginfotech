@@ -38,7 +38,6 @@ interface Tutor {
   tu_mobile_verified: boolean;
   tu_is_active: boolean;
   tu_created_at: string;
-  // Changed from single object to array to match actual Supabase response
   tbl_user_profiles: {
     tup_first_name: string;
     tup_last_name: string;
@@ -47,7 +46,6 @@ interface Tutor {
     tup_gender: string;
     tup_education_level: string;
   }[] | null;
-  // Changed from single object to array to match actual Supabase response
   tbl_tutors: {
     tt_id: string;
     tt_bio: string;
@@ -65,15 +63,17 @@ interface Tutor {
 
 interface Assignment {
   tta_id: string;
-  tta_assignment_date: string;
+  tta_assigned_at: string;
   tta_status: string;
-  tbl_users: {
+  tta_learner_id: string;
+  tta_course_id: string;
+  tbl_users?: {
     tbl_user_profiles: {
       tup_first_name: string;
       tup_last_name: string;
     }[];
   };
-  tbl_courses: {
+  tbl_courses?: {
     tc_title: string;
   };
 }
@@ -600,27 +600,52 @@ const TutorDetails: React.FC<{
         return;
       }
 
+      // First, get the assignments with course information
       const { data: assignments, error } = await supabase
           .from('tbl_tutor_assignments')
           .select(`
           tta_id,
-          tta_assignment_date,
+          tta_assigned_at,
           tta_status,
-          tbl_users!tta_learner_id (
-            tbl_user_profiles (
-              tup_first_name,
-              tup_last_name
-            )
-          ),
+          tta_learner_id,
+          tta_course_id,
           tbl_courses (
             tc_title
           )
         `)
           .eq('tta_tutor_id', tutorInfo.tt_id)
-          .order('tta_assignment_date', { ascending: false });
+          .order('tta_assigned_at', { ascending: false });
 
       if (error) throw error;
-      setAssignments(assignments || []);
+
+      // Then, get user profiles for the learners
+      const learnerIds = assignments?.map(a => a.tta_learner_id).filter(Boolean) || [];
+
+      let userProfiles = [];
+      if (learnerIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabase
+            .from('tbl_user_profiles')
+            .select('tup_user_id, tup_first_name, tup_last_name')
+            .in('tup_user_id', learnerIds);
+
+        if (!profileError) {
+          userProfiles = profiles || [];
+        }
+      }
+
+      // Combine the data
+      const combinedAssignments = (assignments || []).map(assignment => {
+        const userProfile = userProfiles.find(profile => profile.tup_user_id === assignment.tta_learner_id);
+
+        return {
+          ...assignment,
+          tbl_users: {
+            tbl_user_profiles: userProfile ? [userProfile] : []
+          }
+        };
+      });
+
+      setAssignments(combinedAssignments);
     } catch (error) {
       console.error('Failed to load assignments:', error);
       setAssignments([]);
@@ -711,7 +736,7 @@ const TutorDetails: React.FC<{
       notification.showSuccess('Tutor Updated', 'Tutor information has been updated successfully');
       setEditMode(false);
       onUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update tutor:', error);
       notification.showError('Update Failed', `Failed to update tutor information: ${error.message}`);
     }
@@ -967,7 +992,10 @@ const TutorDetails: React.FC<{
                 ) : assignments.length > 0 ? (
                     <div className="space-y-4">
                       {assignments.map((assignment) => {
-                        const studentProfile = assignment.tbl_users?.tbl_user_profiles?.[0];
+                        // Safe access to the student profile data
+                        const studentProfiles = assignment.tbl_users?.tbl_user_profiles || [];
+                        const studentProfile = studentProfiles.length > 0 ? studentProfiles[0] : null;
+
                         return (
                             <div key={assignment.tta_id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                               <div className="flex justify-between items-start">
@@ -984,7 +1012,7 @@ const TutorDetails: React.FC<{
                                         Course: {assignment.tbl_courses?.tc_title || 'N/A'}
                                       </p>
                                       <p className="text-sm text-gray-500">
-                                        Assigned: {new Date(assignment.tta_assignment_date).toLocaleDateString()}
+                                        Assigned: {new Date(assignment.tta_assigned_at).toLocaleDateString()}
                                       </p>
                                     </div>
                                   </div>
@@ -997,7 +1025,7 @@ const TutorDetails: React.FC<{
                                       ? 'bg-blue-100 text-blue-800'
                                       : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {assignment.tta_status.charAt(0).toUpperCase() + assignment.tta_status.slice(1)}
+                            {assignment.tta_status?.charAt(0).toUpperCase() + assignment.tta_status?.slice(1) || 'Unknown'}
                           </span>
                                 </div>
                               </div>

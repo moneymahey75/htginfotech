@@ -13,6 +13,7 @@ import UnifiedLogin from './pages/auth/UnifiedLogin';
 import UnifiedRegister from './pages/auth/UnifiedRegister';
 import LearnerDashboard from './pages/dashboard/LearnerDashboard';
 import TutorDashboard from './pages/dashboard/TutorDashboard';
+import CourseLearning from './pages/dashboard/CourseLearning';
 import BackpanelLogin from './pages/backpanel/AdminLogin';
 import BackpanelDashboard from './pages/backpanel/AdminDashboard';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -97,7 +98,13 @@ function App() {
                               <LearnerDashboard />
                             </ProtectedRoute>
                           } />
-                          
+
+                          <Route path="/learner/course/:courseId" element={
+                            <ProtectedRoute userType="learner">
+                              <CourseLearning />
+                            </ProtectedRoute>
+                          } />
+
                           <Route path="/tutor/dashboard" element={
                             <ProtectedRoute userType="tutor">
                               <TutorDashboard />

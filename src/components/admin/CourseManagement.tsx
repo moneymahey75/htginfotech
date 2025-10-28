@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { videoStorage } from '../../lib/videoStorage';
 import { useNotification } from '../ui/NotificationProvider';
 import {
   BookOpen,
@@ -61,9 +62,13 @@ interface Lesson {
   tcc_description: string;
   tcc_content_type: 'video' | 'document' | 'quiz' | 'assignment' | 'live_session';
   tcc_content_url: string;
+  tcc_storage_path?: string;
+  tcc_storage_provider?: string;
+  tcc_file_size?: number;
   tcc_duration_minutes: number;
   tcc_sort_order: number;
   tcc_is_free: boolean;
+  tcc_is_locked: boolean;
   tcc_is_active: boolean;
 }
 
@@ -79,6 +84,8 @@ const CourseManagement: React.FC = () => {
   const [showLessonsModal, setShowLessonsModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [editLessonMode, setEditLessonMode] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const notification = useNotification();
 
@@ -108,8 +115,15 @@ const CourseManagement: React.FC = () => {
     duration_minutes: 0,
     sort_order: 1,
     is_free: false,
-    is_active: true
+    is_active: true,
+    is_locked: false
   });
+
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  const [uploadMethod, setUploadMethod] = useState<'url' | 'upload'>('url');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadData();
@@ -259,28 +273,69 @@ const CourseManagement: React.FC = () => {
     if (!selectedCourse) return;
 
     try {
-      const { error } = await supabase
-        .from('tbl_course_content')
-        .insert({
-          tcc_course_id: selectedCourse.tc_id,
-          tcc_title: lessonFormData.title,
-          tcc_description: lessonFormData.description,
-          tcc_content_type: lessonFormData.content_type,
-          tcc_content_url: lessonFormData.content_url,
-          tcc_duration_minutes: lessonFormData.duration_minutes,
-          tcc_sort_order: lessonFormData.sort_order,
-          tcc_is_free: lessonFormData.is_free,
-          tcc_is_active: lessonFormData.is_active
-        });
+      setUploadingVideo(true);
+      let contentUrl = lessonFormData.content_url;
+      let storagePath = selectedLesson?.tcc_storage_path || null;
+      let storageProvider = selectedLesson?.tcc_storage_provider || 'external';
+      let fileSize = selectedLesson?.tcc_file_size || 0;
+
+      if (uploadMethod === 'upload' && selectedVideoFile && lessonFormData.content_type === 'video') {
+        const result = await videoStorage.uploadVideo(
+          selectedVideoFile,
+          selectedCourse.tc_id,
+          (progress) => setUploadProgress(progress.percentage)
+        );
+
+        storagePath = result.storagePath;
+        storageProvider = result.provider;
+        fileSize = result.fileSize;
+        contentUrl = '';
+      }
+
+      const lessonData = {
+        tcc_course_id: selectedCourse.tc_id,
+        tcc_title: lessonFormData.title,
+        tcc_description: lessonFormData.description,
+        tcc_content_type: lessonFormData.content_type,
+        tcc_content_url: contentUrl,
+        tcc_storage_provider: storageProvider,
+        tcc_storage_path: storagePath,
+        tcc_file_size: fileSize,
+        tcc_duration_minutes: lessonFormData.duration_minutes,
+        tcc_sort_order: lessonFormData.sort_order,
+        tcc_is_free: lessonFormData.is_free,
+        tcc_is_locked: lessonFormData.is_locked,
+        tcc_is_active: lessonFormData.is_active
+      };
+
+      let error;
+      if (editLessonMode && selectedLesson) {
+        const result = await supabase
+          .from('tbl_course_content')
+          .update(lessonData)
+          .eq('tcc_id', selectedLesson.tcc_id);
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from('tbl_course_content')
+          .insert(lessonData);
+        error = result.error;
+      }
 
       if (error) throw error;
 
-      notification.showSuccess('Lesson Added', 'New lesson has been added successfully');
+      notification.showSuccess(
+        editLessonMode ? 'Lesson Updated' : 'Lesson Added',
+        editLessonMode ? 'Lesson has been updated successfully' : 'New lesson has been added successfully'
+      );
       resetLessonForm();
       loadLessons(selectedCourse.tc_id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save lesson:', error);
-      notification.showError('Save Failed', 'Failed to save lesson');
+      notification.showError('Save Failed', error.message || 'Failed to save lesson');
+    } finally {
+      setUploadingVideo(false);
+      setUploadProgress(0);
     }
   };
 
@@ -303,15 +358,17 @@ const CourseManagement: React.FC = () => {
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
-    if (confirm('Are you sure you want to delete this lesson?')) {
+    if (confirm('Are you sure you want to delete this lesson? This will also delete the video file from storage if it exists.')) {
       try {
+        await videoStorage.deleteVideo(lessonId);
+
         const { error } = await supabase
           .from('tbl_course_content')
           .delete()
           .eq('tcc_id', lessonId);
 
         if (error) throw error;
-        notification.showSuccess('Lesson Deleted', 'Lesson has been deleted successfully');
+        notification.showSuccess('Lesson Deleted', 'Lesson and associated video file have been deleted successfully');
         if (selectedCourse) {
           loadLessons(selectedCourse.tc_id);
         }
@@ -353,8 +410,31 @@ const CourseManagement: React.FC = () => {
       duration_minutes: 0,
       sort_order: lessons.length + 1,
       is_free: false,
+      is_locked: false,
       is_active: true
     });
+    setSelectedVideoFile(null);
+    setUploadMethod('url');
+    setUploadProgress(0);
+    setEditLessonMode(false);
+    setSelectedLesson(null);
+  };
+
+  const openEditLesson = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    setLessonFormData({
+      title: lesson.tcc_title,
+      description: lesson.tcc_description,
+      content_type: lesson.tcc_content_type,
+      content_url: lesson.tcc_content_url,
+      duration_minutes: lesson.tcc_duration_minutes,
+      sort_order: lesson.tcc_sort_order,
+      is_free: lesson.tcc_is_free,
+      is_locked: lesson.tcc_is_locked,
+      is_active: lesson.tcc_is_active
+    });
+    setEditLessonMode(true);
+    setUploadMethod('url');
   };
 
   const openEditCourse = (course: Course) => {
@@ -1012,9 +1092,22 @@ const CourseManagement: React.FC = () => {
 
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Add Lesson Form */}
+                {/* Add/Edit Lesson Form */}
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Add New Lesson</h4>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {editLessonMode ? 'Edit Lesson' : 'Add New Lesson'}
+                    </h4>
+                    {editLessonMode && (
+                      <button
+                        type="button"
+                        onClick={resetLessonForm}
+                        className="text-sm text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel Edit
+                      </button>
+                    )}
+                  </div>
                   <form onSubmit={handleSaveLesson} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1076,18 +1169,112 @@ const CourseManagement: React.FC = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Content URL
-                      </label>
-                      <input
-                        type="url"
-                        value={lessonFormData.content_url}
-                        onChange={(e) => setLessonFormData(prev => ({ ...prev, content_url: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Video URL, document link, etc."
-                      />
-                    </div>
+                    {/* Video Source Selection */}
+                    {lessonFormData.content_type === 'video' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Video Source
+                          </label>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                checked={uploadMethod === 'url'}
+                                onChange={() => setUploadMethod('url')}
+                                className="mr-2"
+                              />
+                              <span className="text-sm">External URL (YouTube, Vimeo, etc.)</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                checked={uploadMethod === 'upload'}
+                                onChange={() => setUploadMethod('upload')}
+                                className="mr-2"
+                              />
+                              <span className="text-sm">Upload Video File</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {uploadMethod === 'url' ? (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Content URL
+                            </label>
+                            <input
+                              type="url"
+                              value={lessonFormData.content_url}
+                              onChange={(e) => setLessonFormData(prev => ({ ...prev, content_url: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="https://youtube.com/watch?v=..."
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Select Video File
+                            </label>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) => setSelectedVideoFile(e.target.files?.[0] || null)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              disabled={uploadingVideo}
+                            />
+                            {selectedVideoFile && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                Selected: {selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)}MB)
+                              </p>
+                            )}
+                            {uploadingVideo && (
+                              <div className="mt-2">
+                                <div className="bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-purple-600 h-2 rounded-full transition-all"
+                                    style={{ width: `${uploadProgress}%` }}
+                                  />
+                                </div>
+                                <p className="text-sm text-center text-gray-600 mt-1">
+                                  Uploading... {uploadProgress}%
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="isLocked"
+                            checked={lessonFormData.is_locked}
+                            onChange={(e) => setLessonFormData(prev => ({ ...prev, is_locked: e.target.checked }))}
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 mr-2"
+                          />
+                          <label htmlFor="isLocked" className="text-sm text-gray-700">
+                            Lock video (requires tutor to grant access to learners)
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Content URL for non-video types */}
+                    {lessonFormData.content_type !== 'video' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Content URL
+                        </label>
+                        <input
+                          type="url"
+                          value={lessonFormData.content_url}
+                          onChange={(e) => setLessonFormData(prev => ({ ...prev, content_url: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="Document link, quiz URL, etc."
+                        />
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1118,9 +1305,10 @@ const CourseManagement: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
+                      disabled={uploadingVideo}
+                      className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      Add Lesson
+                      {uploadingVideo ? 'Uploading...' : (editLessonMode ? 'Update Lesson' : 'Add Lesson')}
                     </button>
                   </form>
                 </div>
@@ -1141,7 +1329,12 @@ const CourseManagement: React.FC = () => {
                               </span>
                               {lesson.tcc_is_free && (
                                 <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                  Free
+                                  Free Preview
+                                </span>
+                              )}
+                              {lesson.tcc_is_locked && (
+                                <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                                  Locked
                                 </span>
                               )}
                               <span className="text-xs text-gray-500">
@@ -1153,9 +1346,9 @@ const CourseManagement: React.FC = () => {
                             <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                               <span>{lesson.tcc_duration_minutes} min</span>
                               {lesson.tcc_content_url && (
-                                <a 
-                                  href={lesson.tcc_content_url} 
-                                  target="_blank" 
+                                <a
+                                  href={lesson.tcc_content_url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-purple-600 hover:text-purple-700"
                                 >
@@ -1164,12 +1357,22 @@ const CourseManagement: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteLesson(lesson.tcc_id)}
-                            className="text-red-600 hover:text-red-800 p-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => openEditLesson(lesson)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="Edit Lesson"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteLesson(lesson.tcc_id)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Delete Lesson"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}

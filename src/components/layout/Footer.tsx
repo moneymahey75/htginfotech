@@ -157,11 +157,9 @@ const Footer: React.FC = () => {
                         <MapPin className="h-4 w-4" />
                       </div>
                       <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                        <p className="text-gray-300 text-sm whitespace-pre-line">
-                          <address>
-                            {formatAddress()}
-                          </address>
-                        </p>
+                        <address className="text-gray-300 text-sm not-italic">
+                          {formatAddress()}
+                        </address>
                       </div>
                     </div>
                 )}

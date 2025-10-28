@@ -14,7 +14,10 @@ import SMTPSettings from '../../components/admin/SMTPSettings';
 import SMSSettings from '../../components/admin/SMSSettings';
 import AdminManagement from '../../components/admin/AdminManagement';
 import StripeConnectSettings from '../../components/admin/StripeConnectSettings';
+import VideoStorageSettings from '../../components/admin/VideoStorageSettings';
 import AdminPaymentHistory from '../../components/admin/PaymentHistory';
+import EnrollmentManagement from '../../components/admin/EnrollmentManagement';
+import NotificationBell from '../../components/admin/NotificationBell';
 import {
   Users,
   Building,
@@ -42,7 +45,8 @@ import {
   BookOpen,
   GraduationCap,
   Image as ImageIcon,
-  Folder
+  Folder,
+  Video
 } from 'lucide-react';
 
 interface SubAdmin {
@@ -195,6 +199,7 @@ const AdminDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3, permission: null },
+    { id: 'enrollments', label: 'Enrollments', icon: UserCheck, permission: 'users' },
     { id: 'learners', label: 'Learners', icon: BookOpen, permission: 'users' },
     { id: 'tutors', label: 'Tutors', icon: GraduationCap, permission: 'users' },
     { id: 'courses', label: 'Courses', icon: BookOpen, permission: 'users' },
@@ -216,6 +221,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'general', label: 'General Settings', icon: Globe },
     { id: 'registration', label: 'Registration Settings', icon: UserCheck },
     { id: 'stripe', label: 'Stripe Connect', icon: CreditCard },
+    { id: 'videostorage', label: 'Video Storage', icon: Video },
     { id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck },
     { id: 'smtp', label: 'Email Settings', icon: FileText },
     { id: 'sms', label: 'SMS Settings', icon: FileText }
@@ -229,9 +235,12 @@ const AdminDashboard: React.FC = () => {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             {!sidebarCollapsed && (
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
-                <p className="text-xs text-gray-500">Management Dashboard</p>
+              <div className="flex items-center justify-between w-full">
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
+                  <p className="text-xs text-gray-500">Management Dashboard</p>
+                </div>
+                <NotificationBell />
               </div>
             )}
             <button
@@ -307,6 +316,7 @@ const AdminDashboard: React.FC = () => {
               </h2>
               <p className="text-gray-600 mt-1">
                 {activeTab === 'overview' && 'System overview and statistics'}
+                {activeTab === 'enrollments' && 'Manage course enrollments and assign tutors'}
                 {activeTab === 'learners' && 'Manage learner accounts and learning progress'}
                 {activeTab === 'tutors' && 'Manage tutor profiles and teaching activities'}
                 {activeTab === 'courses' && 'Manage courses, lessons, and content'}
@@ -384,6 +394,10 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'enrollments' && hasPermission('users', 'read') && (
+            <EnrollmentManagement />
+          )}
+
           {activeTab === 'learners' && hasPermission('users', 'read') && (
             <LearnerManagement />
           )}
@@ -449,6 +463,7 @@ const AdminDashboard: React.FC = () => {
                   {settingsTab === 'general' && <GeneralSettings />}
                   {settingsTab === 'registration' && <RegistrationSettings />}
                   {settingsTab === 'stripe' && <StripeConnectSettings />}
+                  {settingsTab === 'videostorage' && <VideoStorageSettings />}
                   {settingsTab === 'contactsocial' && <ContactSocialSettings />}
                   {settingsTab === 'smtp' && <SMTPSettings />}
                   {settingsTab === 'sms' && <SMSSettings />}
