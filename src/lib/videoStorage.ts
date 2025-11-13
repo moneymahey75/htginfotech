@@ -194,27 +194,46 @@ class VideoStorageService {
     settings: StorageSettings,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<void> {
-    if (!settings.cloudflareAccountId || !settings.cloudflareAccessKey || !settings.cloudflareBucket) {
-      throw new Error('Cloudflare R2 not configured');
-    }
+    try {
+      const courseId = path.split('/')[1];
 
-    const url = `https://${settings.cloudflareAccountId}.r2.cloudflarestorage.com/${settings.cloudflareBucket}/${path}`;
+      const { data, error } = await supabase.functions.invoke('get-r2-presigned-url', {
+        body: {
+          fileName: file.name,
+          courseId,
+          contentType: file.type || 'application/octet-stream',
+        },
+      });
 
-    const response = await fetch(url, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-        'X-Custom-Auth-Key': settings.cloudflareAccessKey,
-      },
-    });
+      if (error) {
+        throw new Error(`Failed to get presigned URL: ${error.message}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Cloudflare upload failed: ${response.statusText}`);
-    }
+      if (!data.success || !data.presignedUrl) {
+        throw new Error(data.error || 'Failed to generate presigned URL');
+      }
 
-    if (onProgress) {
-      onProgress({ loaded: file.size, total: file.size, percentage: 100 });
+      const uploadResponse = await fetch(data.presignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Cloudflare upload failed: ${uploadResponse.statusText} - ${errorText}`);
+      }
+
+      if (onProgress) {
+        onProgress({ loaded: file.size, total: file.size, percentage: 100 });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Cloudflare upload failed');
     }
   }
 
