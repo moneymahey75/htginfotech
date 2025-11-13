@@ -53,6 +53,22 @@ interface GeneralSettings {
   usernameUniqueRequired: boolean;
   usernameAllowNumbers: boolean;
   usernameMustStartWithLetter: boolean;
+
+  // Password validation settings
+  passwordMinLength: number;
+  passwordMaxLength: number;
+  passwordRequireUppercase: boolean;
+  passwordRequireLowercase: boolean;
+  passwordRequireNumbers: boolean;
+  passwordRequireSpecialChars: boolean;
+  passwordAllowedSpecialChars: string;
+  passwordPreventCommon: boolean;
+  passwordPreventSequences: boolean;
+  passwordPreventRepeats: boolean;
+  passwordMaxConsecutive: number;
+  passwordMinUniqueChars: number;
+  passwordExpiryDays: number;
+  passwordHistoryCount: number;
 }
 
 interface SMSGateway {
@@ -125,8 +141,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     secondaryPhone: '',
     secondaryPhoneTagline: '',
     primaryEmail: '',
-    primaryEmailTagline: ''
-,   supportEmail: '',
+    primaryEmailTagline: '',
+    supportEmail: '',
     supportEmailTagline: '',
     address: '',
     city: '',
@@ -156,7 +172,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     usernameForceLowerCase: true,
     usernameUniqueRequired: true,
     usernameAllowNumbers: true,
-    usernameMustStartWithLetter: true
+    usernameMustStartWithLetter: true,
+
+    // Password validation defaults
+    passwordMinLength: 8,
+    passwordMaxLength: 128,
+    passwordRequireUppercase: true,
+    passwordRequireLowercase: true,
+    passwordRequireNumbers: true,
+    passwordRequireSpecialChars: true,
+    passwordAllowedSpecialChars: '!@#$%^&*()_+-=[]{};:\'"|,.<>?/~`',
+    passwordPreventCommon: true,
+    passwordPreventSequences: true,
+    passwordPreventRepeats: true,
+    passwordMaxConsecutive: 3,
+    passwordMinUniqueChars: 5,
+    passwordExpiryDays: 90,
+    passwordHistoryCount: 5
   };
 
   const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
@@ -277,6 +309,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           websiteUrl: settingsMap.website_url || defaultSettings.websiteUrl,
           blogUrl: settingsMap.blog_url || defaultSettings.blogUrl,
 
+          // Username validation settings
           usernameMinLength: settingsMap.username_min_length ?? defaultSettings.usernameMinLength,
           usernameMaxLength: settingsMap.username_max_length ?? defaultSettings.usernameMaxLength,
           usernameAllowSpaces: settingsMap.username_allow_spaces ?? defaultSettings.usernameAllowSpaces,
@@ -285,7 +318,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           usernameForceLowerCase: settingsMap.username_force_lower_case ?? defaultSettings.usernameForceLowerCase,
           usernameUniqueRequired: settingsMap.username_unique_required ?? defaultSettings.usernameUniqueRequired,
           usernameAllowNumbers: settingsMap.username_allow_numbers ?? defaultSettings.usernameAllowNumbers,
-          usernameMustStartWithLetter: settingsMap.username_must_start_with_letter ?? defaultSettings.usernameMustStartWithLetter
+          usernameMustStartWithLetter: settingsMap.username_must_start_with_letter ?? defaultSettings.usernameMustStartWithLetter,
+
+          // Password validation settings
+          passwordMinLength: settingsMap.password_min_length ?? defaultSettings.passwordMinLength,
+          passwordMaxLength: settingsMap.password_max_length ?? defaultSettings.passwordMaxLength,
+          passwordRequireUppercase: settingsMap.password_require_uppercase ?? defaultSettings.passwordRequireUppercase,
+          passwordRequireLowercase: settingsMap.password_require_lowercase ?? defaultSettings.passwordRequireLowercase,
+          passwordRequireNumbers: settingsMap.password_require_numbers ?? defaultSettings.passwordRequireNumbers,
+          passwordRequireSpecialChars: settingsMap.password_require_special_chars ?? defaultSettings.passwordRequireSpecialChars,
+          passwordAllowedSpecialChars: settingsMap.password_allowed_special_chars || defaultSettings.passwordAllowedSpecialChars,
+          passwordPreventCommon: settingsMap.password_prevent_common ?? defaultSettings.passwordPreventCommon,
+          passwordPreventSequences: settingsMap.password_prevent_sequences ?? defaultSettings.passwordPreventSequences,
+          passwordPreventRepeats: settingsMap.password_prevent_repeats ?? defaultSettings.passwordPreventRepeats,
+          passwordMaxConsecutive: settingsMap.password_max_consecutive ?? defaultSettings.passwordMaxConsecutive,
+          passwordMinUniqueChars: settingsMap.password_min_unique_chars ?? defaultSettings.passwordMinUniqueChars,
+          passwordExpiryDays: settingsMap.password_expiry_days ?? defaultSettings.passwordExpiryDays,
+          passwordHistoryCount: settingsMap.password_history_count ?? defaultSettings.passwordHistoryCount
         });
 
         console.log('✅ Settings loaded from database');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { UserCheck, Mail, Smartphone, Save, AlertCircle, CheckCircle, Key, User } from 'lucide-react';
+import { UserCheck, Mail, Smartphone, Save, AlertCircle, CheckCircle, Key, User, Lock } from 'lucide-react';
 
 const RegistrationSettings: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -19,7 +19,22 @@ const RegistrationSettings: React.FC = () => {
         usernameForceLowerCase: true,
         usernameUniqueRequired: true,
         usernameAllowNumbers: true,
-        usernameMustStartWithLetter: true
+        usernameMustStartWithLetter: true,
+        // Password validation settings
+        passwordMinLength: 8,
+        passwordMaxLength: 128,
+        passwordRequireUppercase: true,
+        passwordRequireLowercase: true,
+        passwordRequireNumbers: true,
+        passwordRequireSpecialChars: true,
+        passwordAllowedSpecialChars: '!@#$%^&*()_+-=[]{};:\'"|,.<>?/~`',
+        passwordPreventCommon: true,
+        passwordPreventSequences: true,
+        passwordPreventRepeats: true,
+        passwordMaxConsecutive: 3,
+        passwordMinUniqueChars: 5,
+        passwordExpiryDays: 90,
+        passwordHistoryCount: 5
     });
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -41,6 +56,7 @@ const RegistrationSettings: React.FC = () => {
                     'either_verification_required',
                     'test_otp_enabled',
                     'test_otp_code',
+                    // Username settings
                     'username_min_length',
                     'username_max_length',
                     'username_allow_spaces',
@@ -49,7 +65,22 @@ const RegistrationSettings: React.FC = () => {
                     'username_force_lower_case',
                     'username_unique_required',
                     'username_allow_numbers',
-                    'username_must_start_with_letter'
+                    'username_must_start_with_letter',
+                    // Password settings
+                    'password_min_length',
+                    'password_max_length',
+                    'password_require_uppercase',
+                    'password_require_lowercase',
+                    'password_require_numbers',
+                    'password_require_special_chars',
+                    'password_allowed_special_chars',
+                    'password_prevent_common',
+                    'password_prevent_sequences',
+                    'password_prevent_repeats',
+                    'password_max_consecutive',
+                    'password_min_unique_chars',
+                    'password_expiry_days',
+                    'password_history_count'
                 ]);
 
             if (error) {
@@ -72,6 +103,7 @@ const RegistrationSettings: React.FC = () => {
                     eitherVerificationRequired: settingsMap.either_verification_required ?? false,
                     testOtpEnabled: settingsMap.test_otp_enabled ?? false,
                     testOtpCode: settingsMap.test_otp_code ?? '123456',
+                    // Username settings
                     usernameMinLength: settingsMap.username_min_length ?? 8,
                     usernameMaxLength: settingsMap.username_max_length ?? 30,
                     usernameAllowSpaces: settingsMap.username_allow_spaces ?? false,
@@ -80,7 +112,22 @@ const RegistrationSettings: React.FC = () => {
                     usernameForceLowerCase: settingsMap.username_force_lower_case ?? true,
                     usernameUniqueRequired: settingsMap.username_unique_required ?? true,
                     usernameAllowNumbers: settingsMap.username_allow_numbers ?? true,
-                    usernameMustStartWithLetter: settingsMap.username_must_start_with_letter ?? true
+                    usernameMustStartWithLetter: settingsMap.username_must_start_with_letter ?? true,
+                    // Password settings
+                    passwordMinLength: settingsMap.password_min_length ?? 8,
+                    passwordMaxLength: settingsMap.password_max_length ?? 128,
+                    passwordRequireUppercase: settingsMap.password_require_uppercase ?? true,
+                    passwordRequireLowercase: settingsMap.password_require_lowercase ?? true,
+                    passwordRequireNumbers: settingsMap.password_require_numbers ?? true,
+                    passwordRequireSpecialChars: settingsMap.password_require_special_chars ?? true,
+                    passwordAllowedSpecialChars: settingsMap.password_allowed_special_chars ?? '!@#$%^&*()_+-=[]{};:\'"|,.<>?/~`',
+                    passwordPreventCommon: settingsMap.password_prevent_common ?? true,
+                    passwordPreventSequences: settingsMap.password_prevent_sequences ?? true,
+                    passwordPreventRepeats: settingsMap.password_prevent_repeats ?? true,
+                    passwordMaxConsecutive: settingsMap.password_max_consecutive ?? 3,
+                    passwordMinUniqueChars: settingsMap.password_min_unique_chars ?? 5,
+                    passwordExpiryDays: settingsMap.password_expiry_days ?? 90,
+                    passwordHistoryCount: settingsMap.password_history_count ?? 5
                 });
             }
         } catch (error) {
@@ -107,7 +154,21 @@ const RegistrationSettings: React.FC = () => {
             usernameForceLowerCase: true,
             usernameUniqueRequired: true,
             usernameAllowNumbers: true,
-            usernameMustStartWithLetter: true
+            usernameMustStartWithLetter: true,
+            passwordMinLength: 8,
+            passwordMaxLength: 128,
+            passwordRequireUppercase: true,
+            passwordRequireLowercase: true,
+            passwordRequireNumbers: true,
+            passwordRequireSpecialChars: true,
+            passwordAllowedSpecialChars: '!@#$%^&*()_+-=[]{};:\'"|,.<>?/~`',
+            passwordPreventCommon: true,
+            passwordPreventSequences: true,
+            passwordPreventRepeats: true,
+            passwordMaxConsecutive: 3,
+            passwordMinUniqueChars: 5,
+            passwordExpiryDays: 90,
+            passwordHistoryCount: 5
         });
     };
 
@@ -118,6 +179,7 @@ const RegistrationSettings: React.FC = () => {
 
         try {
             const updates = [
+                // Verification settings
                 {
                     tss_setting_key: 'email_verification_required',
                     tss_setting_value: JSON.stringify(formData.emailVerificationRequired),
@@ -143,6 +205,7 @@ const RegistrationSettings: React.FC = () => {
                     tss_setting_value: JSON.stringify(formData.testOtpEnabled),
                     tss_description: 'Enable test OTP for development/testing purposes'
                 },
+                // Username settings
                 {
                     tss_setting_key: 'username_min_length',
                     tss_setting_value: JSON.stringify(formData.usernameMinLength),
@@ -187,6 +250,77 @@ const RegistrationSettings: React.FC = () => {
                     tss_setting_key: 'username_must_start_with_letter',
                     tss_setting_value: JSON.stringify(formData.usernameMustStartWithLetter),
                     tss_description: 'Username must start with a letter'
+                },
+                // Password settings
+                {
+                    tss_setting_key: 'password_min_length',
+                    tss_setting_value: JSON.stringify(formData.passwordMinLength),
+                    tss_description: 'Minimum length required for passwords'
+                },
+                {
+                    tss_setting_key: 'password_max_length',
+                    tss_setting_value: JSON.stringify(formData.passwordMaxLength),
+                    tss_description: 'Maximum length allowed for passwords'
+                },
+                {
+                    tss_setting_key: 'password_require_uppercase',
+                    tss_setting_value: JSON.stringify(formData.passwordRequireUppercase),
+                    tss_description: 'Require at least one uppercase letter in passwords'
+                },
+                {
+                    tss_setting_key: 'password_require_lowercase',
+                    tss_setting_value: JSON.stringify(formData.passwordRequireLowercase),
+                    tss_description: 'Require at least one lowercase letter in passwords'
+                },
+                {
+                    tss_setting_key: 'password_require_numbers',
+                    tss_setting_value: JSON.stringify(formData.passwordRequireNumbers),
+                    tss_description: 'Require at least one number in passwords'
+                },
+                {
+                    tss_setting_key: 'password_require_special_chars',
+                    tss_setting_value: JSON.stringify(formData.passwordRequireSpecialChars),
+                    tss_description: 'Require at least one special character in passwords'
+                },
+                {
+                    tss_setting_key: 'password_allowed_special_chars',
+                    tss_setting_value: JSON.stringify(formData.passwordAllowedSpecialChars),
+                    tss_description: 'List of allowed special characters for passwords'
+                },
+                {
+                    tss_setting_key: 'password_prevent_common',
+                    tss_setting_value: JSON.stringify(formData.passwordPreventCommon),
+                    tss_description: 'Prevent common passwords'
+                },
+                {
+                    tss_setting_key: 'password_prevent_sequences',
+                    tss_setting_value: JSON.stringify(formData.passwordPreventSequences),
+                    tss_description: 'Prevent sequential characters in passwords'
+                },
+                {
+                    tss_setting_key: 'password_prevent_repeats',
+                    tss_setting_value: JSON.stringify(formData.passwordPreventRepeats),
+                    tss_description: 'Prevent repeated characters in passwords'
+                },
+                {
+                    tss_setting_key: 'password_max_consecutive',
+                    tss_setting_value: JSON.stringify(formData.passwordMaxConsecutive),
+                    tss_description: 'Maximum consecutive identical characters allowed'
+                },
+                {
+                    tss_setting_key: 'password_min_unique_chars',
+                    tss_setting_value: JSON.stringify(formData.passwordMinUniqueChars),
+                    tss_description: 'Minimum number of unique characters required'
+                },
+                {
+                    tss_setting_key: 'password_expiry_days',
+                    tss_setting_value: JSON.stringify(formData.passwordExpiryDays),
+                    tss_description: 'Number of days before password expires'
+                },
+                {
+                    tss_setting_key: 'password_history_count',
+                    tss_setting_value: JSON.stringify(formData.passwordHistoryCount),
+                    tss_description: 'Number of previous passwords to remember'
                 }
             ];
 
@@ -233,7 +367,11 @@ const RegistrationSettings: React.FC = () => {
             return;
         }
 
-        if (name === 'usernameMinLength' || name === 'usernameMaxLength') {
+        // Handle numeric inputs
+        if (name === 'usernameMinLength' || name === 'usernameMaxLength' ||
+            name === 'passwordMinLength' || name === 'passwordMaxLength' ||
+            name === 'passwordMaxConsecutive' || name === 'passwordMinUniqueChars' ||
+            name === 'passwordExpiryDays' || name === 'passwordHistoryCount') {
             const numValue = parseInt(value) || 0;
             if (numValue >= 0) {
                 setFormData(prev => ({ ...prev, [name]: numValue }));
@@ -241,7 +379,7 @@ const RegistrationSettings: React.FC = () => {
             return;
         }
 
-        if (name === 'usernameAllowedSpecialChars') {
+        if (name === 'usernameAllowedSpecialChars' || name === 'passwordAllowedSpecialChars') {
             setFormData(prev => ({ ...prev, [name]: value }));
             return;
         }
@@ -284,6 +422,22 @@ const RegistrationSettings: React.FC = () => {
         }
         if (formData.usernameForceLowerCase) rules.push('Lowercase only');
         if (formData.usernameUniqueRequired) rules.push('Must be unique');
+        return rules;
+    };
+
+    const getPasswordRulesSummary = () => {
+        const rules = [];
+        rules.push(`${formData.passwordMinLength}-${formData.passwordMaxLength} characters`);
+        if (formData.passwordRequireUppercase) rules.push('Uppercase letter (A-Z)');
+        if (formData.passwordRequireLowercase) rules.push('Lowercase letter (a-z)');
+        if (formData.passwordRequireNumbers) rules.push('Number (0-9)');
+        if (formData.passwordRequireSpecialChars) rules.push(`Special character: ${formData.passwordAllowedSpecialChars}`);
+        if (formData.passwordPreventCommon) rules.push('Not common');
+        if (formData.passwordPreventSequences) rules.push('No sequences');
+        if (formData.passwordPreventRepeats) rules.push(`Max ${formData.passwordMaxConsecutive} repeats`);
+        rules.push(`${formData.passwordMinUniqueChars}+ unique chars`);
+        if (formData.passwordExpiryDays > 0) rules.push(`Expires in ${formData.passwordExpiryDays} days`);
+        if (formData.passwordHistoryCount > 0) rules.push(`Remembers ${formData.passwordHistoryCount} previous`);
         return rules;
     };
 
@@ -753,13 +907,291 @@ const RegistrationSettings: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Password Validation Settings */}
+                <div className="border border-purple-200 rounded-lg p-6 bg-purple-50">
+                    <div className="flex items-start space-x-4">
+                        <div className="bg-purple-100 p-2 rounded-lg mt-1">
+                            <Lock className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Password Validation Rules</h4>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Minimum Length */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Minimum Length
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="passwordMinLength"
+                                        value={formData.passwordMinLength}
+                                        onChange={handleChange}
+                                        min="6"
+                                        max="256"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                </div>
+
+                                {/* Maximum Length */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Maximum Length
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="passwordMaxLength"
+                                        value={formData.passwordMaxLength}
+                                        onChange={handleChange}
+                                        min="8"
+                                        max="512"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                </div>
+
+                                {/* Require Uppercase */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Require Uppercase</label>
+                                        <p className="text-sm text-gray-500">At least one capital letter (A-Z)</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordRequireUppercase"
+                                            checked={formData.passwordRequireUppercase}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Require Lowercase */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Require Lowercase</label>
+                                        <p className="text-sm text-gray-500">At least one small letter (a-z)</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordRequireLowercase"
+                                            checked={formData.passwordRequireLowercase}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Require Numbers */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Require Numbers</label>
+                                        <p className="text-sm text-gray-500">At least one number (0-9)</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordRequireNumbers"
+                                            checked={formData.passwordRequireNumbers}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Require Special Characters */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Require Special Chars</label>
+                                        <p className="text-sm text-gray-500">At least one special character</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordRequireSpecialChars"
+                                            checked={formData.passwordRequireSpecialChars}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Allowed Special Characters */}
+                                {formData.passwordRequireSpecialChars && (
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Allowed Special Characters
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="passwordAllowedSpecialChars"
+                                            value={formData.passwordAllowedSpecialChars}
+                                            onChange={handleChange}
+                                            placeholder="!@#$%^&*()_+-=[]{};:'|,.<>?/~`"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 font-mono"
+                                        />
+                                        <p className="text-sm text-gray-500 mt-1">Enter allowed special characters</p>
+                                    </div>
+                                )}
+
+                                {/* Prevent Common Passwords */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Prevent Common</label>
+                                        <p className="text-sm text-gray-500">Block common passwords</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordPreventCommon"
+                                            checked={formData.passwordPreventCommon}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Prevent Sequences */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Prevent Sequences</label>
+                                        <p className="text-sm text-gray-500">Block sequences (abc, 123)</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordPreventSequences"
+                                            checked={formData.passwordPreventSequences}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Prevent Repeats */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Prevent Repeats</label>
+                                        <p className="text-sm text-gray-500">Limit consecutive identical chars</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="passwordPreventRepeats"
+                                            checked={formData.passwordPreventRepeats}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Max Consecutive Characters */}
+                                {formData.passwordPreventRepeats && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Max Consecutive
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="passwordMaxConsecutive"
+                                            value={formData.passwordMaxConsecutive}
+                                            onChange={handleChange}
+                                            min="2"
+                                            max="10"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Minimum Unique Characters */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Min Unique Chars
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="passwordMinUniqueChars"
+                                        value={formData.passwordMinUniqueChars}
+                                        onChange={handleChange}
+                                        min="3"
+                                        max="20"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                </div>
+
+                                {/* Password Expiry */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Expiry (Days)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="passwordExpiryDays"
+                                        value={formData.passwordExpiryDays}
+                                        onChange={handleChange}
+                                        min="0"
+                                        max="365"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                    <p className="text-sm text-gray-500 mt-1">0 = never expires</p>
+                                </div>
+
+                                {/* Password History */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        History Count
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="passwordHistoryCount"
+                                        value={formData.passwordHistoryCount}
+                                        onChange={handleChange}
+                                        min="0"
+                                        max="20"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                    <p className="text-sm text-gray-500 mt-1">0 = no history check</p>
+                                </div>
+                            </div>
+
+                            {/* Password Rules Summary */}
+                            <div className="mt-6 p-4 bg-white border border-gray-200 rounded-lg">
+                                <h5 className="text-sm font-medium text-gray-900 mb-2">Current Password Rules:</h5>
+                                <div className="text-sm text-gray-600">
+                                    <ul className="list-disc list-inside space-y-1">
+                                        {getPasswordRulesSummary().map((rule, index) => (
+                                            <li key={index}>{rule}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="mt-3 text-xs text-gray-500">
+                                    <p className="mb-1">
+                                        <span className="font-medium">Example valid:</span> SecurePass123!
+                                    </p>
+                                    <p>
+                                        <span className="font-medium">Example invalid:</span> {formData.passwordMinLength > 6 ? 'short' : 'weak'}, common words, sequences
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Registration Flow Info */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="text-sm font-medium text-blue-800 mb-2">Registration Flow</h4>
                     <div className="text-sm text-blue-700">
                         <p className="mb-2">Based on your current settings, users will need to:</p>
                         <ol className="list-decimal list-inside space-y-1">
-                            <li>Complete registration form (with username validation)</li>
+                            <li>Complete registration form (with username and password validation)</li>
                             {formData.eitherVerificationRequired ? (
                                 <li>Verify either email address or mobile number via OTP</li>
                             ) : (
