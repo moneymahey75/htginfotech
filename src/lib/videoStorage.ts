@@ -9,6 +9,7 @@ export interface StorageSettings {
   cloudflareAccessKey?: string;
   cloudflareSecretKey?: string;
   cloudflareBucket?: string;
+  cloudflareWorkerUrl?: string;
   cloudflareStreamEnabled?: boolean;
   bunnyApiKey?: string;
   bunnyStorageZone?: string;
@@ -53,6 +54,7 @@ class VideoStorageService {
       cloudflareAccessKey: data.tvss_cloudflare_access_key,
       cloudflareSecretKey: data.tvss_cloudflare_secret_key,
       cloudflareBucket: data.tvss_cloudflare_bucket,
+      cloudflareWorkerUrl: data.tvss_cloudflare_worker_url,
       cloudflareStreamEnabled: data.tvss_cloudflare_stream_enabled,
       bunnyApiKey: data.tvss_bunny_api_key,
       bunnyStorageZone: data.tvss_bunny_storage_zone,
@@ -194,36 +196,94 @@ class VideoStorageService {
     settings: StorageSettings,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<void> {
+    if (!settings.cloudflareWorkerUrl) {
+      throw new Error('Cloudflare Worker URL not configured. Please configure it in Admin → Video Storage Settings.');
+    }
+
+    const courseId = path.split('/')[1];
+    const CHUNK_SIZE = 50 * 1024 * 1024;
+
     try {
-      const courseId = path.split('/')[1];
+      const initiateResponse = await fetch(
+        `${settings.cloudflareWorkerUrl}/upload`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: file.name,
+            courseId,
+            contentType: file.type || 'video/mp4',
+          }),
+        }
+      );
 
-      const { data, error } = await supabase.functions.invoke('get-r2-presigned-url', {
-        body: {
-          fileName: file.name,
-          courseId,
-          contentType: file.type || 'application/octet-stream',
-        },
-      });
-
-      if (error) {
-        throw new Error(`Failed to get presigned URL: ${error.message}`);
+      if (!initiateResponse.ok) {
+        throw new Error(`Failed to initiate upload: ${initiateResponse.statusText}`);
       }
 
-      if (!data.success || !data.presignedUrl) {
-        throw new Error(data.error || 'Failed to generate presigned URL');
+      const uploadData = await initiateResponse.json();
+      if (!uploadData.success) {
+        throw new Error(uploadData.error || 'Failed to initiate upload');
       }
 
-      const uploadResponse = await fetch(data.presignedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type || 'application/octet-stream',
-        },
-      });
+      const uploadId = uploadData.uploadId;
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Cloudflare upload failed: ${uploadResponse.statusText} - ${errorText}`);
+      let uploadedBytes = 0;
+
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        const chunkResponse = await fetch(
+          `${settings.cloudflareWorkerUrl}/chunk`,
+          {
+            method: 'PUT',
+            headers: {
+              'X-Upload-ID': uploadId,
+              'X-Chunk-Index': i.toString(),
+              'X-Total-Chunks': totalChunks.toString(),
+              'Content-Type': file.type || 'application/octet-stream',
+            },
+            body: chunk,
+          }
+        );
+
+        if (!chunkResponse.ok) {
+          throw new Error(`Chunk ${i} upload failed: ${chunkResponse.statusText}`);
+        }
+
+        uploadedBytes += chunk.size;
+
+        if (onProgress) {
+          onProgress({
+            loaded: uploadedBytes,
+            total: file.size,
+            percentage: Math.round((uploadedBytes / file.size) * 100),
+          });
+        }
+      }
+
+      const completeResponse = await fetch(
+        `${settings.cloudflareWorkerUrl}/complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uploadId,
+            totalChunks,
+          }),
+        }
+      );
+
+      if (!completeResponse.ok) {
+        throw new Error(`Failed to complete upload: ${completeResponse.statusText}`);
+      }
+
+      const completeData = await completeResponse.json();
+      if (!completeData.success) {
+        throw new Error(completeData.error || 'Failed to complete upload');
       }
 
       if (onProgress) {

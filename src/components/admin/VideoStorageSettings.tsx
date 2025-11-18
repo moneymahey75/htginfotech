@@ -11,6 +11,7 @@ interface Settings {
   tvss_cloudflare_access_key: string | null;
   tvss_cloudflare_secret_key: string | null;
   tvss_cloudflare_bucket: string | null;
+  tvss_cloudflare_worker_url: string | null;
   tvss_cloudflare_stream_enabled: boolean;
   tvss_bunny_api_key: string | null;
   tvss_bunny_storage_zone: string | null;
@@ -67,6 +68,7 @@ export default function VideoStorageSettings() {
           tvss_cloudflare_access_key: settings.tvss_cloudflare_access_key,
           tvss_cloudflare_secret_key: settings.tvss_cloudflare_secret_key,
           tvss_cloudflare_bucket: settings.tvss_cloudflare_bucket,
+          tvss_cloudflare_worker_url: settings.tvss_cloudflare_worker_url,
           tvss_cloudflare_stream_enabled: settings.tvss_cloudflare_stream_enabled,
           tvss_bunny_api_key: settings.tvss_bunny_api_key,
           tvss_bunny_storage_zone: settings.tvss_bunny_storage_zone,
@@ -222,6 +224,21 @@ export default function VideoStorageSettings() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Worker URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={settings.tvss_cloudflare_worker_url || ''}
+                onChange={(e) => updateSetting('tvss_cloudflare_worker_url', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="https://course-videos.workers.dev"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Required: Your deployed Cloudflare Worker URL for handling video uploads
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Account ID
               </label>
               <input
@@ -230,6 +247,9 @@ export default function VideoStorageSettings() {
                 onChange={(e) => updateSetting('tvss_cloudflare_account_id', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Find in Cloudflare Dashboard → R2 → Overview
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -241,6 +261,9 @@ export default function VideoStorageSettings() {
                 onChange={(e) => updateSetting('tvss_cloudflare_access_key', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Used by Worker for R2 authentication
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -252,6 +275,9 @@ export default function VideoStorageSettings() {
                 onChange={(e) => updateSetting('tvss_cloudflare_secret_key', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Keep this secure - used by Worker only
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -262,7 +288,20 @@ export default function VideoStorageSettings() {
                 value={settings.tvss_cloudflare_bucket || ''}
                 onChange={(e) => updateSetting('tvss_cloudflare_bucket', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="course-videos"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Your R2 bucket name (must exist in Cloudflare)
+              </p>
+            </div>
+            <div className="bg-orange-100 border border-orange-200 rounded-lg p-4 mt-4">
+              <p className="text-sm text-orange-900 font-medium mb-2">
+                📚 Setup Required
+              </p>
+              <p className="text-xs text-orange-800">
+                Before using Cloudflare R2, you must deploy the Cloudflare Worker.
+                See <code className="bg-orange-200 px-1 py-0.5 rounded">CLOUDFLARE_WORKER_SETUP.md</code> for deployment instructions.
+              </p>
             </div>
           </div>
         </div>
