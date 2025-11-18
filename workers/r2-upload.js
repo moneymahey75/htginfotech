@@ -18,6 +18,18 @@ export default {
     }
 
     try {
+      // Check if R2 bucket is bound
+      if (!env.COURSE_VIDEOS) {
+        return jsonResponse(
+          {
+            error: 'R2 bucket not configured. Please bind your R2 bucket to this Worker.',
+            help: 'Go to Worker Settings → Variables → R2 Bucket Bindings → Add binding: Variable name = COURSE_VIDEOS, R2 bucket = course-videos'
+          },
+          500,
+          corsHeaders
+        );
+      }
+
       const url = new URL(request.url);
       const pathname = url.pathname;
 
