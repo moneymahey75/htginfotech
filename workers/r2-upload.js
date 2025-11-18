@@ -30,6 +30,20 @@ export default {
         );
       }
 
+      // Verify R2 bucket has put method
+      if (typeof env.COURSE_VIDEOS.put !== 'function') {
+        return jsonResponse(
+          {
+            error: 'R2 bucket binding is incorrect. The bucket object does not have put method.',
+            bindingType: typeof env.COURSE_VIDEOS,
+            availableMethods: Object.keys(env.COURSE_VIDEOS || {}),
+            help: 'Verify R2 bucket binding in Worker Settings. Variable name must be COURSE_VIDEOS and type must be R2 Bucket.'
+          },
+          500,
+          corsHeaders
+        );
+      }
+
       const url = new URL(request.url);
       const pathname = url.pathname;
 
