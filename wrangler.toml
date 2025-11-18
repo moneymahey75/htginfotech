@@ -1,0 +1,12 @@
+name = "r2-upload-proxy"
+main = "workers/r2-upload.js"
+compatibility_date = "2024-01-01"
+
+# R2 Bucket Binding
+[[r2_buckets]]
+binding = "COURSE_VIDEOS"
+bucket_name = "course-videos"
+
+# Variables
+[vars]
+ALLOWED_ORIGINS = "*"
