@@ -12,6 +12,7 @@ interface Settings {
   tvss_cloudflare_secret_key: string | null;
   tvss_cloudflare_bucket: string | null;
   tvss_cloudflare_worker_url: string | null;
+  tvss_cloudflare_public_url: string | null;
   tvss_cloudflare_stream_enabled: boolean;
   tvss_bunny_api_key: string | null;
   tvss_bunny_storage_zone: string | null;
@@ -69,6 +70,7 @@ export default function VideoStorageSettings() {
           tvss_cloudflare_secret_key: settings.tvss_cloudflare_secret_key,
           tvss_cloudflare_bucket: settings.tvss_cloudflare_bucket,
           tvss_cloudflare_worker_url: settings.tvss_cloudflare_worker_url,
+          tvss_cloudflare_public_url: settings.tvss_cloudflare_public_url,
           tvss_cloudflare_stream_enabled: settings.tvss_cloudflare_stream_enabled,
           tvss_bunny_api_key: settings.tvss_bunny_api_key,
           tvss_bunny_storage_zone: settings.tvss_bunny_storage_zone,
@@ -235,6 +237,21 @@ export default function VideoStorageSettings() {
               />
               <p className="text-xs text-gray-600 mt-1">
                 Required: Your deployed Cloudflare Worker URL for handling video uploads
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                R2 Public URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={settings.tvss_cloudflare_public_url || ''}
+                onChange={(e) => updateSetting('tvss_cloudflare_public_url', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="https://pub-xxxxx.r2.dev"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Required: R2 bucket public domain URL for video playback. Get this from Cloudflare Dashboard → R2 → Your Bucket → Settings → Public R2.dev Subdomain
               </p>
             </div>
             <div>

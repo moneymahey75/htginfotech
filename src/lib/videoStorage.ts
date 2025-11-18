@@ -10,6 +10,7 @@ export interface StorageSettings {
   cloudflareSecretKey?: string;
   cloudflareBucket?: string;
   cloudflareWorkerUrl?: string;
+  cloudflarePublicUrl?: string;
   cloudflareStreamEnabled?: boolean;
   bunnyApiKey?: string;
   bunnyStorageZone?: string;
@@ -55,6 +56,7 @@ class VideoStorageService {
       cloudflareSecretKey: data.tvss_cloudflare_secret_key,
       cloudflareBucket: data.tvss_cloudflare_bucket,
       cloudflareWorkerUrl: data.tvss_cloudflare_worker_url,
+      cloudflarePublicUrl: data.tvss_cloudflare_public_url,
       cloudflareStreamEnabled: data.tvss_cloudflare_stream_enabled,
       bunnyApiKey: data.tvss_bunny_api_key,
       bunnyStorageZone: data.tvss_bunny_storage_zone,
@@ -369,10 +371,34 @@ class VideoStorageService {
   }
 
   private async getCloudflareSignedUrl(path: string, settings: StorageSettings): Promise<string> {
-    // For R2, generate a presigned URL (simplified version)
-    // In production, this should use proper AWS S3 signature v4
-    const expiresAt = Math.floor(Date.now() / 1000) + settings.signedUrlExpiry;
-    return `https://${settings.cloudflareAccountId}.r2.cloudflarestorage.com/${settings.cloudflareBucket}/${path}?expires=${expiresAt}`;
+    // Use R2 public URL if configured
+    if (settings.cloudflarePublicUrl) {
+      return `${settings.cloudflarePublicUrl}/${path}`;
+    }
+
+    // Fallback: try to get from Worker if available
+    if (settings.cloudflareWorkerUrl) {
+      try {
+        const response = await fetch(
+          `${settings.cloudflareWorkerUrl}/get-url`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ objectKey: path }),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.url) return data.url;
+        }
+      } catch (err) {
+        console.error('Failed to get URL from Worker:', err);
+      }
+    }
+
+    // Last fallback: construct URL (may not work without proper config)
+    throw new Error('Cloudflare R2 public URL not configured. Please set it in Video Storage Settings.');
   }
 
   private async getBunnySignedUrl(path: string, settings: StorageSettings): Promise<string> {
