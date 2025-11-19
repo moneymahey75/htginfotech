@@ -50,7 +50,7 @@ export default {
       // POST /upload - Initiate upload
       if (pathname === '/upload' && request.method === 'POST') {
         const body = await request.json();
-        const { fileName, courseId, contentType } = body;
+        const { fileName, courseId, contentType, storagePath } = body;
 
         if (!fileName || !courseId) {
           return jsonResponse(
@@ -62,7 +62,7 @@ export default {
 
         const uploadId = crypto.randomUUID();
         const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const objectKey = `courses/${courseId}/${Date.now()}_${sanitizedFileName}`;
+        const objectKey = storagePath || `courses/${courseId}/${Date.now()}_${sanitizedFileName}`;
 
         const metadata = {
           uploadId,
@@ -241,6 +241,43 @@ export default {
           200,
           corsHeaders
         );
+      }
+
+      // POST /delete - Delete a video file
+      if (pathname === '/delete' && request.method === 'POST') {
+        const body = await request.json();
+        const { objectKey } = body;
+
+        if (!objectKey) {
+          return jsonResponse(
+            { error: 'Missing required field: objectKey' },
+            400,
+            corsHeaders
+          );
+        }
+
+        try {
+          await env.COURSE_VIDEOS.delete(objectKey);
+          return jsonResponse(
+            {
+              success: true,
+              message: 'File deleted successfully',
+              objectKey,
+            },
+            200,
+            corsHeaders
+          );
+        } catch (error) {
+          return jsonResponse(
+            {
+              success: false,
+              error: error.message || 'Failed to delete file',
+              objectKey,
+            },
+            500,
+            corsHeaders
+          );
+        }
       }
 
       return jsonResponse({ error: 'Not found' }, 404, corsHeaders);

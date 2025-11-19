@@ -215,6 +215,7 @@ class VideoStorageService {
             fileName: file.name,
             courseId,
             contentType: file.type || 'video/mp4',
+            storagePath: path,
           }),
         }
       );
@@ -459,21 +460,29 @@ class VideoStorageService {
   }
 
   private async deleteFromCloudflare(path: string, settings: StorageSettings): Promise<void> {
-    if (!settings.cloudflareAccountId || !settings.cloudflareAccessKey || !settings.cloudflareBucket) {
-      throw new Error('Cloudflare R2 not configured');
+    if (!settings.cloudflareWorkerUrl) {
+      throw new Error('Cloudflare Worker URL not configured. Cannot delete video.');
     }
 
-    const url = `https://${settings.cloudflareAccountId}.r2.cloudflarestorage.com/${settings.cloudflareBucket}/${path}`;
-
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        'X-Custom-Auth-Key': settings.cloudflareAccessKey,
-      },
-    });
+    const response = await fetch(
+      `${settings.cloudflareWorkerUrl}/delete`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          objectKey: path,
+        }),
+      }
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to delete from Cloudflare R2`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to delete from Cloudflare R2: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to delete from Cloudflare R2');
     }
   }
 
