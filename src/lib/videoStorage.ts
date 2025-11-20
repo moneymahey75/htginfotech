@@ -91,12 +91,14 @@ class VideoStorageService {
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storagePath = `courses/${courseId}/${timestamp}_${sanitizedFileName}`;
 
+    let actualStoragePath = storagePath;
+
     switch (settings.activeProvider) {
       case 'supabase':
         await this.uploadToSupabase(file, storagePath, settings, onProgress);
         break;
       case 'cloudflare':
-        await this.uploadToCloudflare(file, storagePath, settings, onProgress);
+        actualStoragePath = await this.uploadToCloudflare(file, storagePath, settings, onProgress);
         break;
       case 'bunny':
         await this.uploadToBunny(file, storagePath, settings, onProgress);
@@ -106,7 +108,7 @@ class VideoStorageService {
     }
 
     return {
-      storagePath,
+      storagePath: actualStoragePath,
       provider: settings.activeProvider,
       fileSize: file.size,
     };
@@ -197,7 +199,7 @@ class VideoStorageService {
     path: string,
     settings: StorageSettings,
     onProgress?: (progress: UploadProgress) => void
-  ): Promise<void> {
+  ): Promise<string> {
     if (!settings.cloudflareWorkerUrl) {
       throw new Error('Cloudflare Worker URL not configured. Please configure it in Admin → Video Storage Settings.');
     }
@@ -292,6 +294,8 @@ class VideoStorageService {
       if (onProgress) {
         onProgress({ loaded: file.size, total: file.size, percentage: 100 });
       }
+
+      return completeData.objectKey || path;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -424,12 +428,16 @@ class VideoStorageService {
 
     // Don't delete external URLs
     if (content.tcc_storage_provider === 'external') {
+      console.log('Skipping deletion for external URL');
       return;
     }
 
     if (!content.tcc_storage_path) {
+      console.log('No storage path found, skipping deletion');
       return;
     }
+
+    console.log(`Deleting video from ${content.tcc_storage_provider}: ${content.tcc_storage_path}`);
 
     const settings = await this.getSettings();
 
@@ -437,16 +445,19 @@ class VideoStorageService {
       switch (content.tcc_storage_provider) {
         case 'supabase':
           await this.deleteFromSupabase(content.tcc_storage_path, settings);
+          console.log('Successfully deleted from Supabase storage');
           break;
         case 'cloudflare':
           await this.deleteFromCloudflare(content.tcc_storage_path, settings);
+          console.log('Successfully deleted from Cloudflare R2');
           break;
         case 'bunny':
           await this.deleteFromBunny(content.tcc_storage_path, settings);
+          console.log('Successfully deleted from Bunny.net');
           break;
       }
     } catch (err) {
-      console.error('Error deleting video from storage:', err);
+      console.error(`Error deleting video from ${content.tcc_storage_provider} storage:`, err);
       // Don't throw - still allow database deletion
     }
   }
