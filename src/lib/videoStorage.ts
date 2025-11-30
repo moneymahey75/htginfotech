@@ -311,22 +311,55 @@ class VideoStorageService {
     onProgress?: (progress: UploadProgress) => void
   ): Promise<void> {
     if (!settings.bunnyApiKey || !settings.bunnyStorageZone) {
-      throw new Error('Bunny.net not configured');
+      throw new Error('Bunny.net not configured. Please add Storage Zone Password and Storage Zone Name in Video Storage Settings.');
     }
 
-    const url = `https://storage.bunnycdn.com/${settings.bunnyStorageZone}/${path}`;
+    const apiKey = settings.bunnyApiKey.trim();
+    const storageZone = settings.bunnyStorageZone.trim();
+
+    if (!apiKey) {
+      throw new Error('Bunny.net Storage Zone Password is empty. Please check your Video Storage Settings.');
+    }
+
+    const url = `https://storage.bunnycdn.com/${storageZone}/${path}`;
+
+    console.log('Bunny.net Upload Request:', {
+      url,
+      storageZone,
+      path,
+      fileSize: file.size,
+      fileName: file.name,
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey.length
+    });
 
     const response = await fetch(url, {
       method: 'PUT',
       body: file,
       headers: {
-        'AccessKey': settings.bunnyApiKey,
+        'AccessKey': apiKey,
         'Content-Type': 'application/octet-stream',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Bunny.net upload failed: ${response.statusText}`);
+      const errorText = await response.text().catch(() => 'Unable to read error response');
+      console.error('Bunny.net Upload Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText,
+        url
+      });
+
+      if (response.status === 401) {
+        throw new Error(
+          'Bunny.net Authentication Failed (401): Invalid Storage Zone Password. ' +
+          'Please verify your password in Video Storage Settings. ' +
+          'Find it in: Bunny Dashboard → Storage → Your Zone → FTP & API Access → Password'
+        );
+      }
+
+      throw new Error(`Bunny.net upload failed (${response.status}): ${response.statusText}. ${errorText}`);
     }
 
     if (onProgress) {
@@ -502,17 +535,23 @@ class VideoStorageService {
       throw new Error('Bunny.net not configured');
     }
 
-    const url = `https://storage.bunnycdn.com/${settings.bunnyStorageZone}/${path}`;
+    const apiKey = settings.bunnyApiKey.trim();
+    const storageZone = settings.bunnyStorageZone.trim();
+    const url = `https://storage.bunnycdn.com/${storageZone}/${path}`;
 
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'AccessKey': settings.bunnyApiKey,
+        'AccessKey': apiKey,
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to delete from Bunny.net`);
+      const errorText = await response.text().catch(() => '');
+      if (response.status === 401) {
+        throw new Error('Bunny.net Authentication Failed: Invalid Storage Zone Password');
+      }
+      throw new Error(`Failed to delete from Bunny.net (${response.status}): ${response.statusText}`);
     }
   }
 
