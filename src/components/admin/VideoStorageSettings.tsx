@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { videoStorage, StorageProvider } from '../../lib/videoStorage';
-import { Save, HardDrive, Cloud, Zap, Play, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, HardDrive, Cloud, Zap, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Settings {
   tvss_id: string;
@@ -18,10 +18,6 @@ interface Settings {
   tvss_bunny_storage_zone: string | null;
   tvss_bunny_cdn_url: string | null;
   tvss_bunny_stream_library_id: string | null;
-  tvss_vimeo_access_token: string | null;
-  tvss_vimeo_client_id: string | null;
-  tvss_vimeo_client_secret: string | null;
-  tvss_vimeo_user_id: string | null;
   tvss_signed_url_expiry_seconds: number;
   tvss_max_file_size_mb: number;
   tvss_auto_compress: boolean;
@@ -80,10 +76,6 @@ export default function VideoStorageSettings() {
           tvss_bunny_storage_zone: settings.tvss_bunny_storage_zone,
           tvss_bunny_cdn_url: settings.tvss_bunny_cdn_url,
           tvss_bunny_stream_library_id: settings.tvss_bunny_stream_library_id,
-          tvss_vimeo_access_token: settings.tvss_vimeo_access_token,
-          tvss_vimeo_client_id: settings.tvss_vimeo_client_id,
-          tvss_vimeo_client_secret: settings.tvss_vimeo_client_secret,
-          tvss_vimeo_user_id: settings.tvss_vimeo_user_id,
           tvss_signed_url_expiry_seconds: settings.tvss_signed_url_expiry_seconds,
           tvss_max_file_size_mb: settings.tvss_max_file_size_mb,
           tvss_auto_compress: settings.tvss_auto_compress,
@@ -149,7 +141,7 @@ export default function VideoStorageSettings() {
       {/* Provider Selection */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Storage Provider</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             type="button"
             onClick={() => updateSetting('tvss_active_provider', 'supabase')}
@@ -181,23 +173,6 @@ export default function VideoStorageSettings() {
             <div className="text-sm text-gray-600 mb-2">Free: 10GB storage</div>
             <div className="text-xs text-gray-500">
               No egress fees, global CDN
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => updateSetting('tvss_active_provider', 'vimeo')}
-            className={`p-6 rounded-lg border-2 transition-all ${
-              settings.tvss_active_provider === 'vimeo'
-                ? 'border-green-600 bg-green-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <Play className="h-10 w-10 mx-auto mb-3 text-green-600" />
-            <div className="font-semibold text-lg mb-1">Vimeo</div>
-            <div className="text-sm text-gray-600 mb-2">Free: 2GB/week unlimited storage</div>
-            <div className="text-xs text-gray-500">
-              Professional player, no storage limits
             </div>
           </button>
 
@@ -386,70 +361,6 @@ export default function VideoStorageSettings() {
                 onChange={(e) => updateSetting('tvss_bunny_cdn_url', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 placeholder="https://your-pullzone.b-cdn.net"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Vimeo Settings */}
-      {settings.tvss_active_provider === 'vimeo' && (
-        <div className="bg-green-50 rounded-lg p-6">
-          <h3 className="font-semibold text-green-900 mb-4">Vimeo Configuration</h3>
-          <div className="space-y-4">
-            <div className="bg-green-100 border border-green-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-green-800">
-                <strong>Vimeo Free Plan Benefits:</strong>
-                <br />
-                • 2GB upload per week
-                <br />
-                • Unlimited total storage
-                <br />
-                • Professional video player
-                <br />
-                • Embed videos anywhere
-                <br />
-                <br />
-                Get your API access token from: <a href="https://developer.vimeo.com/apps" target="_blank" rel="noopener noreferrer" className="underline">Vimeo Developer Apps</a>
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Access Token *
-              </label>
-              <input
-                type="password"
-                value={settings.tvss_vimeo_access_token || ''}
-                onChange={(e) => updateSetting('tvss_vimeo_access_token', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="Your Vimeo API access token"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                Required: Create an app at developer.vimeo.com and generate an access token with upload permissions
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Client ID (Optional)
-              </label>
-              <input
-                type="text"
-                value={settings.tvss_vimeo_client_id || ''}
-                onChange={(e) => updateSetting('tvss_vimeo_client_id', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="Your app client ID"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Client Secret (Optional)
-              </label>
-              <input
-                type="password"
-                value={settings.tvss_vimeo_client_secret || ''}
-                onChange={(e) => updateSetting('tvss_vimeo_client_secret', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="Your app client secret"
               />
             </div>
           </div>

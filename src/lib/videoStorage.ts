@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type StorageProvider = 'supabase' | 'cloudflare' | 'bunny' | 'vimeo';
+export type StorageProvider = 'supabase' | 'cloudflare' | 'bunny';
 
 export interface StorageSettings {
   activeProvider: StorageProvider;
@@ -16,10 +16,6 @@ export interface StorageSettings {
   bunnyStorageZone?: string;
   bunnyCdnUrl?: string;
   bunnyStreamLibraryId?: string;
-  vimeoAccessToken?: string;
-  vimeoClientId?: string;
-  vimeoClientSecret?: string;
-  vimeoUserId?: string;
   signedUrlExpiry: number;
   maxFileSizeMB: number;
   autoCompress: boolean;
@@ -66,10 +62,6 @@ class VideoStorageService {
       bunnyStorageZone: data.tvss_bunny_storage_zone,
       bunnyCdnUrl: data.tvss_bunny_cdn_url,
       bunnyStreamLibraryId: data.tvss_bunny_stream_library_id,
-      vimeoAccessToken: data.tvss_vimeo_access_token,
-      vimeoClientId: data.tvss_vimeo_client_id,
-      vimeoClientSecret: data.tvss_vimeo_client_secret,
-      vimeoUserId: data.tvss_vimeo_user_id,
       signedUrlExpiry: data.tvss_signed_url_expiry_seconds,
       maxFileSizeMB: data.tvss_max_file_size_mb,
       autoCompress: data.tvss_auto_compress,
@@ -110,9 +102,6 @@ class VideoStorageService {
         break;
       case 'bunny':
         await this.uploadToBunny(file, storagePath, settings, onProgress);
-        break;
-      case 'vimeo':
-        actualStoragePath = await this.uploadToVimeo(file, storagePath, settings, onProgress);
         break;
       default:
         throw new Error('Invalid storage provider');
@@ -345,72 +334,6 @@ class VideoStorageService {
     }
   }
 
-  private async uploadToVimeo(
-    file: File,
-    path: string,
-    settings: StorageSettings,
-    onProgress?: (progress: UploadProgress) => void
-  ): Promise<string> {
-    if (!settings.vimeoAccessToken) {
-      throw new Error('Vimeo not configured. Please add your Vimeo access token in Video Storage Settings.');
-    }
-
-    try {
-      const createResponse = await fetch('https://api.vimeo.com/me/videos', {
-        method: 'POST',
-        headers: {
-          'Authorization': `bearer ${settings.vimeoAccessToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.vimeo.*+json;version=3.4',
-        },
-        body: JSON.stringify({
-          upload: {
-            approach: 'tus',
-            size: file.size.toString(),
-          },
-          name: file.name,
-          privacy: {
-            view: 'unlisted',
-          },
-        }),
-      });
-
-      if (!createResponse.ok) {
-        const errorData = await createResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || `Vimeo upload creation failed: ${createResponse.statusText}`);
-      }
-
-      const uploadData = await createResponse.json();
-      const uploadLink = uploadData.upload.upload_link;
-      const videoUri = uploadData.uri;
-
-      const uploadResponse = await fetch(uploadLink, {
-        method: 'PATCH',
-        headers: {
-          'Tus-Resumable': '1.0.0',
-          'Upload-Offset': '0',
-          'Content-Type': 'application/offset+octet-stream',
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Vimeo file upload failed: ${uploadResponse.statusText}`);
-      }
-
-      if (onProgress) {
-        onProgress({ loaded: file.size, total: file.size, percentage: 100 });
-      }
-
-      return videoUri;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Vimeo upload failed');
-    }
-  }
-
   async getSignedUrl(contentId: string): Promise<string> {
     const { data: content, error } = await supabase
       .from('tbl_course_content')
@@ -438,8 +361,6 @@ class VideoStorageService {
         return this.getCloudflareSignedUrl(content.tcc_storage_path, settings);
       case 'bunny':
         return this.getBunnySignedUrl(content.tcc_storage_path, settings);
-      case 'vimeo':
-        return this.getVimeoSignedUrl(content.tcc_storage_path, settings);
       default:
         throw new Error('Invalid storage provider');
     }
@@ -496,42 +417,6 @@ class VideoStorageService {
     return `${settings.bunnyCdnUrl}/${path}?token=${token}&expires=${expiresAt}`;
   }
 
-  private async getVimeoSignedUrl(videoUri: string, settings: StorageSettings): Promise<string> {
-    if (!settings.vimeoAccessToken) {
-      throw new Error('Vimeo not configured');
-    }
-
-    try {
-      const response = await fetch(`https://api.vimeo.com${videoUri}`, {
-        headers: {
-          'Authorization': `bearer ${settings.vimeoAccessToken}`,
-          'Accept': 'application/vnd.vimeo.*+json;version=3.4',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get Vimeo video details: ${response.statusText}`);
-      }
-
-      const videoData = await response.json();
-
-      if (videoData.player_embed_url) {
-        return videoData.player_embed_url;
-      }
-
-      if (videoData.link) {
-        return videoData.link;
-      }
-
-      throw new Error('No playable URL found for Vimeo video');
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Failed to get Vimeo video URL');
-    }
-  }
-
   async deleteVideo(contentId: string): Promise<void> {
     const { data: content, error } = await supabase
       .from('tbl_course_content')
@@ -569,10 +454,6 @@ class VideoStorageService {
         case 'bunny':
           await this.deleteFromBunny(content.tcc_storage_path, settings);
           console.log('Successfully deleted from Bunny.net');
-          break;
-        case 'vimeo':
-          await this.deleteFromVimeo(content.tcc_storage_path, settings);
-          console.log('Successfully deleted from Vimeo');
           break;
       }
     } catch (err) {
@@ -632,24 +513,6 @@ class VideoStorageService {
 
     if (!response.ok) {
       throw new Error(`Failed to delete from Bunny.net`);
-    }
-  }
-
-  private async deleteFromVimeo(videoUri: string, settings: StorageSettings): Promise<void> {
-    if (!settings.vimeoAccessToken) {
-      throw new Error('Vimeo not configured');
-    }
-
-    const response = await fetch(`https://api.vimeo.com${videoUri}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `bearer ${settings.vimeoAccessToken}`,
-        'Accept': 'application/vnd.vimeo.*+json;version=3.4',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete from Vimeo: ${response.statusText}`);
     }
   }
 
