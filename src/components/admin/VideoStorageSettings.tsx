@@ -329,31 +329,52 @@ export default function VideoStorageSettings() {
         <div className="bg-purple-50 rounded-lg p-6">
           <h3 className="font-semibold text-purple-900 mb-4">Bunny.net Configuration</h3>
           <div className="space-y-4">
+            <div className="bg-purple-100 border border-purple-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-purple-800">
+                <strong>How to get your credentials:</strong>
+                <br />
+                1. Log in to your Bunny.net dashboard
+                <br />
+                2. Go to <strong>Storage → [Your Storage Zone] → FTP & API Access</strong>
+                <br />
+                3. Copy the <strong>Password</strong> (this is your Storage Zone Password/API Key)
+                <br />
+                4. For streaming: Go to <strong>Stream → [Your Library] → API</strong> to get Stream Library ID
+              </p>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                API Key
+                Storage Zone Password (API Key) *
               </label>
               <input
                 type="password"
                 value={settings.tvss_bunny_api_key || ''}
                 onChange={(e) => updateSetting('tvss_bunny_api_key', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="Your Storage Zone password from FTP & API Access"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Required: Found in Storage → Your Zone → FTP & API Access → Password
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Storage Zone Name
+                Storage Zone Name *
               </label>
               <input
                 type="text"
                 value={settings.tvss_bunny_storage_zone || ''}
                 onChange={(e) => updateSetting('tvss_bunny_storage_zone', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="my-storage-zone"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Required: The name of your Storage Zone (e.g., "my-videos")
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                CDN URL (Pull Zone)
+                Pull Zone URL (CDN URL) *
               </label>
               <input
                 type="text"
@@ -362,6 +383,24 @@ export default function VideoStorageSettings() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 placeholder="https://your-pullzone.b-cdn.net"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                Required: Your Pull Zone URL for content delivery (e.g., "https://mycdn.b-cdn.net")
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stream Library ID (Optional)
+              </label>
+              <input
+                type="text"
+                value={settings.tvss_bunny_stream_library_id || ''}
+                onChange={(e) => updateSetting('tvss_bunny_stream_library_id', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="12345"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Optional: For Bunny Stream video hosting (found in Stream → Your Library → API)
+              </p>
             </div>
           </div>
         </div>
