@@ -27,6 +27,7 @@ export default function VideoStorageSettings() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -97,6 +98,86 @@ export default function VideoStorageSettings() {
   const updateSetting = (key: keyof Settings, value: any) => {
     if (!settings) return;
     setSettings({ ...settings, [key]: value });
+  };
+
+  const testBunnyConnection = async () => {
+    if (!settings) return;
+
+    setTesting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const apiKey = settings.tvss_bunny_api_key?.trim();
+      const storageZone = settings.tvss_bunny_storage_zone?.trim();
+
+      if (!apiKey || !storageZone) {
+        setError('Please fill in Storage Zone Password and Storage Zone Name first');
+        return;
+      }
+
+      console.log('Testing Bunny.net connection with:', {
+        storageZone,
+        apiKeyLength: apiKey.length,
+        apiKeyPreview: apiKey.substring(0, 5) + '...' + apiKey.substring(apiKey.length - 5)
+      });
+
+      const testFileName = `test-connection-${Date.now()}.txt`;
+      const testContent = new Blob(['Bunny.net connection test'], { type: 'text/plain' });
+      const url = `https://storage.bunnycdn.com/${storageZone}/${testFileName}`;
+
+      console.log('Test upload URL:', url);
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        body: testContent,
+        headers: {
+          'AccessKey': apiKey,
+          'Content-Type': 'application/octet-stream',
+        },
+      });
+
+      console.log('Test response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.error('Test failed:', errorText);
+
+        if (response.status === 401) {
+          setError(
+            `Authentication Failed (401): The Storage Zone Password is incorrect. ` +
+            `Please verify you're using the PASSWORD (not Read Only Password) from: ` +
+            `Bunny Dashboard → Storage → ${storageZone} → FTP & API Access → Password`
+          );
+        } else if (response.status === 404) {
+          setError(
+            `Storage Zone Not Found (404): The storage zone "${storageZone}" does not exist. ` +
+            `Please check the Storage Zone Name in your Bunny.net dashboard.`
+          );
+        } else {
+          setError(`Test failed (${response.status}): ${response.statusText}. ${errorText}`);
+        }
+        return;
+      }
+
+      await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'AccessKey': apiKey,
+        },
+      }).catch(() => {});
+
+      setSuccess('Connection successful! Your Bunny.net credentials are correct.');
+    } catch (err: any) {
+      console.error('Test connection error:', err);
+      setError(`Test failed: ${err.message}`);
+    } finally {
+      setTesting(false);
+    }
   };
 
   if (loading) {
@@ -400,6 +481,30 @@ export default function VideoStorageSettings() {
               />
               <p className="text-xs text-gray-600 mt-1">
                 Optional: For Bunny Stream video hosting (found in Stream → Your Library → API)
+              </p>
+            </div>
+
+            <div className="col-span-full">
+              <button
+                type="button"
+                onClick={testBunnyConnection}
+                disabled={testing || !settings.tvss_bunny_api_key || !settings.tvss_bunny_storage_zone}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+              >
+                {testing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Testing Connection...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Test Connection
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-gray-600 mt-2">
+                Click to verify your Bunny.net credentials before saving. Check browser console (F12) for detailed logs.
               </p>
             </div>
           </div>
