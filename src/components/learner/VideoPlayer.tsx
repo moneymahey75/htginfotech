@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { videoStorage } from '../../lib/videoStorage';
-import { Play, Pause, Volume2, VolumeX, Maximize, Lock } from 'lucide-react';
+import { videoStorage, VideoStatus } from '../../lib/videoStorage';
+import { Play, Pause, Volume2, VolumeX, Maximize, Lock, Clock } from 'lucide-react';
 
 interface VideoPlayerProps {
   contentId: string;
@@ -16,6 +16,7 @@ export default function VideoPlayer({ contentId, title, isFreePreview, isLocked,
   const [isIframe, setIsIframe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [videoStatus, setVideoStatus] = useState<VideoStatus | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -28,10 +29,45 @@ export default function VideoPlayer({ contentId, title, isFreePreview, isLocked,
     loadVideo();
   }, [contentId]);
 
+  useEffect(() => {
+    if (videoStatus?.status === 'processing') {
+      const interval = setInterval(async () => {
+        try {
+          const status = await videoStorage.checkVideoStatus(contentId);
+          setVideoStatus(status);
+          if (status.status === 'ready') {
+            loadVideo();
+          } else if (status.status === 'error') {
+            setError(status.message || 'Video processing failed');
+          }
+        } catch (err) {
+          console.error('Error checking video status:', err);
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [videoStatus?.status, contentId]);
+
   const loadVideo = async () => {
     try {
       setLoading(true);
       setError('');
+
+      const status = await videoStorage.checkVideoStatus(contentId);
+      setVideoStatus(status);
+
+      if (status.status === 'processing') {
+        setLoading(false);
+        return;
+      }
+
+      if (status.status === 'error') {
+        setError(status.message || 'Video processing failed');
+        setLoading(false);
+        return;
+      }
+
       const url = await videoStorage.getSignedUrl(contentId);
       setVideoUrl(url);
       setIsIframe(url.includes('iframe.mediadelivery.net') || url.includes('embed'));
@@ -103,6 +139,34 @@ export default function VideoPlayer({ contentId, title, isFreePreview, isLocked,
           <Lock className="h-16 w-16 mx-auto mb-4 opacity-50" />
           <h3 className="text-xl font-semibold mb-2">This video is locked</h3>
           <p className="text-gray-400">Contact your tutor to get access to this video</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (videoStatus?.status === 'processing') {
+    return (
+      <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video flex items-center justify-center">
+        <div className="text-center text-white max-w-md px-6">
+          <Clock className="h-16 w-16 mx-auto mb-4 text-blue-400 animate-pulse" />
+          <h3 className="text-xl font-semibold mb-2">Video Processing</h3>
+          <p className="text-gray-300 mb-4">
+            Your video is being transcoded to multiple quality levels for optimal streaming
+          </p>
+          {videoStatus.progress !== undefined && videoStatus.progress > 0 && (
+            <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${videoStatus.progress}%` }}
+              />
+            </div>
+          )}
+          <p className="text-sm text-gray-400">
+            {videoStatus.message || 'This usually takes 2-5 minutes...'}
+          </p>
+          <p className="text-xs text-gray-500 mt-4">
+            Page will auto-refresh when ready
+          </p>
         </div>
       </div>
     );

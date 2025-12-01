@@ -29,6 +29,12 @@ export interface UploadProgress {
   percentage: number;
 }
 
+export interface VideoStatus {
+  status: 'processing' | 'ready' | 'error';
+  progress?: number;
+  message?: string;
+}
+
 class VideoStorageService {
   private settingsCache: StorageSettings | null = null;
   private cacheTime: number = 0;
@@ -474,6 +480,71 @@ class VideoStorageService {
     }
 
     return `bunny-stream://${videoId}`;
+  }
+
+  async checkVideoStatus(contentId: string): Promise<VideoStatus> {
+    const { data: content, error } = await supabase
+      .from('tbl_course_content')
+      .select('tcc_storage_provider, tcc_storage_path')
+      .eq('tcc_id', contentId)
+      .single();
+
+    if (error || !content) {
+      throw new Error('Content not found');
+    }
+
+    if (content.tcc_storage_provider !== 'bunny') {
+      return { status: 'ready' };
+    }
+
+    const path = content.tcc_storage_path;
+    if (!path || !path.startsWith('bunny-stream://')) {
+      return { status: 'ready' };
+    }
+
+    const videoId = path.replace('bunny-stream://', '');
+    const settings = await this.getSettings();
+
+    if (!settings.bunnyStreamLibraryId || !settings.bunnyStreamApiKey) {
+      return { status: 'error', message: 'Bunny Stream not configured' };
+    }
+
+    try {
+      const url = `https://video.bunnycdn.com/library/${settings.bunnyStreamLibraryId}/videos/${videoId}`;
+      const response = await fetch(url, {
+        headers: {
+          'AccessKey': settings.bunnyStreamApiKey.trim(),
+        },
+      });
+
+      if (!response.ok) {
+        return { status: 'error', message: 'Failed to check video status' };
+      }
+
+      const videoData = await response.json();
+
+      if (videoData.status === 4) {
+        return { status: 'ready' };
+      }
+
+      if (videoData.status === 0 || videoData.status === 1 || videoData.status === 2) {
+        const progress = videoData.encodeProgress || 0;
+        return {
+          status: 'processing',
+          progress,
+          message: `Processing video... ${progress}%`
+        };
+      }
+
+      if (videoData.status === 3 || videoData.status === 5) {
+        return { status: 'error', message: 'Video processing failed' };
+      }
+
+      return { status: 'processing', message: 'Processing video...' };
+    } catch (err) {
+      console.error('Error checking video status:', err);
+      return { status: 'error', message: 'Failed to check video status' };
+    }
   }
 
   async getSignedUrl(contentId: string): Promise<string> {
