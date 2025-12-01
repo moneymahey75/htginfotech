@@ -16,6 +16,8 @@ export interface StorageSettings {
   bunnyStorageZone?: string;
   bunnyCdnUrl?: string;
   bunnyStreamLibraryId?: string;
+  bunnyStreamApiKey?: string;
+  bunnyUseStream?: boolean;
   signedUrlExpiry: number;
   maxFileSizeMB: number;
   autoCompress: boolean;
@@ -62,6 +64,8 @@ class VideoStorageService {
       bunnyStorageZone: data.tvss_bunny_storage_zone,
       bunnyCdnUrl: data.tvss_bunny_cdn_url,
       bunnyStreamLibraryId: data.tvss_bunny_stream_library_id,
+      bunnyStreamApiKey: data.tvss_bunny_stream_api_key,
+      bunnyUseStream: data.tvss_bunny_use_stream || false,
       signedUrlExpiry: data.tvss_signed_url_expiry_seconds,
       maxFileSizeMB: data.tvss_max_file_size_mb,
       autoCompress: data.tvss_auto_compress,
@@ -101,7 +105,11 @@ class VideoStorageService {
         actualStoragePath = await this.uploadToCloudflare(file, storagePath, settings, onProgress);
         break;
       case 'bunny':
-        await this.uploadToBunny(file, storagePath, settings, onProgress);
+        if (settings.bunnyUseStream) {
+          actualStoragePath = await this.uploadToBunnyStream(file, storagePath, settings, onProgress);
+        } else {
+          await this.uploadToBunny(file, storagePath, settings, onProgress);
+        }
         break;
       default:
         throw new Error('Invalid storage provider');
@@ -367,6 +375,107 @@ class VideoStorageService {
     }
   }
 
+  private async uploadToBunnyStream(
+    file: File,
+    path: string,
+    settings: StorageSettings,
+    onProgress?: (progress: UploadProgress) => void
+  ): Promise<string> {
+    if (!settings.bunnyStreamLibraryId || !settings.bunnyStreamApiKey) {
+      throw new Error(
+        'Bunny Stream not configured. Please add Stream Library ID and Stream API Key in Video Storage Settings.'
+      );
+    }
+
+    const libraryId = settings.bunnyStreamLibraryId.trim();
+    const apiKey = settings.bunnyStreamApiKey.trim();
+
+    if (!apiKey || !libraryId) {
+      throw new Error('Bunny Stream credentials are empty. Please check your Video Storage Settings.');
+    }
+
+    console.log('Bunny Stream Upload Request:', {
+      libraryId,
+      fileName: file.name,
+      fileSize: file.size,
+      hasApiKey: !!apiKey,
+    });
+
+    const createUrl = `https://video.bunnycdn.com/library/${libraryId}/videos`;
+    const createResponse = await fetch(createUrl, {
+      method: 'POST',
+      headers: {
+        'AccessKey': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: file.name,
+      }),
+    });
+
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text().catch(() => 'Unable to read error response');
+      console.error('Bunny Stream Create Video Error:', {
+        status: createResponse.status,
+        statusText: createResponse.statusText,
+        errorText,
+      });
+
+      if (createResponse.status === 401) {
+        throw new Error(
+          'Bunny Stream Authentication Failed (401): Invalid Stream API Key. ' +
+          'Please verify your API Key in Video Storage Settings. ' +
+          'Find it in: Bunny Dashboard → Stream → Your Library → API → API Key'
+        );
+      }
+
+      throw new Error(
+        `Bunny Stream create video failed (${createResponse.status}): ${createResponse.statusText}. ${errorText}`
+      );
+    }
+
+    const videoData = await createResponse.json();
+    const videoId = videoData.guid;
+
+    if (!videoId) {
+      throw new Error('Failed to get video ID from Bunny Stream response');
+    }
+
+    console.log('Bunny Stream video created:', { videoId });
+
+    const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'AccessKey': apiKey,
+        'Content-Type': 'application/octet-stream',
+      },
+      body: file,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text().catch(() => 'Unable to read error response');
+      console.error('Bunny Stream Upload Error:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        errorText,
+        videoId,
+      });
+
+      throw new Error(
+        `Bunny Stream upload failed (${uploadResponse.status}): ${uploadResponse.statusText}. ${errorText}`
+      );
+    }
+
+    console.log('Bunny Stream upload successful:', { videoId });
+
+    if (onProgress) {
+      onProgress({ loaded: file.size, total: file.size, percentage: 100 });
+    }
+
+    return `bunny-stream://${videoId}`;
+  }
+
   async getSignedUrl(contentId: string): Promise<string> {
     const { data: content, error } = await supabase
       .from('tbl_course_content')
@@ -440,11 +549,20 @@ class VideoStorageService {
   }
 
   private async getBunnySignedUrl(path: string, settings: StorageSettings): Promise<string> {
+    if (path.startsWith('bunny-stream://')) {
+      const videoId = path.replace('bunny-stream://', '');
+
+      if (!settings.bunnyStreamLibraryId) {
+        throw new Error('Bunny Stream Library ID not configured');
+      }
+
+      return `https://iframe.mediadelivery.net/embed/${settings.bunnyStreamLibraryId}/${videoId}`;
+    }
+
     if (!settings.bunnyCdnUrl) {
       throw new Error('Bunny CDN URL not configured');
     }
 
-    // Bunny.net signed URL with token
     const expiresAt = Math.floor(Date.now() / 1000) + settings.signedUrlExpiry;
     const token = btoa(`${settings.bunnyApiKey}:${expiresAt}`);
     return `${settings.bunnyCdnUrl}/${path}?token=${token}&expires=${expiresAt}`;
@@ -531,6 +649,31 @@ class VideoStorageService {
   }
 
   private async deleteFromBunny(path: string, settings: StorageSettings): Promise<void> {
+    if (path.startsWith('bunny-stream://')) {
+      const videoId = path.replace('bunny-stream://', '');
+
+      if (!settings.bunnyStreamLibraryId || !settings.bunnyStreamApiKey) {
+        throw new Error('Bunny Stream not configured');
+      }
+
+      const url = `https://video.bunnycdn.com/library/${settings.bunnyStreamLibraryId}/videos/${videoId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'AccessKey': settings.bunnyStreamApiKey.trim(),
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        if (response.status === 401) {
+          throw new Error('Bunny Stream Authentication Failed: Invalid Stream API Key');
+        }
+        throw new Error(`Failed to delete from Bunny Stream (${response.status}): ${response.statusText}`);
+      }
+      return;
+    }
+
     if (!settings.bunnyApiKey || !settings.bunnyStorageZone) {
       throw new Error('Bunny.net not configured');
     }

@@ -18,6 +18,8 @@ interface Settings {
   tvss_bunny_storage_zone: string | null;
   tvss_bunny_cdn_url: string | null;
   tvss_bunny_stream_library_id: string | null;
+  tvss_bunny_stream_api_key: string | null;
+  tvss_bunny_use_stream: boolean;
   tvss_signed_url_expiry_seconds: number;
   tvss_max_file_size_mb: number;
   tvss_auto_compress: boolean;
@@ -77,6 +79,8 @@ export default function VideoStorageSettings() {
           tvss_bunny_storage_zone: settings.tvss_bunny_storage_zone,
           tvss_bunny_cdn_url: settings.tvss_bunny_cdn_url,
           tvss_bunny_stream_library_id: settings.tvss_bunny_stream_library_id,
+          tvss_bunny_stream_api_key: settings.tvss_bunny_stream_api_key,
+          tvss_bunny_use_stream: settings.tvss_bunny_use_stream,
           tvss_signed_url_expiry_seconds: settings.tvss_signed_url_expiry_seconds,
           tvss_max_file_size_mb: settings.tvss_max_file_size_mb,
           tvss_auto_compress: settings.tvss_auto_compress,
@@ -409,104 +413,190 @@ export default function VideoStorageSettings() {
       {settings.tvss_active_provider === 'bunny' && (
         <div className="bg-purple-50 rounded-lg p-6">
           <h3 className="font-semibold text-purple-900 mb-4">Bunny.net Configuration</h3>
+
+          {/* Mode Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Service Type</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => updateSetting('tvss_bunny_use_stream', false)}
+                className={`p-4 rounded-lg border-2 transition-all text-left ${
+                  !settings.tvss_bunny_use_stream
+                    ? 'border-purple-600 bg-white shadow-md'
+                    : 'border-gray-300 bg-white hover:border-purple-300'
+                }`}
+              >
+                <div className="font-semibold text-gray-900 mb-1">📦 Bunny Storage</div>
+                <div className="text-xs text-gray-600">
+                  Basic file hosting with CDN
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSetting('tvss_bunny_use_stream', true)}
+                className={`p-4 rounded-lg border-2 transition-all text-left ${
+                  settings.tvss_bunny_use_stream
+                    ? 'border-purple-600 bg-white shadow-md'
+                    : 'border-gray-300 bg-white hover:border-purple-300'
+                }`}
+              >
+                <div className="font-semibold text-gray-900 mb-1">🎬 Bunny Stream</div>
+                <div className="text-xs text-gray-600">
+                  Video streaming with transcoding (Recommended)
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <div className="bg-purple-100 border border-purple-200 rounded-lg p-4 mb-4">
               <p className="text-sm text-purple-800">
-                <strong>How to get your credentials:</strong>
+                <strong>{settings.tvss_bunny_use_stream ? '🎬 Bunny Stream Setup:' : '📦 Bunny Storage Setup:'}</strong>
                 <br />
-                1. Log in to your Bunny.net dashboard
-                <br />
-                2. Go to <strong>Storage → [Your Storage Zone] → FTP & API Access</strong>
-                <br />
-                3. Copy the <strong>Password</strong> (this is your Storage Zone Password/API Key)
-                <br />
-                4. For streaming: Go to <strong>Stream → [Your Library] → API</strong> to get Stream Library ID
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Storage Zone Password (API Key) *
-              </label>
-              <input
-                type="password"
-                value={settings.tvss_bunny_api_key || ''}
-                onChange={(e) => updateSetting('tvss_bunny_api_key', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="Your Storage Zone password from FTP & API Access"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                Required: Found in Storage → Your Zone → FTP & API Access → Password
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Storage Zone Name *
-              </label>
-              <input
-                type="text"
-                value={settings.tvss_bunny_storage_zone || ''}
-                onChange={(e) => updateSetting('tvss_bunny_storage_zone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="my-storage-zone"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                Required: The name of your Storage Zone (e.g., "my-videos")
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Pull Zone URL (CDN URL) *
-              </label>
-              <input
-                type="text"
-                value={settings.tvss_bunny_cdn_url || ''}
-                onChange={(e) => updateSetting('tvss_bunny_cdn_url', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="https://your-pullzone.b-cdn.net"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                Required: Your Pull Zone URL for content delivery (e.g., "https://mycdn.b-cdn.net")
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Stream Library ID (Optional)
-              </label>
-              <input
-                type="text"
-                value={settings.tvss_bunny_stream_library_id || ''}
-                onChange={(e) => updateSetting('tvss_bunny_stream_library_id', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="12345"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                Optional: For Bunny Stream video hosting (found in Stream → Your Library → API)
-              </p>
-            </div>
-
-            <div className="col-span-full">
-              <button
-                type="button"
-                onClick={testBunnyConnection}
-                disabled={testing || !settings.tvss_bunny_api_key || !settings.tvss_bunny_storage_zone}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
-              >
-                {testing ? (
+                {settings.tvss_bunny_use_stream ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Testing Connection...
+                    1. Log in to <strong>Bunny Dashboard</strong>
+                    <br />
+                    2. Go to <strong>Stream</strong> (left menu) → Create a Video Library
+                    <br />
+                    3. Click your library → <strong>API</strong> tab
+                    <br />
+                    4. Copy <strong>Library ID</strong> and <strong>API Key</strong>
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Test Connection
+                    1. Log in to <strong>Bunny Dashboard</strong>
+                    <br />
+                    2. Go to <strong>Storage → [Your Storage Zone] → FTP & API Access</strong>
+                    <br />
+                    3. Copy the <strong>Password</strong> (Storage Zone Password/FTP Password)
+                    <br />
+                    4. Get your <strong>Pull Zone URL</strong> from Pull Zones section
                   </>
                 )}
-              </button>
-              <p className="text-xs text-gray-600 mt-2">
-                Click to verify your Bunny.net credentials before saving. Check browser console (F12) for detailed logs.
               </p>
             </div>
+            {settings.tvss_bunny_use_stream ? (
+              <>
+                {/* Bunny Stream Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stream Library ID *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.tvss_bunny_stream_library_id || ''}
+                    onChange={(e) => updateSetting('tvss_bunny_stream_library_id', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="12345"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Required: Found in Stream → Your Library → API → Library ID
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stream API Key *
+                  </label>
+                  <input
+                    type="password"
+                    value={settings.tvss_bunny_stream_api_key || ''}
+                    onChange={(e) => updateSetting('tvss_bunny_stream_api_key', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="Your Stream Library API Key"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Required: Found in Stream → Your Library → API → API Key
+                  </p>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-800">
+                    ✅ <strong>Bunny Stream Benefits:</strong>
+                    <br />• Automatic video transcoding (multiple quality levels)
+                    <br />• Built-in HLS adaptive streaming
+                    <br />• Professional video player included
+                    <br />• Thumbnail generation
+                    <br />• Better security with token authentication
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Bunny Storage Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Storage Zone Password (FTP Password) *
+                  </label>
+                  <input
+                    type="password"
+                    value={settings.tvss_bunny_api_key || ''}
+                    onChange={(e) => updateSetting('tvss_bunny_api_key', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="Your Storage Zone FTP password"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Required: Found in Storage → Your Zone → FTP & API Access → Password (NOT Read-Only Password)
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Storage Zone Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.tvss_bunny_storage_zone || ''}
+                    onChange={(e) => updateSetting('tvss_bunny_storage_zone', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="htg-infotech"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Required: The name of your Storage Zone (e.g., "htg-infotech")
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pull Zone URL (CDN URL) *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.tvss_bunny_cdn_url || ''}
+                    onChange={(e) => updateSetting('tvss_bunny_cdn_url', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="https://htg-infotech.b-cdn.net"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Required: Your Pull Zone URL (e.g., "https://htg-infotech.b-cdn.net")
+                  </p>
+                </div>
+              </>
+            )}
+
+            {!settings.tvss_bunny_use_stream && (
+              <div className="col-span-full">
+                <button
+                  type="button"
+                  onClick={testBunnyConnection}
+                  disabled={testing || !settings.tvss_bunny_api_key || !settings.tvss_bunny_storage_zone}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+                >
+                  {testing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Testing Connection...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Test Storage Connection
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-600 mt-2">
+                  Click to verify your Bunny Storage credentials before saving.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

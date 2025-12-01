@@ -13,6 +13,7 @@ interface VideoPlayerProps {
 
 export default function VideoPlayer({ contentId, title, isFreePreview, isLocked, hasAccess, onVideoEnd }: VideoPlayerProps) {
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const [isIframe, setIsIframe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,6 +34,7 @@ export default function VideoPlayer({ contentId, title, isFreePreview, isLocked,
       setError('');
       const url = await videoStorage.getSignedUrl(contentId);
       setVideoUrl(url);
+      setIsIframe(url.includes('iframe.mediadelivery.net') || url.includes('embed'));
     } catch (err: any) {
       console.error('Failed to load video:', err);
       setError('Failed to load video');
@@ -123,6 +125,25 @@ export default function VideoPlayer({ contentId, title, isFreePreview, isLocked,
         <div className="text-center text-white">
           <p className="text-red-400">{error || 'Video not available'}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isIframe) {
+    return (
+      <div className="bg-gray-900 rounded-lg overflow-hidden relative">
+        <iframe
+          src={videoUrl}
+          className="w-full aspect-video"
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          style={{ border: 'none' }}
+        />
+        {isFreePreview && !hasAccess && (
+          <div className="absolute top-2 right-2 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-medium">
+            Preview Mode
+          </div>
+        )}
       </div>
     );
   }
