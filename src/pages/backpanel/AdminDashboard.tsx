@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
 import ContactSocialSettings from '../../components/admin/ContactSocialSettings';
@@ -70,6 +71,13 @@ const AdminDashboard: React.FC = () => {
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [selectedSubAdmin, setSelectedSubAdmin] = useState<SubAdmin | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState({
+    totalLearners: 0,
+    totalTutors: 0,
+    totalCourses: 0,
+    totalRevenue: 0,
+    totalEnrollments: 0
+  });
 
   const [newSubAdmin, setNewSubAdmin] = useState({
     email: '',
@@ -90,6 +98,36 @@ const AdminDashboard: React.FC = () => {
       loadSubAdmins();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      loadDashboardStats();
+    }
+  }, [activeTab]);
+
+  const loadDashboardStats = async () => {
+    try {
+      const [learnersRes, tutorsRes, coursesRes, paymentsRes, enrollmentsRes] = await Promise.all([
+        supabase.from('tbl_users').select('tu_id', { count: 'exact', head: true }).eq('tu_user_type', 'learner'),
+        supabase.from('tbl_users').select('tu_id', { count: 'exact', head: true }).eq('tu_user_type', 'tutor'),
+        supabase.from('tbl_courses').select('tc_id', { count: 'exact', head: true }),
+        supabase.from('tbl_payments').select('tp_amount').eq('tp_payment_status', 'completed'),
+        supabase.from('tbl_course_enrollments').select('tce_id', { count: 'exact', head: true })
+      ]);
+
+      const totalRevenue = paymentsRes.data?.reduce((sum, payment) => sum + (payment.tp_amount || 0), 0) || 0;
+
+      setDashboardStats({
+        totalLearners: learnersRes.count || 0,
+        totalTutors: tutorsRes.count || 0,
+        totalCourses: coursesRes.count || 0,
+        totalRevenue: totalRevenue,
+        totalEnrollments: enrollmentsRes.count || 0
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error);
+    }
+  };
 
   const loadSubAdmins = async () => {
     setLoading(true);
@@ -168,32 +206,34 @@ const AdminDashboard: React.FC = () => {
 
   const stats = [
     {
-      title: 'Total Users',
-      value: '12,847',
+      title: 'Total Learners',
+      value: dashboardStats.totalLearners.toLocaleString(),
       icon: Users,
-      color: 'bg-blue-500',
-      change: '+12%'
+      color: 'bg-blue-500'
     },
     {
-      title: 'Companies',
-      value: '234',
-      icon: Building,
-      color: 'bg-green-500',
-      change: '+8%'
+      title: 'Total Tutors',
+      value: dashboardStats.totalTutors.toLocaleString(),
+      icon: GraduationCap,
+      color: 'bg-green-500'
     },
     {
-      title: 'Active Plans',
-      value: '3',
-      icon: CreditCard,
-      color: 'bg-purple-500',
-      change: '+2'
+      title: 'Total Courses',
+      value: dashboardStats.totalCourses.toLocaleString(),
+      icon: BookOpen,
+      color: 'bg-purple-500'
     },
     {
-      title: 'Monthly Revenue',
-      value: '$45,230',
+      title: 'Total Enrollments',
+      value: dashboardStats.totalEnrollments.toLocaleString(),
+      icon: UserCheck,
+      color: 'bg-orange-500'
+    },
+    {
+      title: 'Total Revenue',
+      value: `$${dashboardStats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: DollarSign,
-      color: 'bg-yellow-500',
-      change: '+15%'
+      color: 'bg-yellow-500'
     }
   ];
 
@@ -339,16 +379,15 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'overview' && (
             <div>
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                 {stats.map((stat, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                        <p className="text-sm text-green-600 mt-1">{stat.change}</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
                       </div>
-                      <div className={`${stat.color} p-3 rounded-lg`}>
+                      <div className={`${stat.color} p-3 rounded-lg ml-4`}>
                         <stat.icon className="h-6 w-6 text-white" />
                       </div>
                     </div>
