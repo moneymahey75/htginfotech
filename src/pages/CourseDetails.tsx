@@ -60,12 +60,33 @@ const CourseDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     if (courseId) {
       loadCourse();
+      if (user) {
+        checkEnrollmentStatus();
+      }
     }
-  }, [courseId]);
+  }, [courseId, user]);
+
+  const checkEnrollmentStatus = async () => {
+    if (!user || !courseId) return;
+
+    try {
+      const { data } = await supabase
+        .from('tbl_course_enrollments')
+        .select('tce_id')
+        .eq('tce_user_id', user.id)
+        .eq('tce_course_id', courseId)
+        .maybeSingle();
+
+      setIsEnrolled(!!data);
+    } catch (err) {
+      console.error('Error checking enrollment:', err);
+    }
+  };
 
   const loadCourse = async () => {
     try {
@@ -87,9 +108,15 @@ const CourseDetails: React.FC = () => {
 
     if (!course) return;
 
+    if (isEnrolled) {
+      alert('You are already enrolled in this course!');
+      navigate('/learner/dashboard');
+      return;
+    }
+
     try {
       setEnrolling(true);
-      
+
       if (course.tc_pricing_type === 'free') {
         await enrollInCourse(user.id, course.tc_id, 0);
         alert('Successfully enrolled in the course!');
@@ -97,11 +124,11 @@ const CourseDetails: React.FC = () => {
       } else {
         // Redirect to course payment page
         navigate('/course/payment', {
-          state: { 
+          state: {
             courseId: course.tc_id,
             amount: course.tc_price,
             courseName: course.tc_title
-          } 
+          }
         });
       }
     } catch (error) {
@@ -472,10 +499,16 @@ const CourseDetails: React.FC = () => {
               {/* Enroll Button */}
               <button
                 onClick={handleEnroll}
-                disabled={enrolling}
-                className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4"
+                disabled={enrolling || isEnrolled}
+                className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors mb-4 ${
+                  isEnrolled
+                    ? 'bg-green-600 text-white cursor-default'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                }`}
               >
-                {enrolling ? (
+                {isEnrolled ? (
+                  'Already Enrolled'
+                ) : enrolling ? (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     <span>Enrolling...</span>

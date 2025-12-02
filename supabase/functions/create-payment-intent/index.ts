@@ -27,6 +27,18 @@ Deno.serve(async (req: Request) => {
             throw new Error("Missing required fields: courseId, userId, amount");
         }
 
+        // Check if user is already enrolled
+        const { data: existingEnrollment } = await supabase
+            .from("tbl_course_enrollments")
+            .select("tce_id")
+            .eq("tce_user_id", userId)
+            .eq("tce_course_id", courseId)
+            .maybeSingle();
+
+        if (existingEnrollment) {
+            throw new Error("You are already enrolled in this course");
+        }
+
         const { data: stripeConfigArray, error: configError } = await supabase
             .from("tbl_stripe_config")
             .select("*")
@@ -76,6 +88,33 @@ Deno.serve(async (req: Request) => {
                 enabled: true,
             },
         };
+
+        // Add Stripe Connect payment splitting if splits exist
+        if (splits && splits.length > 0) {
+            // Find the tutor's connected account (they get the majority)
+            const tutorSplit = splits.find((s: any) => s.account_type === 'tutor');
+            const adminSplit = splits.find((s: any) => s.account_type === 'admin');
+
+            if (tutorSplit && tutorSplit.stripe_account_id) {
+                // Calculate platform fee (admin's percentage)
+                const platformFeePercentage = adminSplit ? parseFloat(adminSplit.split_percentage) : 20;
+                const platformFeeAmount = Math.round((amountInCents * platformFeePercentage) / 100);
+
+                // Use transfer_data to send payment to tutor's connected account
+                // The platform fee is automatically retained
+                paymentIntentData.application_fee_amount = platformFeeAmount;
+                paymentIntentData.transfer_data = {
+                    destination: tutorSplit.stripe_account_id,
+                };
+
+                console.log('Stripe Connect split configured:', {
+                    totalAmount: amountInCents,
+                    platformFee: platformFeeAmount,
+                    tutorReceives: amountInCents - platformFeeAmount,
+                    destination: tutorSplit.stripe_account_id
+                });
+            }
+        }
 
         const paymentIntent = await stripe.paymentIntents.create(
             paymentIntentData,
