@@ -48,7 +48,7 @@ const JoinAsLearner: React.FC = () => {
       step: "1",
       title: "Create Your Account",
       description: "Sign up with your basic information and set your learning goals.",
-      image: "https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      image: "https://images.pexels.com/photos/4144923/pexels-photo-4144923.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
     },
     {
       step: "2",
@@ -66,7 +66,7 @@ const JoinAsLearner: React.FC = () => {
       step: "4",
       title: "Start Learning",
       description: "Begin your educational journey with personalized guidance and support.",
-      image: "https://images.pexels.com/photos/4144923/pexels-photo-4144923.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      image: "https://images.pexels.com/photos/5905709/pexels-photo-5905709.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
     }
   ];
 
@@ -99,8 +99,8 @@ const JoinAsLearner: React.FC = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white py-20 overflow-hidden">
         <div className="absolute inset-0">
-          <img 
-            src="https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop" 
+          <img
+            src="https://images.pexels.com/photos/7092347/pexels-photo-7092347.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
             alt="Join as Learner"
             className="w-full h-full object-cover opacity-20"
           />
@@ -306,8 +306,8 @@ const JoinAsLearner: React.FC = () => {
               </div>
             </div>
             <div className="relative">
-              <img 
-                src="https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" 
+              <img
+                src="https://images.pexels.com/photos/5940831/pexels-photo-5940831.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop"
                 alt="Requirements"
                 className="rounded-2xl shadow-2xl"
               />
