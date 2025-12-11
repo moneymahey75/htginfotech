@@ -20,7 +20,7 @@ const JoinAsLearner: React.FC = () => {
     {
       icon: BookOpen,
       title: "Unlimited Course Access",
-      description: "Access thousands of courses in programming, science, mathematics, and more subjects.",
+      description: "Trusted by learners worldwide, our platform offers top-quality courses, interactive learning, and personalized support to help you grow.",
       color: "from-blue-500 to-indigo-600"
     },
     {
@@ -116,11 +116,11 @@ const JoinAsLearner: React.FC = () => {
                 Start Your <span className="bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">Learning Journey</span>
               </h1>
               <p className="text-xl text-gray-200 mb-8 leading-relaxed">
-                Join thousands of learners mastering new skills with expert tutors in programming, science, mathematics, and more.
+                Upskill your career with thousands of professional courses in technology and more — with personalized learning tailored to your career goals.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  to="/learner/register"
+                  to="/register"
                   className="group bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-4 rounded-2xl font-bold hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                 >
                   <span>Register Now</span>
@@ -349,7 +349,7 @@ const JoinAsLearner: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
             <Link
-              to="/learner/register"
+              to="/register"
               className="group bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             >
               <BookOpen className="h-6 w-6" />
