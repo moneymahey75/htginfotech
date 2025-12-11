@@ -279,42 +279,58 @@ const JoinAsLearner: React.FC = () => {
         </div>
       </section>
 
-      {/* Requirements */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+      {/* Great Features */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Learner Requirements
-              </h2>
-              <p className="text-xl text-indigo-100 mb-8">
-                Simple requirements to start your learning journey.
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
+              Some great features of HTG Infotech
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Flexible Learning Options */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-blue-100">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <Clock className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Flexible Learning Options</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Whether you choose in-person classes, live online sessions, or self-paced learning, we offer flexible options tailored to your lifestyle and goals. Our adaptive approach ensures you can advance your skills while seamlessly balancing work, family, and other commitments.
               </p>
-              <div className="space-y-4">
-                {[
-                  "Must be 13 years or older",
-                  "Valid email address and phone number",
-                  "Basic computer/internet access",
-                  "Commitment to learning and growth",
-                  "Willingness to engage with tutors and community"
-                ].map((requirement, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <CheckCircle className="h-6 w-6 text-green-300 flex-shrink-0" />
-                    <span className="text-indigo-100">{requirement}</span>
-                  </div>
-                ))}
-              </div>
             </div>
-            <div className="relative">
-              <img
-                src="https://images.pexels.com/photos/5940831/pexels-photo-5940831.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop"
-                alt="Requirements"
-                className="rounded-2xl shadow-2xl"
-              />
-              <div className="absolute -bottom-6 -left-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 p-6 rounded-2xl shadow-xl">
-                <div className="text-2xl font-bold">Ready to Learn?</div>
-                <div className="text-sm opacity-90">Join thousands of successful learners</div>
+
+            {/* Personalized Mentorships */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-green-100">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <Users className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Personalized Mentorships</h3>
+              <p className="text-gray-700 leading-relaxed">
+                At HTG Infotech, we believe in learning that's built around you. Our personalized mentorship ensures that your unique goals, strengths, and challenges are understood, while our expert instructors provide customized guidance and continuous support to help you achieve success.
+              </p>
+            </div>
+
+            {/* Industry-Driven Curriculum */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-orange-100">
+              <div className="bg-gradient-to-r from-orange-500 to-amber-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <TrendingUp className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Industry-Driven Curriculum</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Gain the skills employers demand with our industry-focused courses. Designed to deliver practical, real-world knowledge, our programs empower you to step into your professional career with confidence and start making a difference from day one.
+              </p>
+            </div>
+
+            {/* Career Growth Assistance */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-purple-100">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <Target className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Career Growth Assistance</h3>
+              <p className="text-gray-700 leading-relaxed">
+                At HTG Infotech, we don't just teach technical skills — we shape careers. With our comprehensive career placement assistance, we empower you with the knowledge, resources, and expert guidance needed to land the right opportunities and accelerate your growth in the competitive industry.
+              </p>
             </div>
           </div>
         </div>
