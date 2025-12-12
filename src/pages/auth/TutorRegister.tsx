@@ -98,7 +98,10 @@ const TutorRegister: React.FC = () => {
 
     try {
       await register(formData, 'tutor');
-      navigate('/tutor/dashboard');
+
+      // After successful registration, show message about email confirmation
+      // Navigation will be handled by the user clicking the confirmation link
+      navigate('/login');
     } catch (err) {
       // Error is handled by notification system
     } finally {

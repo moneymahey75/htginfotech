@@ -16,24 +16,87 @@ const AuthCallback: React.FC = () => {
       try {
         const token = searchParams.get('token');
         const type = searchParams.get('type');
-        
+
         if (type === 'recovery' && token) {
           // This is a password reset callback
           const { data, error } = await supabase.auth.verifyOtp({
             token_hash: token,
             type: 'recovery'
           });
-          
+
           if (error) {
             throw error;
           }
-          
+
           if (data.session) {
             // User is now authenticated, redirect to reset password page
             notification.showSuccess('Email Verified', 'You can now reset your password.');
             navigate('/reset-password');
           } else {
             throw new Error('Failed to verify reset token');
+          }
+        } else if (type === 'signup') {
+          // This is an email confirmation callback
+          console.log('📧 Processing email confirmation...');
+
+          // Get the session after email confirmation
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+          if (sessionError) {
+            throw sessionError;
+          }
+
+          if (session?.user) {
+            console.log('✅ Email confirmed for user:', session.user.id);
+
+            // Get user metadata
+            const firstName = session.user.user_metadata?.first_name || '';
+            const lastName = session.user.user_metadata?.last_name || '';
+            const userType = session.user.user_metadata?.user_type || 'learner';
+
+            // Send welcome email
+            try {
+              const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome-email`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email: session.user.email,
+                    firstName: firstName,
+                    lastName: lastName,
+                    userType: userType,
+                  }),
+                }
+              );
+
+              if (response.ok) {
+                console.log('✅ Welcome email sent successfully');
+              } else {
+                console.warn('⚠️ Failed to send welcome email, but continuing...');
+              }
+            } catch (emailError) {
+              console.warn('⚠️ Welcome email error:', emailError);
+              // Don't throw - continue with redirect even if email fails
+            }
+
+            // Sign out the user so they can log in properly
+            await supabase.auth.signOut();
+
+            // Show success message and redirect to login
+            notification.showSuccess(
+              'Email Confirmed!',
+              'Your email has been verified successfully. Please log in to continue.'
+            );
+
+            // Redirect to login page after 2 seconds
+            setTimeout(() => {
+              navigate('/login');
+            }, 2000);
+          } else {
+            throw new Error('Failed to verify email');
           }
         } else {
           // Handle other auth callbacks or redirect to home
@@ -42,12 +105,22 @@ const AuthCallback: React.FC = () => {
       } catch (error) {
         console.error('Auth callback error:', error);
         setError(error.message || 'Authentication failed');
-        notification.showError('Authentication Failed', 'The reset link is invalid or has expired.');
-        
-        // Redirect to forgot password page after 3 seconds
-        setTimeout(() => {
-          navigate('/forgot-password');
-        }, 3000);
+
+        const type = searchParams.get('type');
+        if (type === 'signup') {
+          notification.showError(
+            'Verification Failed',
+            'The confirmation link is invalid or has expired. Please try registering again.'
+          );
+          setTimeout(() => {
+            navigate('/register');
+          }, 3000);
+        } else {
+          notification.showError('Authentication Failed', 'The reset link is invalid or has expired.');
+          setTimeout(() => {
+            navigate('/forgot-password');
+          }, 3000);
+        }
       } finally {
         setLoading(false);
       }

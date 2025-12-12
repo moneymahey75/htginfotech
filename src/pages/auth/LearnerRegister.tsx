@@ -80,12 +80,10 @@ const LearnerRegister: React.FC = () => {
 
     try {
       await register(formData, 'learner');
-      
-      if (settings.mobileVerificationRequired) {
-        navigate('/verify-otp');
-      } else {
-        navigate('/courses');
-      }
+
+      // After successful registration, show message about email confirmation
+      // Navigation will be handled by the user clicking the confirmation link
+      navigate('/login');
     } catch (err) {
       // Error is handled by notification system
     } finally {

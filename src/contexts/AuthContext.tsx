@@ -355,7 +355,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: userData.email,
         password: userData.password,
         options: {
-          emailRedirectTo: undefined // Disable email confirmation for demo
+          emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            user_type: userType
+          }
         }
       });
 
@@ -411,10 +416,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       console.log('✅ Registration completed successfully:', regResult);
-      notification.showSuccess('Registration Successful!', 'Your account has been created successfully.');
 
-      // Fetch user data immediately after successful registration
-      if (authData.session) {
+      // Check if email confirmation is required
+      if (!authData.session) {
+        notification.showSuccess(
+          'Registration Successful!',
+          'Please check your email to confirm your account. After confirmation, you can log in.'
+        );
+      } else {
+        notification.showSuccess('Registration Successful!', 'Your account has been created successfully.');
+        // Fetch user data immediately after successful registration
         await fetchUserData(authData.user.id);
       }
 
