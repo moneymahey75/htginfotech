@@ -485,6 +485,9 @@ const UnifiedRegister: React.FC = () => {
     }
 
     try {
+
+      console.log('Registering user mobile...', formData.phoneNumber);
+      
       const fullPhone = formData.phoneNumber ?
           formData.phoneCountryCode + formData.phoneNumber :
           null;
