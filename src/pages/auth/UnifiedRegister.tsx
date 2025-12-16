@@ -485,7 +485,9 @@ const UnifiedRegister: React.FC = () => {
     }
 
     try {
-      const fullPhone = formData.phoneCountryCode + formData.phoneNumber;
+      const fullPhone = formData.phoneNumber ?
+          formData.phoneCountryCode + formData.phoneNumber :
+          null;
 
       let finalUsername = formData.userName;
       if (settings.usernameForceLowerCase) {
@@ -495,7 +497,8 @@ const UnifiedRegister: React.FC = () => {
       await register({
         ...formData,
         userName: finalUsername,
-        phoneNumber: fullPhone
+        phoneNumber: fullPhone, // This will be null if no phone number
+        mobile: fullPhone // Add this for backward compatibility
       }, formData.userType as any);
 
       switch (formData.userType) {

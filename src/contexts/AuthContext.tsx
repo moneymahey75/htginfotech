@@ -391,7 +391,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         p_middle_name: userData.middleName || '',
         p_last_name: userData.lastName,
         p_username: userData.userName,
-        p_mobile: userData.phoneNumber || userData.mobile || '',
+        p_mobile: userData.phoneNumber && userData.phoneNumber.trim() !== '' ? userData.phoneNumber : null,
+        p_gender: userData.gender || null,
         p_user_type: userType
       });
 
