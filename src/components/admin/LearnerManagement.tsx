@@ -478,8 +478,9 @@ const LearnerDetails: React.FC<{
 }> = ({ learner, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, getProfile }) => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentLearner, setCurrentLearner] = useState<Learner>(learner);
 
-  const profile = getProfile(learner);
+  const profile = getProfile(currentLearner);
 
   const [editData, setEditData] = useState({
     first_name: profile?.tup_first_name || '',
@@ -502,6 +503,66 @@ const LearnerDetails: React.FC<{
       loadEnrollments();
     }
   }, [activeTab, learner.tu_id]);
+
+  useEffect(() => {
+    setCurrentLearner(learner);
+  }, [learner]);
+
+  const refetchLearnerData = async () => {
+    try {
+      const { data, error } = await supabase
+          .from('tbl_users')
+          .select(`
+          tu_id,
+          tu_email,
+          tu_user_type,
+          tu_is_verified,
+          tu_email_verified,
+          tu_mobile_verified,
+          tu_is_active,
+          tu_created_at,
+          tu_updated_at,
+          tbl_user_profiles (
+            tup_id,
+            tup_first_name,
+            tup_last_name,
+            tup_middle_name,
+            tup_username,
+            tup_mobile,
+            tup_gender,
+            tup_education_level,
+            tup_interests,
+            tup_learning_goals,
+            tup_created_at,
+            tup_updated_at
+          )
+        `)
+          .eq('tu_id', currentLearner.tu_id)
+          .single();
+
+      if (error) throw error;
+      if (data) {
+        setCurrentLearner(data as Learner);
+        const updatedProfile = getProfile(data as Learner);
+        setEditData({
+          first_name: updatedProfile?.tup_first_name || '',
+          last_name: updatedProfile?.tup_last_name || '',
+          middle_name: updatedProfile?.tup_middle_name || '',
+          username: updatedProfile?.tup_username || '',
+          mobile: updatedProfile?.tup_mobile || '',
+          gender: updatedProfile?.tup_gender || '',
+          education_level: updatedProfile?.tup_education_level || '',
+          learning_goals: updatedProfile?.tup_learning_goals || '',
+          email: data.tu_email,
+          is_active: data.tu_is_active,
+          email_verified: data.tu_email_verified,
+          mobile_verified: data.tu_mobile_verified
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refetch learner data:', error);
+    }
+  };
 
   const loadEnrollments = async () => {
     setLoading(true);
@@ -543,7 +604,7 @@ const LearnerDetails: React.FC<{
             tu_mobile_verified: editData.mobile_verified,
             tu_is_active: editData.is_active
           })
-          .eq('tu_id', learner.tu_id);
+          .eq('tu_id', currentLearner.tu_id);
 
       if (userError) throw userError;
 
@@ -553,7 +614,7 @@ const LearnerDetails: React.FC<{
         const { error: profileError } = await supabase
             .from('tbl_user_profiles')
             .insert({
-              tup_user_id: learner.tu_id,
+              tup_user_id: currentLearner.tu_id,
               tup_first_name: editData.first_name,
               tup_last_name: editData.last_name,
               tup_middle_name: editData.middle_name,
@@ -579,7 +640,7 @@ const LearnerDetails: React.FC<{
               tup_education_level: editData.education_level,
               tup_learning_goals: editData.learning_goals
             })
-            .eq('tup_user_id', learner.tu_id);
+            .eq('tup_user_id', currentLearner.tu_id);
 
         if (profileError) throw profileError;
       }
@@ -588,7 +649,8 @@ const LearnerDetails: React.FC<{
         notification.showSuccess('Learner Updated', 'Learner information has been updated successfully');
       }
       setEditMode(false);
-      await onUpdate();
+      onUpdate();
+      await refetchLearnerData();
     } catch (error) {
       console.error('Failed to update learner:', error);
       if (notification) {
@@ -804,7 +866,7 @@ const LearnerDetails: React.FC<{
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium text-gray-500">Registration Date</label>
-                        <p className="text-gray-900 mt-1">{new Date(learner.tu_created_at).toLocaleDateString()}</p>
+                        <p className="text-gray-900 mt-1">{new Date(currentLearner.tu_created_at).toLocaleDateString()}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Learning Goals</label>

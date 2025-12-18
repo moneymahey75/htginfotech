@@ -566,9 +566,10 @@ const TutorDetails: React.FC<{
 }> = ({ tutor, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, getProfile, getTutorInfo }) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentTutor, setCurrentTutor] = useState<Tutor>(tutor);
 
-  const profile = getProfile(tutor);
-  const tutorInfo = getTutorInfo(tutor);
+  const profile = getProfile(currentTutor);
+  const tutorInfo = getTutorInfo(currentTutor);
 
   const [editData, setEditData] = useState({
     first_name: profile?.tup_first_name || '',
@@ -590,6 +591,80 @@ const TutorDetails: React.FC<{
       loadAssignments();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    setCurrentTutor(tutor);
+  }, [tutor]);
+
+  const refetchTutorData = async () => {
+    try {
+      const { data, error } = await supabase
+          .from('tbl_users')
+          .select(`
+          tu_id,
+          tu_email,
+          tu_user_type,
+          tu_is_verified,
+          tu_email_verified,
+          tu_mobile_verified,
+          tu_is_active,
+          tu_created_at,
+          tu_updated_at,
+          tbl_user_profiles (
+            tup_id,
+            tup_first_name,
+            tup_last_name,
+            tup_middle_name,
+            tup_username,
+            tup_mobile,
+            tup_gender,
+            tup_created_at,
+            tup_updated_at
+          ),
+          tbl_tutors (
+            tt_id,
+            tt_user_id,
+            tt_bio,
+            tt_specializations,
+            tt_experience_years,
+            tt_education,
+            tt_hourly_rate,
+            tt_languages,
+            tt_rating,
+            tt_total_reviews,
+            tt_total_students,
+            tt_is_verified,
+            tt_is_active,
+            tt_created_at,
+            tt_updated_at
+          )
+        `)
+          .eq('tu_id', currentTutor.tu_id)
+          .single();
+
+      if (error) throw error;
+      if (data) {
+        setCurrentTutor(data as Tutor);
+        const updatedProfile = getProfile(data as Tutor);
+        const updatedTutorInfo = getTutorInfo(data as Tutor);
+        setEditData({
+          first_name: updatedProfile?.tup_first_name || '',
+          last_name: updatedProfile?.tup_last_name || '',
+          username: updatedProfile?.tup_username || '',
+          mobile: updatedProfile?.tup_mobile || '',
+          gender: updatedProfile?.tup_gender || '',
+          bio: updatedTutorInfo?.tt_bio || '',
+          hourly_rate: updatedTutorInfo?.tt_hourly_rate || 0,
+          education: updatedTutorInfo?.tt_education || '',
+          email: data.tu_email,
+          is_active: data.tu_is_active,
+          is_verified: updatedTutorInfo?.tt_is_verified || false
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refetch tutor data:', error);
+    }
+  };
 
   const loadAssignments = async () => {
     setLoading(true);
@@ -664,7 +739,7 @@ const TutorDetails: React.FC<{
             tu_is_active: editData.is_active,
             tu_updated_at: new Date().toISOString()
           })
-          .eq('tu_id', tutor.tu_id);
+          .eq('tu_id', currentTutor.tu_id);
 
       if (userError) throw userError;
 
@@ -680,7 +755,7 @@ const TutorDetails: React.FC<{
               tup_gender: editData.gender || null,
               tup_updated_at: new Date().toISOString()
             })
-            .eq('tup_user_id', tutor.tu_id);
+            .eq('tup_user_id', currentTutor.tu_id);
 
         if (profileError) throw profileError;
       } else {
@@ -688,7 +763,7 @@ const TutorDetails: React.FC<{
         const { error: profileCreateError } = await supabase
             .from('tbl_user_profiles')
             .insert({
-              tup_user_id: tutor.tu_id,
+              tup_user_id: currentTutor.tu_id,
               tup_first_name: editData.first_name,
               tup_last_name: editData.last_name,
               tup_username: editData.username,
@@ -709,7 +784,7 @@ const TutorDetails: React.FC<{
               tt_education: editData.education,
               tt_is_verified: editData.is_verified
             })
-            .eq('tt_user_id', tutor.tu_id);
+            .eq('tt_user_id', currentTutor.tu_id);
 
         if (tutorError) throw tutorError;
       } else {
@@ -717,7 +792,7 @@ const TutorDetails: React.FC<{
         const { error: tutorCreateError } = await supabase
             .from('tbl_tutors')
             .insert({
-              tt_user_id: tutor.tu_id,
+              tt_user_id: currentTutor.tu_id,
               tt_bio: editData.bio,
               tt_hourly_rate: editData.hourly_rate,
               tt_education: editData.education,
@@ -736,6 +811,7 @@ const TutorDetails: React.FC<{
       notification.showSuccess('Tutor Updated', 'Tutor information has been updated successfully');
       setEditMode(false);
       onUpdate();
+      await refetchTutorData();
     } catch (error: any) {
       console.error('Failed to update tutor:', error);
       notification.showError('Update Failed', `Failed to update tutor information: ${error.message}`);

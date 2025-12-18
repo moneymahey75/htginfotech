@@ -459,16 +459,17 @@ const CustomerDetails: React.FC<{
 }> = ({ customer, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab }) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(false);
+    const [currentCustomer, setCurrentCustomer] = useState<Customer>(customer);
     const [editData, setEditData] = useState({
-        first_name: customer.tbl_user_profiles?.tup_first_name || '',
-        last_name: customer.tbl_user_profiles?.tup_last_name || '',
-        username: customer.tbl_user_profiles?.tup_username || '',
-        mobile: customer.tbl_user_profiles?.tup_mobile || '',
-        gender: customer.tbl_user_profiles?.tup_gender || '',
-        email: customer.tu_email,
-        is_active: customer.tu_is_active,
-        email_verified: customer.tu_email_verified,
-        mobile_verified: customer.tu_mobile_verified
+        first_name: currentCustomer.tbl_user_profiles?.tup_first_name || '',
+        last_name: currentCustomer.tbl_user_profiles?.tup_last_name || '',
+        username: currentCustomer.tbl_user_profiles?.tup_username || '',
+        mobile: currentCustomer.tbl_user_profiles?.tup_mobile || '',
+        gender: currentCustomer.tbl_user_profiles?.tup_gender || '',
+        email: currentCustomer.tu_email,
+        is_active: currentCustomer.tu_is_active,
+        email_verified: currentCustomer.tu_email_verified,
+        mobile_verified: currentCustomer.tu_mobile_verified
     });
     const notification = useNotification();
 
@@ -477,6 +478,57 @@ const CustomerDetails: React.FC<{
             loadTransactions();
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        setCurrentCustomer(customer);
+    }, [customer]);
+
+    const refetchCustomerData = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('tbl_users')
+                .select(`
+                    tu_id,
+                    tu_email,
+                    tu_user_type,
+                    tu_is_verified,
+                    tu_email_verified,
+                    tu_mobile_verified,
+                    tu_is_active,
+                    tu_created_at,
+                    tu_updated_at,
+                    tbl_user_profiles (
+                        tup_id,
+                        tup_first_name,
+                        tup_last_name,
+                        tup_middle_name,
+                        tup_username,
+                        tup_mobile,
+                        tup_gender
+                    )
+                `)
+                .eq('tu_id', currentCustomer.tu_id)
+                .single();
+
+            if (error) throw error;
+            if (data) {
+                setCurrentCustomer(data as Customer);
+                setEditData({
+                    first_name: data.tbl_user_profiles?.tup_first_name || '',
+                    last_name: data.tbl_user_profiles?.tup_last_name || '',
+                    username: data.tbl_user_profiles?.tup_username || '',
+                    mobile: data.tbl_user_profiles?.tup_mobile || '',
+                    gender: data.tbl_user_profiles?.tup_gender || '',
+                    email: data.tu_email,
+                    is_active: data.tu_is_active,
+                    email_verified: data.tu_email_verified,
+                    mobile_verified: data.tu_mobile_verified
+                });
+            }
+        } catch (error) {
+            console.error('Failed to refetch customer data:', error);
+        }
+    };
 
     const loadTransactions = async () => {
         setLoading(true);
@@ -510,7 +562,7 @@ const CustomerDetails: React.FC<{
     };
 
     const handleSaveEdit = async () => {
-        if (!customer || !editData) return;
+        if (!currentCustomer || !editData) return;
 
         try {
             // Update tbl_users table
@@ -523,7 +575,7 @@ const CustomerDetails: React.FC<{
                     tu_mobile_verified: editData.mobileVerified,
                     tu_is_active: editData.isActive
                 })
-                .eq('tu_id', customer.tu_id);
+                .eq('tu_id', currentCustomer.tu_id);
 
             if (userError) throw userError;
 
@@ -537,13 +589,14 @@ const CustomerDetails: React.FC<{
                     tup_mobile: editData.mobile || null,
                     tup_gender: editData.gender || null
                 })
-                .eq('tup_user_id', customer.tu_id);
+                .eq('tup_user_id', currentCustomer.tu_id);
 
             if (profileError) throw profileError;
 
             notification.showSuccess('Customer Updated', 'Customer information has been updated successfully');
             setEditMode(false);
             onUpdate();
+            await refetchCustomerData();
         } catch (error) {
             console.error('Failed to update customer:', error);
             notification.showError('Update Failed', 'Failed to update customer information');
