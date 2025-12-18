@@ -677,7 +677,7 @@ const TutorDetails: React.FC<{
               tup_last_name: editData.last_name,
               tup_username: editData.username,
               tup_mobile: editData.mobile,
-              tup_gender: editData.gender,
+              tup_gender: editData.gender || null,
               tup_updated_at: new Date().toISOString()
             })
             .eq('tup_user_id', tutor.tu_id);
@@ -693,7 +693,7 @@ const TutorDetails: React.FC<{
               tup_last_name: editData.last_name,
               tup_username: editData.username,
               tup_mobile: editData.mobile,
-              tup_gender: editData.gender
+              tup_gender: editData.gender || null
             });
 
         if (profileCreateError) throw profileCreateError;

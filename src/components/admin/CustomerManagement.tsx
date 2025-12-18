@@ -535,7 +535,7 @@ const CustomerDetails: React.FC<{
                     tup_last_name: editData.lastName,
                     tup_username: editData.username,
                     tup_mobile: editData.mobile,
-                    tup_gender: editData.gender
+                    tup_gender: editData.gender || null
                 })
                 .eq('tup_user_id', customer.tu_id);
 
