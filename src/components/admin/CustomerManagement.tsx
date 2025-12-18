@@ -593,10 +593,10 @@ const CustomerDetails: React.FC<{
 
             if (profileError) throw profileError;
 
-            notification.showSuccess('Customer Updated', 'Customer information has been updated successfully');
+            await refetchCustomerData();
             setEditMode(false);
             onUpdate();
-            await refetchCustomerData();
+            notification.showSuccess('Customer Updated', 'Customer information has been updated successfully');
         } catch (error) {
             console.error('Failed to update customer:', error);
             notification.showError('Update Failed', 'Failed to update customer information');

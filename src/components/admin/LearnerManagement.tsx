@@ -645,12 +645,12 @@ const LearnerDetails: React.FC<{
         if (profileError) throw profileError;
       }
 
+      await refetchLearnerData();
+      setEditMode(false);
+      onUpdate();
       if (notification) {
         notification.showSuccess('Learner Updated', 'Learner information has been updated successfully');
       }
-      setEditMode(false);
-      onUpdate();
-      await refetchLearnerData();
     } catch (error) {
       console.error('Failed to update learner:', error);
       if (notification) {

@@ -808,10 +808,10 @@ const TutorDetails: React.FC<{
         if (tutorCreateError) throw tutorCreateError;
       }
 
-      notification.showSuccess('Tutor Updated', 'Tutor information has been updated successfully');
+      await refetchTutorData();
       setEditMode(false);
       onUpdate();
-      await refetchTutorData();
+      notification.showSuccess('Tutor Updated', 'Tutor information has been updated successfully');
     } catch (error: any) {
       console.error('Failed to update tutor:', error);
       notification.showError('Update Failed', `Failed to update tutor information: ${error.message}`);
