@@ -558,7 +558,7 @@ const LearnerDetails: React.FC<{
               tup_last_name: editData.last_name,
               tup_middle_name: editData.middle_name,
               tup_username: editData.username,
-              tup_mobile: editData.mobile,
+              tup_mobile: editData.mobile || null,
               tup_gender: editData.gender || null,
               tup_education_level: editData.education_level,
               tup_learning_goals: editData.learning_goals
@@ -574,7 +574,7 @@ const LearnerDetails: React.FC<{
               tup_last_name: editData.last_name,
               tup_middle_name: editData.middle_name,
               tup_username: editData.username,
-              tup_mobile: editData.mobile,
+              tup_mobile: editData.mobile || null,
               tup_gender: editData.gender || null,
               tup_education_level: editData.education_level,
               tup_learning_goals: editData.learning_goals

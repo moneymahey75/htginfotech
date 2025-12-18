@@ -676,7 +676,7 @@ const TutorDetails: React.FC<{
               tup_first_name: editData.first_name,
               tup_last_name: editData.last_name,
               tup_username: editData.username,
-              tup_mobile: editData.mobile,
+              tup_mobile: editData.mobile || null,
               tup_gender: editData.gender || null,
               tup_updated_at: new Date().toISOString()
             })
@@ -692,7 +692,7 @@ const TutorDetails: React.FC<{
               tup_first_name: editData.first_name,
               tup_last_name: editData.last_name,
               tup_username: editData.username,
-              tup_mobile: editData.mobile,
+              tup_mobile: editData.mobile || null,
               tup_gender: editData.gender || null
             });
 
