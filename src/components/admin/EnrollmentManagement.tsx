@@ -233,17 +233,25 @@
           if (deactivateError) throw deactivateError;
         }
 
+        const adminId = getAdminId();
+        console.log('Admin ID for assignment:', adminId);
+        console.log('Selected tutor ID:', selectedTutor);
+        console.log('Enrollment ID:', enrollmentId);
+
         const { error: insertError } = await supabase
           .from('tbl_tutor_assignments')
           .insert({
             tta_tutor_id: selectedTutor,
             tta_enrollment_id: enrollmentId,
-            tta_assigned_by: getAdminId(),
+            tta_assigned_by: null,
             tta_notes: assignmentNotes || null,
             tta_is_active: true
           });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Insert error details:', insertError);
+          throw insertError;
+        }
 
         const { error: enrollmentError } = await supabase
           .from('tbl_course_enrollments')
@@ -265,11 +273,12 @@
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (error: any) {
         console.error('Error assigning tutor:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
 
         let errorMsg = error.message || 'Failed to assign tutor. Please try again.';
 
-        if (errorMsg.includes('foreign key constraint')) {
-          errorMsg = 'Database configuration issue: Please check the tutor assignments table.';
+        if (errorMsg.includes('foreign key constraint') || errorMsg.includes('violates foreign key')) {
+          errorMsg = `Database error: ${error.message}. Please ensure the selected tutor exists in the system.`;
         }
 
         setErrorMessage(errorMsg);
@@ -580,9 +589,17 @@
                           disabled={isAssigning}
                       >
                         <option value="">Choose a tutor...</option>
-                        {tutors.map((tutor) => (
+                        {tutors.filter(tutor => tutor.tbl_tutors && tutor.tbl_tutors.length > 0).map((tutor) => (
                             <option key={tutor.tu_id} value={tutor.tu_id}>
                               {getTutorNameWithSubjects(tutor)}
+                            </option>
+                        ))}
+                        {tutors.filter(tutor => !tutor.tbl_tutors || tutor.tbl_tutors.length === 0).length > 0 && (
+                          <option disabled>──────────</option>
+                        )}
+                        {tutors.filter(tutor => !tutor.tbl_tutors || tutor.tbl_tutors.length === 0).map((tutor) => (
+                            <option key={tutor.tu_id} value={tutor.tu_id}>
+                              {getTutorName(tutor)} (Profile Incomplete)
                             </option>
                         ))}
                       </select>
