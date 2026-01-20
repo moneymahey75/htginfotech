@@ -503,7 +503,7 @@ const AdminManagement: React.FC = () => {
                       onClick={() => setShowCreateModal(true)}
                       className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
                   >
-                    Create First Sub-Admin
+                    Create Sub-Admin
                   </button>
               )}
             </div>
