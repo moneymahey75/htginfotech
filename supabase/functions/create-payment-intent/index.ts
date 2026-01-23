@@ -91,27 +91,44 @@ Deno.serve(async (req: Request) => {
 
         // Add Stripe Connect payment splitting if splits exist
         if (splits && splits.length > 0) {
-            // Find the tutor's connected account (they get the majority)
-            const tutorSplit = splits.find((s: any) => s.account_type === 'tutor');
-            const adminSplit = splits.find((s: any) => s.account_type === 'admin');
+            // Sort splits by percentage (highest first)
+            const sortedSplits = [...splits].sort((a: any, b: any) =>
+                parseFloat(b.split_percentage) - parseFloat(a.split_percentage)
+            );
 
-            if (tutorSplit && tutorSplit.stripe_account_id) {
-                // Calculate platform fee (admin's percentage)
-                const platformFeePercentage = adminSplit ? parseFloat(adminSplit.split_percentage) : 20;
-                const platformFeeAmount = Math.round((amountInCents * platformFeePercentage) / 100);
+            // The connected account with the highest percentage receives the direct payment
+            // Other splits are handled via transfers after payment succeeds
+            const primarySplit = sortedSplits[0];
 
-                // Use transfer_data to send payment to tutor's connected account
-                // The platform fee is automatically retained
+            if (primarySplit && primarySplit.stripe_account_id) {
+                // Calculate the amounts for each split
+                let platformFeeAmount = 0;
+
+                // Calculate total for all OTHER accounts (these become the platform fee/retain)
+                for (const split of sortedSplits) {
+                    if (split.account_id !== primarySplit.account_id) {
+                        const splitAmount = Math.round((amountInCents * parseFloat(split.split_percentage)) / 100);
+                        platformFeeAmount += splitAmount;
+                    }
+                }
+
+                // The primary account receives: total - platform fees (which stay with main account)
                 paymentIntentData.application_fee_amount = platformFeeAmount;
                 paymentIntentData.transfer_data = {
-                    destination: tutorSplit.stripe_account_id,
+                    destination: primarySplit.stripe_account_id,
                 };
 
                 console.log('Stripe Connect split configured:', {
                     totalAmount: amountInCents,
-                    platformFee: platformFeeAmount,
-                    tutorReceives: amountInCents - platformFeeAmount,
-                    destination: tutorSplit.stripe_account_id
+                    primaryAccount: primarySplit.account_name,
+                    primaryReceives: amountInCents - platformFeeAmount,
+                    primaryPercentage: primarySplit.split_percentage,
+                    platformRetains: platformFeeAmount,
+                    destination: primarySplit.stripe_account_id,
+                    allSplits: sortedSplits.map((s: any) => ({
+                        name: s.account_name,
+                        percentage: s.split_percentage
+                    }))
                 });
             }
         }
