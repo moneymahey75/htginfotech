@@ -91,44 +91,37 @@ Deno.serve(async (req: Request) => {
 
         // Add Stripe Connect payment splitting if splits exist
         if (splits && splits.length > 0) {
-            // Sort splits by percentage (highest first)
-            const sortedSplits = [...splits].sort((a: any, b: any) =>
-                parseFloat(b.split_percentage) - parseFloat(a.split_percentage)
-            );
+            // Currently supporting single connected account destination
+            // Multiple connected accounts would require separate transfers after payment
+            const connectedAccountSplit = splits[0];
 
-            // The connected account with the highest percentage receives the direct payment
-            // Other splits are handled via transfers after payment succeeds
-            const primarySplit = sortedSplits[0];
+            if (connectedAccountSplit && connectedAccountSplit.stripe_account_id) {
+                // Calculate how much the connected account receives
+                const connectedAccountPercentage = parseFloat(connectedAccountSplit.split_percentage);
+                const connectedAccountAmount = Math.round((amountInCents * connectedAccountPercentage) / 100);
 
-            if (primarySplit && primarySplit.stripe_account_id) {
-                // Calculate the amounts for each split
-                let platformFeeAmount = 0;
+                // Calculate how much platform retains (application fee)
+                const platformFeePercentage = 100 - connectedAccountPercentage;
+                const platformFeeAmount = Math.round((amountInCents * platformFeePercentage) / 100);
 
-                // Calculate total for all OTHER accounts (these become the platform fee/retain)
-                for (const split of sortedSplits) {
-                    if (split.account_id !== primarySplit.account_id) {
-                        const splitAmount = Math.round((amountInCents * parseFloat(split.split_percentage)) / 100);
-                        platformFeeAmount += splitAmount;
-                    }
-                }
-
-                // The primary account receives: total - platform fees (which stay with main account)
+                // With transfer_data, Stripe automatically transfers (amount - application_fee_amount) to destination
+                // Platform keeps the application_fee_amount
                 paymentIntentData.application_fee_amount = platformFeeAmount;
                 paymentIntentData.transfer_data = {
-                    destination: primarySplit.stripe_account_id,
+                    destination: connectedAccountSplit.stripe_account_id,
                 };
 
                 console.log('Stripe Connect split configured:', {
                     totalAmount: amountInCents,
-                    primaryAccount: primarySplit.account_name,
-                    primaryReceives: amountInCents - platformFeeAmount,
-                    primaryPercentage: primarySplit.split_percentage,
+                    totalAmountUSD: (amountInCents / 100).toFixed(2),
+                    connectedAccount: connectedAccountSplit.account_name,
+                    connectedAccountPercentage: connectedAccountPercentage + '%',
+                    connectedAccountReceives: connectedAccountAmount,
+                    connectedAccountReceivesUSD: (connectedAccountAmount / 100).toFixed(2),
+                    platformFeePercentage: platformFeePercentage + '%',
                     platformRetains: platformFeeAmount,
-                    destination: primarySplit.stripe_account_id,
-                    allSplits: sortedSplits.map((s: any) => ({
-                        name: s.account_name,
-                        percentage: s.split_percentage
-                    }))
+                    platformRetainsUSD: (platformFeeAmount / 100).toFixed(2),
+                    destination: connectedAccountSplit.stripe_account_id
                 });
             }
         }
