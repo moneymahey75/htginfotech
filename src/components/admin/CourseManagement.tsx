@@ -349,34 +349,6 @@ const CourseManagement: React.FC = () => {
     }
   };
 
-  const updateCourseDynamicFields = async (courseId: string) => {
-    try {
-      const { data: lessonsData, error: lessonsError } = await supabase
-        .from('tbl_course_content')
-        .select('tcc_duration_minutes')
-        .eq('tcc_course_id', courseId)
-        .eq('tcc_is_active', true);
-
-      if (lessonsError) throw lessonsError;
-
-      const totalLessons = lessonsData?.length || 0;
-      const totalMinutes = lessonsData?.reduce((sum, lesson) => sum + (lesson.tcc_duration_minutes || 0), 0) || 0;
-      const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
-
-      const { error: updateError } = await supabase
-        .from('tbl_courses')
-        .update({
-          tc_total_lessons: totalLessons,
-          tc_duration_hours: totalHours
-        })
-        .eq('tc_id', courseId);
-
-      if (updateError) throw updateError;
-    } catch (error) {
-      console.error('Failed to update course dynamic fields:', error);
-    }
-  };
-
   const handleSaveLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourse) return;
@@ -433,15 +405,12 @@ const CourseManagement: React.FC = () => {
 
       if (error) throw error;
 
-      await updateCourseDynamicFields(selectedCourse.tc_id);
-
       notification.showSuccess(
           editLessonMode ? 'Lesson Updated' : 'Lesson Added',
           editLessonMode ? 'Lesson has been updated successfully' : 'New lesson has been added successfully'
       );
       resetLessonForm();
       loadLessons(selectedCourse.tc_id);
-      loadCourses();
     } catch (error: any) {
       console.error('Failed to save lesson:', error);
       notification.showError('Save Failed', error.message || 'Failed to save lesson');
@@ -480,14 +449,10 @@ const CourseManagement: React.FC = () => {
             .eq('tcc_id', lessonId);
 
         if (error) throw error;
-
-        if (selectedCourse) {
-          await updateCourseDynamicFields(selectedCourse.tc_id);
-          loadLessons(selectedCourse.tc_id);
-          loadCourses();
-        }
-
         notification.showSuccess('Lesson Deleted', 'Lesson and associated video file have been deleted successfully');
+        if (selectedCourse) {
+          loadLessons(selectedCourse.tc_id);
+        }
       } catch (error) {
         console.error('Failed to delete lesson:', error);
         notification.showError('Delete Failed', 'Failed to delete lesson');
@@ -553,35 +518,24 @@ const CourseManagement: React.FC = () => {
     setUploadMethod('url');
   };
 
-  const openEditCourse = async (course: Course) => {
+  const openEditCourse = (course: Course) => {
     setSelectedCourse(course);
-
-    await updateCourseDynamicFields(course.tc_id);
-
-    const { data: updatedCourse } = await supabase
-      .from('tbl_courses')
-      .select('*')
-      .eq('tc_id', course.tc_id)
-      .single();
-
-    const courseToEdit = updatedCourse || course;
-
     setCourseFormData({
-      title: courseToEdit.tc_title,
-      description: courseToEdit.tc_description,
-      short_description: courseToEdit.tc_short_description,
-      thumbnail_url: courseToEdit.tc_thumbnail_url,
-      category_id: courseToEdit.tc_category_id || '',
-      price: courseToEdit.tc_price,
-      pricing_type: courseToEdit.tc_pricing_type,
-      access_days: courseToEdit.tc_access_days || 30,
-      difficulty_level: courseToEdit.tc_difficulty_level,
-      duration_hours: courseToEdit.tc_duration_hours,
-      total_lessons: courseToEdit.tc_total_lessons,
-      learning_outcomes: courseToEdit.tc_learning_outcomes,
-      tags: courseToEdit.tc_tags,
-      featured: courseToEdit.tc_featured,
-      is_active: courseToEdit.tc_is_active
+      title: course.tc_title,
+      description: course.tc_description,
+      short_description: course.tc_short_description,
+      thumbnail_url: course.tc_thumbnail_url,
+      category_id: course.tc_category_id || '',
+      price: course.tc_price,
+      pricing_type: course.tc_pricing_type,
+      access_days: course.tc_access_days || 30,
+      difficulty_level: course.tc_difficulty_level,
+      duration_hours: course.tc_duration_hours,
+      total_lessons: course.tc_total_lessons,
+      learning_outcomes: course.tc_learning_outcomes,
+      tags: course.tc_tags,
+      featured: course.tc_featured,
+      is_active: course.tc_is_active
     });
     setEditMode(true);
     setShowCourseModal(true);
@@ -1153,36 +1107,28 @@ const CourseManagement: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Duration (Hours)
-                        <span className="text-xs text-gray-500 ml-1">(Auto-calculated)</span>
                       </label>
                       <input
-                          type="text"
-                          value={`${courseFormData.duration_hours}h`}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                          title="Automatically calculated from lessons"
+                          type="number"
+                          min="0"
+                          value={courseFormData.duration_hours}
+                          onChange={(e) => setCourseFormData(prev => ({ ...prev, duration_hours: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Total Lessons
-                        <span className="text-xs text-gray-500 ml-1">(Auto-calculated)</span>
                       </label>
                       <input
-                          type="text"
-                          value={`${courseFormData.total_lessons} lessons`}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                          title="Automatically calculated from lessons"
+                          type="number"
+                          min="0"
+                          value={courseFormData.total_lessons}
+                          onChange={(e) => setCourseFormData(prev => ({ ...prev, total_lessons: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     </div>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm text-blue-700">
-                      <strong>Note:</strong> Duration and lesson count are calculated automatically based on the lessons you add to the course.
-                    </p>
                   </div>
 
                   {/* Learning Outcomes */}
