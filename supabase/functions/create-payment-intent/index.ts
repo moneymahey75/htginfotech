@@ -66,12 +66,19 @@ Deno.serve(async (req: Request) => {
 
         const course = courseArray[0];
 
-        const { data: splits } = await supabase.rpc(
+        const { data: splits, error: splitsError } = await supabase.rpc(
             "get_payment_splits_for_course",
             {
                 p_course_id: courseId,
             },
         );
+
+        console.log('Payment splits query result:', {
+            courseId,
+            splitsCount: splits?.length || 0,
+            splits: splits,
+            splitsError: splitsError
+        });
 
         const amountInCents = Math.round(parseFloat(amount) * 100);
 

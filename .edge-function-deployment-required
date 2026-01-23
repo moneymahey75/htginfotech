@@ -1,0 +1,27 @@
+Edge Function Deployment Required
+
+The following edge function has been modified and requires deployment:
+- create-payment-intent
+
+Reason for manual deployment:
+The mcp__supabase__deploy_edge_function tool is experiencing a technical issue
+with error: "A database is already setup for this project"
+
+This error appears to be a bug in the MCP server configuration and affects all
+Supabase MCP operations including list_edge_functions, deploy_edge_function,
+and execute_sql.
+
+Deployment Commands:
+1. Using Supabase CLI:
+   npx supabase functions deploy create-payment-intent
+
+2. Using Supabase Dashboard:
+   Navigate to Edge Functions → create-payment-intent → Deploy
+
+Changes Made:
+- Fixed payment split logic (was sending 100% to connected account)
+- Added diagnostic logging for troubleshooting
+- Corrected percentage calculations
+
+Function Location: supabase/functions/create-payment-intent/index.ts
+Last Modified: 2025-01-23 19:01 UTC
