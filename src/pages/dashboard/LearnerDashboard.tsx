@@ -72,18 +72,27 @@ interface AssignedTutor {
   };
 }
 
+interface RecentActivity {
+  type: string;
+  message: string;
+  time: string;
+  icon: any;
+}
+
 const LearnerDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [assignedTutors, setAssignedTutors] = useState<AssignedTutor[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [tutorsLoading, setTutorsLoading] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
       loadEnrollments();
+      loadRecentActivities();
     }
   }, [user?.id]);
 
@@ -102,6 +111,124 @@ const LearnerDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadRecentActivities = async () => {
+    try {
+      const activities: RecentActivity[] = [];
+
+      const { data: learningProgress } = await supabase
+        .from('tbl_learning_progress')
+        .select(`
+          tlp_id,
+          tlp_completed,
+          tlp_completion_date,
+          tlp_updated_at,
+          tbl_course_content!inner(
+            tcc_title,
+            tcc_content_type
+          ),
+          tbl_courses!inner(
+            tc_title
+          )
+        `)
+        .eq('tlp_user_id', user!.id)
+        .order('tlp_updated_at', { ascending: false })
+        .limit(5);
+
+      if (learningProgress) {
+        learningProgress.forEach((progress: any) => {
+          if (progress.tlp_completed) {
+            activities.push({
+              type: 'lesson_complete',
+              message: `Completed: ${progress.tbl_course_content.tcc_title} in ${progress.tbl_courses.tc_title}`,
+              time: getTimeAgo(progress.tlp_completion_date || progress.tlp_updated_at),
+              icon: CheckCircle
+            });
+          }
+        });
+      }
+
+      const { data: completedCourses } = await supabase
+        .from('tbl_course_enrollments')
+        .select('tce_id, tce_completion_date, tbl_courses(tc_title)')
+        .eq('tce_user_id', user!.id)
+        .eq('tce_progress_percentage', 100)
+        .not('tce_completion_date', 'is', null)
+        .order('tce_completion_date', { ascending: false })
+        .limit(3);
+
+      if (completedCourses) {
+        completedCourses.forEach((course: any) => {
+          activities.push({
+            type: 'certificate',
+            message: `Earned certificate for ${course.tbl_courses.tc_title}`,
+            time: getTimeAgo(course.tce_completion_date),
+            icon: Award
+          });
+        });
+      }
+
+      const { data: recentEnrollments } = await supabase
+        .from('tbl_course_enrollments')
+        .select('tce_id, tce_enrollment_date, tbl_courses(tc_title)')
+        .eq('tce_user_id', user!.id)
+        .order('tce_enrollment_date', { ascending: false })
+        .limit(3);
+
+      if (recentEnrollments) {
+        recentEnrollments.forEach((enrollment: any) => {
+          activities.push({
+            type: 'course_start',
+            message: `Started ${enrollment.tbl_courses.tc_title} course`,
+            time: getTimeAgo(enrollment.tce_enrollment_date),
+            icon: Play
+          });
+        });
+      }
+
+      activities.sort((a, b) => {
+        const timeA = parseTimeAgo(a.time);
+        const timeB = parseTimeAgo(b.time);
+        return timeA - timeB;
+      });
+
+      setRecentActivities(activities.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to load recent activities:', error);
+    }
+  };
+
+  const getTimeAgo = (date: string): string => {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
+    return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
+  };
+
+  const parseTimeAgo = (timeStr: string): number => {
+    const match = timeStr.match(/(\d+)\s+(minute|hour|day|week|month)/);
+    if (!match) return 0;
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    const multipliers: { [key: string]: number } = {
+      minute: 1,
+      hour: 60,
+      day: 1440,
+      week: 10080,
+      month: 43200
+    };
+    return value * (multipliers[unit] || 0);
   };
 
   const loadAssignedTutors = async () => {
@@ -177,55 +304,39 @@ const LearnerDashboard: React.FC = () => {
     };
   };
 
+  const completedCourses = enrollments.filter(e => e.tce_progress_percentage === 100).length;
+  const totalHours = enrollments.reduce((total, e) => total + (e.tbl_courses?.tc_duration_hours || 0), 0);
+  const timeSpentHours = Math.round(enrollments.reduce((sum, e) =>
+    sum + ((e.tbl_courses?.tc_duration_hours || 0) * (e.tce_progress_percentage / 100)), 0));
+
   const stats = [
     {
       title: 'Enrolled Courses',
       value: enrollments.length,
       icon: BookOpen,
       color: 'bg-blue-500',
-      change: '+2 this month'
+      change: totalHours > 0 ? `${totalHours} total hours` : 'No courses yet'
     },
     {
       title: 'Completed Courses',
-      value: enrollments.filter(e => e.tce_progress_percentage === 100).length,
+      value: completedCourses,
       icon: CheckCircle,
       color: 'bg-green-500',
-      change: '+1 this week'
+      change: enrollments.length > 0 && completedCourses > 0 ? `${Math.round((completedCourses / enrollments.length) * 100)}% completion rate` : 'No courses completed'
     },
     {
       title: 'Learning Hours',
-      value: enrollments.reduce((total, e) => total + (e.tbl_courses?.tc_duration_hours || 0), 0),
+      value: timeSpentHours,
       icon: Clock,
       color: 'bg-purple-500',
-      change: '+5h this week'
+      change: enrollments.length > 0 && totalHours > 0 ? `${Math.round((timeSpentHours / totalHours) * 100)}% of total` : 'Start learning'
     },
     {
       title: 'Certificates',
-      value: enrollments.filter(e => e.tce_progress_percentage === 100).length,
+      value: completedCourses,
       icon: Award,
       color: 'bg-yellow-500',
-      change: '+1 earned'
-    }
-  ];
-
-  const recentActivities = [
-    {
-      type: 'course_start',
-      message: 'Started JavaScript Fundamentals course',
-      time: '2 hours ago',
-      icon: Play
-    },
-    {
-      type: 'lesson_complete',
-      message: 'Completed lesson: Variables and Data Types',
-      time: '1 day ago',
-      icon: CheckCircle
-    },
-    {
-      type: 'certificate',
-      message: 'Earned certificate for HTML & CSS Basics',
-      time: '3 days ago',
-      icon: Award
+      change: completedCourses > 0 ? 'Download available' : 'Complete courses to earn'
     }
   ];
 
@@ -305,8 +416,9 @@ const LearnerDashboard: React.FC = () => {
                     {/* Recent Activities */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
-                      <div className="space-y-4">
-                        {recentActivities.map((activity, index) => (
+                      {recentActivities.length > 0 ? (
+                        <div className="space-y-4">
+                          {recentActivities.map((activity, index) => (
                             <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                               <div className="bg-indigo-100 p-2 rounded-full">
                                 <activity.icon className="h-4 w-4 text-indigo-600" />
@@ -316,8 +428,15 @@ const LearnerDashboard: React.FC = () => {
                                 <p className="text-xs text-gray-500">{activity.time}</p>
                               </div>
                             </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg p-8 text-center">
+                          <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-600 text-sm">No recent activities yet</p>
+                          <p className="text-gray-500 text-xs mt-1">Start learning to see your progress here</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Quick Actions */}
@@ -444,19 +563,30 @@ const LearnerDashboard: React.FC = () => {
                       <h4 className="text-lg font-semibold mb-2">Overall Learning Progress</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                          <div className="text-2xl font-bold">85%</div>
+                          <div className="text-2xl font-bold">
+                            {enrollments.length > 0
+                              ? Math.round(enrollments.reduce((sum, e) => sum + e.tce_progress_percentage, 0) / enrollments.length)
+                              : 0}%
+                          </div>
                           <div className="text-sm opacity-90">Average Progress</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold">24h</div>
+                          <div className="text-2xl font-bold">
+                            {Math.round(enrollments.reduce((sum, e) =>
+                              sum + ((e.tbl_courses?.tc_duration_hours || 0) * (e.tce_progress_percentage / 100)), 0))}h
+                          </div>
                           <div className="text-sm opacity-90">Time Spent</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold">3</div>
+                          <div className="text-2xl font-bold">
+                            {enrollments.filter(e => e.tce_progress_percentage === 100).length}
+                          </div>
                           <div className="text-sm opacity-90">Completed</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold">2</div>
+                          <div className="text-2xl font-bold">
+                            {enrollments.filter(e => e.tce_progress_percentage === 100).length}
+                          </div>
                           <div className="text-sm opacity-90">Certificates</div>
                         </div>
                       </div>
