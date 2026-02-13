@@ -263,8 +263,8 @@ const AdminDashboard: React.FC = () => {
     { id: 'stripe', label: 'Stripe Connect', icon: CreditCard },
     { id: 'videostorage', label: 'Video Storage', icon: Video },
     { id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck },
-    { id: 'smtp', label: 'Email Settings', icon: FileText },
-    { id: 'sms', label: 'SMS Settings', icon: FileText }
+    // { id: 'smtp', label: 'Email Settings', icon: FileText },
+    // { id: 'sms', label: 'SMS Settings', icon: FileText }
   ];
 
   return (
