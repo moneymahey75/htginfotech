@@ -53,6 +53,7 @@ const AuthCallback: React.FC = () => {
             const firstName = session.user.user_metadata?.first_name || '';
             const lastName = session.user.user_metadata?.last_name || '';
             const userType = session.user.user_metadata?.user_type || 'learner';
+            const mobile = session.user.user_metadata?.mobile || '';
 
             // Send welcome email
             try {
@@ -80,6 +81,36 @@ const AuthCallback: React.FC = () => {
             } catch (emailError) {
               console.warn('⚠️ Welcome email error:', emailError);
               // Don't throw - continue with redirect even if email fails
+            }
+
+            // Send registration SMS if mobile number is provided
+            if (mobile) {
+              try {
+                const smsResponse = await fetch(
+                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-registration-sms`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      mobile: mobile,
+                      firstName: firstName,
+                      lastName: lastName,
+                      userType: userType,
+                    }),
+                  }
+                );
+
+                if (smsResponse.ok) {
+                  console.log('✅ Registration SMS sent successfully');
+                } else {
+                  console.warn('⚠️ Failed to send registration SMS, but continuing...');
+                }
+              } catch (smsError) {
+                console.warn('⚠️ Registration SMS error:', smsError);
+                // Don't throw - continue with redirect even if SMS fails
+              }
             }
 
             // Sign out the user so they can log in properly

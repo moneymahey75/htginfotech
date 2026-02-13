@@ -144,6 +144,39 @@ export default function CourseLearning() {
       });
 
       await loadCourseData();
+
+      // Check if course is 100% complete and send notification
+      const { data: enrollment } = await supabase
+        .from('tbl_course_enrollments')
+        .select('tce_id, tce_progress_percentage, tce_completion_status')
+        .eq('tce_user_id', userId)
+        .eq('tce_course_id', courseId)
+        .single();
+
+      if (enrollment && enrollment.tce_progress_percentage === 100 && enrollment.tce_completion_status !== 'completed') {
+        // Update enrollment status to completed
+        await supabase
+          .from('tbl_course_enrollments')
+          .update({
+            tce_completion_status: 'completed',
+            tce_completion_date: new Date().toISOString()
+          })
+          .eq('tce_id', enrollment.tce_id);
+
+        // Send course completion notification
+        try {
+          await supabase.functions.invoke('send-course-completion-notification', {
+            body: {
+              userId: userId,
+              courseId: courseId,
+              enrollmentId: enrollment.tce_id
+            }
+          });
+          console.log('Course completion notification sent');
+        } catch (notifError) {
+          console.error('Error sending completion notification:', notifError);
+        }
+      }
     } catch (err: any) {
       console.error('Error marking as completed:', err);
     }

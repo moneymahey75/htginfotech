@@ -179,6 +179,22 @@ Deno.serve(async (req: Request) => {
                         console.error("Error sending enrollment notification:", notifError);
                         // Don't fail the payment if notification fails
                     }
+
+                    // Send payment success notification to learner
+                    try {
+                        await supabase.functions.invoke("send-payment-success-notification", {
+                            body: {
+                                userId: userId,
+                                courseId: courseId,
+                                amount: payment.tp_amount.toString(),
+                                paymentId: payment.tp_id,
+                            },
+                        });
+                        console.log("Payment success notification sent to learner");
+                    } catch (paymentNotifError) {
+                        console.error("Error sending payment success notification:", paymentNotifError);
+                        // Don't fail the payment if notification fails
+                    }
                 }
             }
 
