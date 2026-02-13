@@ -66,12 +66,19 @@ Deno.serve(async (req: Request) => {
 
         const course = courseArray[0];
 
-        const { data: splits } = await supabase.rpc(
+        const { data: splits, error: splitsError } = await supabase.rpc(
             "get_payment_splits_for_course",
             {
                 p_course_id: courseId,
             },
         );
+
+        console.log('Payment splits query result:', {
+            courseId,
+            splitsCount: splits?.length || 0,
+            splits: splits,
+            splitsError: splitsError
+        });
 
         const amountInCents = Math.round(parseFloat(amount) * 100);
 
@@ -91,27 +98,37 @@ Deno.serve(async (req: Request) => {
 
         // Add Stripe Connect payment splitting if splits exist
         if (splits && splits.length > 0) {
-            // Find the tutor's connected account (they get the majority)
-            const tutorSplit = splits.find((s: any) => s.account_type === 'tutor');
-            const adminSplit = splits.find((s: any) => s.account_type === 'admin');
+            // Currently supporting single connected account destination
+            // Multiple connected accounts would require separate transfers after payment
+            const connectedAccountSplit = splits[0];
 
-            if (tutorSplit && tutorSplit.stripe_account_id) {
-                // Calculate platform fee (admin's percentage)
-                const platformFeePercentage = adminSplit ? parseFloat(adminSplit.split_percentage) : 20;
+            if (connectedAccountSplit && connectedAccountSplit.stripe_account_id) {
+                // Calculate how much the connected account receives
+                const connectedAccountPercentage = parseFloat(connectedAccountSplit.split_percentage);
+                const connectedAccountAmount = Math.round((amountInCents * connectedAccountPercentage) / 100);
+
+                // Calculate how much platform retains (application fee)
+                const platformFeePercentage = 100 - connectedAccountPercentage;
                 const platformFeeAmount = Math.round((amountInCents * platformFeePercentage) / 100);
 
-                // Use transfer_data to send payment to tutor's connected account
-                // The platform fee is automatically retained
+                // With transfer_data, Stripe automatically transfers (amount - application_fee_amount) to destination
+                // Platform keeps the application_fee_amount
                 paymentIntentData.application_fee_amount = platformFeeAmount;
                 paymentIntentData.transfer_data = {
-                    destination: tutorSplit.stripe_account_id,
+                    destination: connectedAccountSplit.stripe_account_id,
                 };
 
                 console.log('Stripe Connect split configured:', {
                     totalAmount: amountInCents,
-                    platformFee: platformFeeAmount,
-                    tutorReceives: amountInCents - platformFeeAmount,
-                    destination: tutorSplit.stripe_account_id
+                    totalAmountUSD: (amountInCents / 100).toFixed(2),
+                    connectedAccount: connectedAccountSplit.account_name,
+                    connectedAccountPercentage: connectedAccountPercentage + '%',
+                    connectedAccountReceives: connectedAccountAmount,
+                    connectedAccountReceivesUSD: (connectedAccountAmount / 100).toFixed(2),
+                    platformFeePercentage: platformFeePercentage + '%',
+                    platformRetains: platformFeeAmount,
+                    platformRetainsUSD: (platformFeeAmount / 100).toFixed(2),
+                    destination: connectedAccountSplit.stripe_account_id
                 });
             }
         }

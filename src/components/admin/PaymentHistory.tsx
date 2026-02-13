@@ -227,21 +227,30 @@ const AdminPaymentHistory: React.FC = () => {
     }
   };
 
+  const escapeCSVField = (field: string): string => {
+    if (field === null || field === undefined) {
+      return '""';
+    }
+    const stringField = String(field);
+    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+      return `"${stringField.replace(/"/g, '""')}"`;
+    }
+    return `"${stringField}"`;
+  };
+
   const exportToCSV = () => {
     const csvContent = [
-      ['Date', 'User', 'Course', 'Amount', 'Status', 'Payment Method', 'Transaction ID'],
+      ['Date', 'User', 'Course', 'Amount', 'Status', 'Payment Method', 'Transaction ID'].map(escapeCSVField).join(','),
       ...payments.map(p => [
-        formatDate(p.tp_payment_date),
-        p.tbl_users.tu_email,
-        p.tbl_courses.tc_title,
-        `$${parseFloat(p.tp_amount.toString()).toFixed(2)}`,
-        p.tp_payment_status,
-        p.tp_payment_method,
-        p.tp_stripe_payment_intent_id || 'N/A',
-      ]),
-    ]
-        .map(row => row.join(','))
-        .join('\n');
+        escapeCSVField(formatDate(p.tp_payment_date)),
+        escapeCSVField(p.tbl_users.tu_email),
+        escapeCSVField(p.tbl_courses.tc_title),
+        escapeCSVField(`$${parseFloat(p.tp_amount.toString()).toFixed(2)}`),
+        escapeCSVField(p.tp_payment_status),
+        escapeCSVField(p.tp_payment_method),
+        escapeCSVField(p.tp_stripe_payment_intent_id || 'N/A'),
+      ].join(',')),
+    ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
