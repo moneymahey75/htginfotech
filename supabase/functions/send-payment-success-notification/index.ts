@@ -27,7 +27,14 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { userId, courseId, amount, paymentId }: RequestPayload = await req.json();
+    let payload: RequestPayload;
+    try {
+      payload = await req.json();
+    } catch (jsonError) {
+      throw new Error('Invalid JSON payload');
+    }
+
+    const { userId, courseId, amount, paymentId } = payload;
 
     if (!userId || !courseId || !amount || !paymentId) {
       throw new Error('Missing required fields');
@@ -54,7 +61,7 @@ Deno.serve(async (req: Request) => {
     // Get course details
     const { data: course, error: courseError } = await supabase
       .from("tbl_courses")
-      .select("tc_title, tc_description, tc_duration_minutes")
+      .select("tc_title, tc_description, tc_duration_hours")
       .eq("tc_id", courseId)
       .single();
 
@@ -70,8 +77,8 @@ Deno.serve(async (req: Request) => {
     const mobile = (learner as any).tu_mobile;
 
     const siteUrl = Deno.env.get('SITE_URL') || 'https://htginfotech.com';
-    const courseDuration = course.tc_duration_minutes
-      ? `${Math.floor(course.tc_duration_minutes / 60)}h ${course.tc_duration_minutes % 60}m`
+    const courseDuration = course.tc_duration_hours
+      ? `${course.tc_duration_hours} hours`
       : 'N/A';
 
     // Send Email
