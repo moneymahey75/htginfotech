@@ -30,7 +30,7 @@ const Footer: React.FC = () => {
                   <img
                       src={settings.logoUrl}
                       alt={settings.siteName}
-                      className="h-12 w-12 object-cover rounded-lg shadow-lg"
+                      className="h-14 w-100 object-cover rounded-lg shadow-lg"
                       onError={(e) => {
                         // Fallback to default logo if image fails to load
                         (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop';
@@ -38,9 +38,6 @@ const Footer: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                    {settings.siteName}
-                  </h2>
                   {settings.tagline && (
                       <p className="text-gray-300 text-sm mt-1">{settings.tagline}</p>
                   )}
