@@ -129,7 +129,7 @@ export default function EnrollmentManagement() {
       return admin.tau_id || admin.id || admin.admin_id || admin.userId || null;
     }
 
-    const adminSession = sessionStorage.getItem('admin_session_token');
+    const adminSession = localStorage.getItem('admin_session_token');
     if (adminSession && adminSession !== 'null') {
       try {
         const sessionData = JSON.parse(adminSession);
@@ -144,7 +144,7 @@ export default function EnrollmentManagement() {
 
   // Reload when filters or pagination change
   useEffect(() => {
-    if (admin || sessionStorage.getItem('admin_session_token')) {
+    if (admin || localStorage.getItem('admin_session_token')) {
       fetchEnrollments();
       fetchTutors();
     }

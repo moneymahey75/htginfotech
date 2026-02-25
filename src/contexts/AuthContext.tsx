@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const notification = useNotification();
 
   useEffect(() => {
-    // Initialize session from sessionStorage
+    // Initialize session from localStorage
     const initializeSession = async () => {
       if (isInitialized) return; // Prevent multiple initializations
 
@@ -58,16 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (existingSession?.user) {
           console.log('✅ Found existing Supabase session:', existingSession.user.id);
-          // Save to sessionStorage if not already saved
+          // Save to localStorage if not already saved
           sessionManager.saveSession(existingSession);
           await fetchUserData(existingSession.user.id);
         } else {
-          // Try to restore from sessionStorage
-          console.log('🔍 Checking sessionStorage for saved session...');
+          // Try to restore from localStorage
+          console.log('🔍 Checking localStorage for saved session...');
           const restoredSession = await sessionManager.restoreSession();
 
           if (restoredSession?.user) {
-            console.log('✅ Session restored from sessionStorage:', restoredSession.user.id);
+            console.log('✅ Session restored from localStorage:', restoredSession.user.id);
             await fetchUserData(restoredSession.user.id);
           } else {
             console.log('ℹ️ No existing session found');
@@ -378,7 +378,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Save session immediately if available
       if (authData.session) {
-        console.log('💾 Saving session to sessionStorage');
+        console.log('💾 Saving session to localStorage');
         sessionManager.saveSession(authData.session);
       }
 

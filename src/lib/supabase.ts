@@ -34,11 +34,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Custom session storage utilities
 export const sessionManager = {
-  // Save session to sessionStorage
+  // Save session to localStorage (for cross-tab persistence)
   saveSession: (session: any) => {
     if (typeof window !== 'undefined' && session?.user?.id) {
       try {
-        console.log('💾 Saving session to sessionStorage:', {
+        console.log('💾 Saving session to localStorage:', {
           user_id: session.user.id,
           expires_at: session.expires_at,
           token_type: session.token_type
@@ -54,28 +54,28 @@ export const sessionManager = {
           user: session.user
         };
 
-        sessionStorage.setItem(sessionKey, JSON.stringify(sessionData));
-        sessionStorage.setItem('current-user-id', session.user.id);
+        localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+        localStorage.setItem('current-user-id', session.user.id);
 
         console.log('✅ Session saved successfully');
       } catch (error) {
-        console.error('❌ Failed to save session to sessionStorage:', error);
+        console.error('❌ Failed to save session to localStorage:', error);
       }
     }
   },
 
-  // Get session from sessionStorage
+  // Get session from localStorage
   getSession: (userId?: string) => {
     if (typeof window !== 'undefined') {
       try {
-        const currentUserId = userId || sessionStorage.getItem('current-user-id');
+        const currentUserId = userId || localStorage.getItem('current-user-id');
         if (!currentUserId) {
           console.log('ℹ️ No current user ID found');
           return null;
         }
 
         const sessionKey = `supabase-session-${currentUserId}`;
-        const sessionData = sessionStorage.getItem(sessionKey);
+        const sessionData = localStorage.getItem(sessionKey);
 
         if (!sessionData) {
           console.log('ℹ️ No session data found for user:', currentUserId);
@@ -86,15 +86,15 @@ export const sessionManager = {
 
         // Check if session is expired
         if (session.expires_at && new Date(session.expires_at * 1000) <= new Date()) {
-          console.log('⏰ Session expired, removing from sessionStorage');
+          console.log('⏰ Session expired, removing from localStorage');
           sessionManager.removeSession(currentUserId);
           return null;
         }
 
-        console.log('✅ Valid session found in sessionStorage for user:', currentUserId);
+        console.log('✅ Valid session found in localStorage for user:', currentUserId);
         return session;
       } catch (error) {
-        console.error('❌ Failed to get session from sessionStorage:', error);
+        console.error('❌ Failed to get session from localStorage:', error);
         // Clear corrupted session data
         sessionManager.removeSession(userId);
         return null;
@@ -103,41 +103,41 @@ export const sessionManager = {
     return null;
   },
 
-  // Remove session from sessionStorage
+  // Remove session from localStorage
   removeSession: (userId?: string) => {
     if (typeof window !== 'undefined') {
       try {
         if (userId) {
           console.log('🗑️ Removing session for specific user:', userId);
           const sessionKey = `supabase-session-${userId}`;
-          sessionStorage.removeItem(sessionKey);
+          localStorage.removeItem(sessionKey);
 
           // Only remove current-user-id if it matches this user
-          const currentUserId = sessionStorage.getItem('current-user-id');
+          const currentUserId = localStorage.getItem('current-user-id');
           if (currentUserId === userId) {
-            sessionStorage.removeItem('current-user-id');
+            localStorage.removeItem('current-user-id');
           }
         } else {
-          console.log('🗑️ Removing all session data from sessionStorage');
+          console.log('🗑️ Removing all session data from localStorage');
 
           // Remove current user session
-          const currentUserId = sessionStorage.getItem('current-user-id');
+          const currentUserId = localStorage.getItem('current-user-id');
           if (currentUserId) {
-            sessionStorage.removeItem(`supabase-session-${currentUserId}`);
+            localStorage.removeItem(`supabase-session-${currentUserId}`);
           }
-          sessionStorage.removeItem('current-user-id');
+          localStorage.removeItem('current-user-id');
 
           // Also remove any orphaned session data
-          const keys = Object.keys(sessionStorage);
+          const keys = Object.keys(localStorage);
           keys.forEach(key => {
             if (key.startsWith('supabase-session-')) {
-              sessionStorage.removeItem(key);
+              localStorage.removeItem(key);
             }
           });
         }
         console.log('✅ Session removal completed');
       } catch (error) {
-        console.error('❌ Failed to remove session from sessionStorage:', error);
+        console.error('❌ Failed to remove session from localStorage:', error);
       }
     }
   },
@@ -153,7 +153,7 @@ export const sessionManager = {
     if (typeof window === 'undefined') return null;
 
     try {
-      const currentUserId = sessionStorage.getItem('current-user-id');
+      const currentUserId = localStorage.getItem('current-user-id');
       const session = sessionManager.getSession(currentUserId);
 
       if (!session) {
@@ -184,7 +184,7 @@ export const sessionManager = {
 
       console.log('✅ Session restored successfully');
 
-      // Update sessionStorage with refreshed session if needed
+      // Update localStorage with refreshed session if needed
       if (data.session.access_token !== session.access_token) {
         console.log('🔄 Session was refreshed during restore, updating storage');
         sessionManager.saveSession(data.session);
@@ -193,7 +193,7 @@ export const sessionManager = {
       return data.session;
     } catch (error) {
       console.error('❌ Error during session restoration:', error);
-      const currentUserId = sessionStorage.getItem('current-user-id');
+      const currentUserId = localStorage.getItem('current-user-id');
       sessionManager.removeSession(currentUserId);
       return null;
     }
@@ -203,13 +203,13 @@ export const sessionManager = {
       try {
         console.log('🧹 Clearing all session data');
 
-        // Get all sessionStorage keys
-        const keys = Object.keys(sessionStorage);
+        // Get all localStorage keys
+        const keys = Object.keys(localStorage);
 
         // Remove all session-related keys
         keys.forEach(key => {
           if (key.startsWith('supabase-session-') || key === 'current-user-id') {
-            sessionStorage.removeItem(key);
+            localStorage.removeItem(key);
           }
         });
 

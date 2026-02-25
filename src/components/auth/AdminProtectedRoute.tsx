@@ -16,8 +16,8 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
 }) => {
   const { admin, loading, hasPermission } = useAdminAuth();
 
-  // Check if admin session exists in sessionStorage
-  const adminSessionToken = typeof window !== 'undefined' ? sessionStorage.getItem('admin_session_token') : null;
+  // Check if admin session exists in localStorage
+  const adminSessionToken = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') : null;
   
   // Only redirect if we're sure there's no valid session
   if (!loading && !admin && (!adminSessionToken || adminSessionToken === 'null' || adminSessionToken === 'undefined')) {

@@ -11,7 +11,7 @@ export interface SessionInfo {
 export const sessionUtils = {
   // Get detailed session information
   getSessionInfo: (): SessionInfo => {
-    const currentUserId = typeof window !== 'undefined' ? sessionStorage.getItem('current-user-id') : null;
+    const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('current-user-id') : null;
     const session = sessionManager.getSession(currentUserId);
 
     if (!session) {
@@ -61,7 +61,7 @@ export const sessionUtils = {
   // Clear all session data (both Supabase and admin)
   clearAllSessions: () => {
     sessionManager.clearAllSessions();
-    sessionStorage.removeItem('admin_session_token');
+    localStorage.removeItem('admin_session_token');
   },
 
   // Check if current page is a login page
@@ -88,60 +88,17 @@ export const sessionUtils = {
   setupSessionListeners: () => {
     if (typeof window === 'undefined') return;
 
-    let isHandlingVisibilityChange = false;
-
-    // Handle visibility change (tab switching)
-    document.addEventListener('visibilitychange', async () => {
-      if (isHandlingVisibilityChange) return;
-      isHandlingVisibilityChange = true;
-
-      try {
-        if (document.visibilityState === 'visible' && !sessionUtils.isOnLoginPage()) {
-          console.log('🔍 Tab became visible, checking session validity...');
-
-          // Small delay to ensure any ongoing auth operations complete
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          const sessionInfo = sessionUtils.getSessionInfo();
-          const adminSessionToken = sessionStorage.getItem('admin_session_token');
-
-          // For admin area, check admin session
-          if (sessionUtils.isInAdminArea()) {
-            if (!adminSessionToken || adminSessionToken === 'null' || adminSessionToken === 'undefined') {
-              if (window.location.pathname !== '/backpanel/login') {
-                console.log('🔒 No valid admin session, redirecting to admin login');
-                window.location.href = '/backpanel/login';
-              }
-            }
-          } else {
-            // For customer area, check Supabase session
-            if (!sessionInfo.isValid) {
-              if (!sessionUtils.isPublicPage()) {
-                console.log('🔒 No valid user session, redirecting to customer login');
-                sessionUtils.clearAllSessions();
-                window.location.href = '/customer/login';
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error in visibility change handler:', error);
-      } finally {
-        isHandlingVisibilityChange = false;
-      }
-    });
-
     // Handle storage events (for multi-tab synchronization)
     window.addEventListener('storage', (e) => {
       try {
-        const currentUserId = sessionStorage.getItem('current-user-id');
+        const currentUserId = localStorage.getItem('current-user-id');
 
         // Handle user session cleared in another tab
         if (e.key === `supabase-session-${currentUserId}` && e.newValue === null) {
           if (!sessionUtils.isOnLoginPage() && !sessionUtils.isInAdminArea() && !sessionUtils.isPublicPage()) {
             console.log('🔄 User session cleared in another tab, redirecting...');
             sessionUtils.clearAllSessions();
-            window.location.href = '/customer/login';
+            window.location.href = '/login';
           }
         }
 
@@ -167,13 +124,6 @@ export const sessionUtils = {
       }
     });
 
-    // Handle beforeunload (optional - for better UX, you might want to keep sessions)
-    window.addEventListener('beforeunload', () => {
-      // Optional: Clear sessions on page close
-      // Commented out for better UX - sessions will persist across browser sessions
-      // sessionUtils.clearAllSessions();
-    });
-
     console.log('✅ Session listeners setup completed');
   },
 
@@ -197,7 +147,7 @@ export const sessionUtils = {
 
   // Check if admin is authenticated
   isAdminAuthenticated: (): boolean => {
-    const adminToken = sessionStorage.getItem('admin_session_token');
+    const adminToken = localStorage.getItem('admin_session_token');
     return !!(adminToken && adminToken !== 'null' && adminToken !== 'undefined');
   }
 };
