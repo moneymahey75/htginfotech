@@ -3,6 +3,36 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Preload critical resources
+const preloadResources = async () => {
+  const criticalResources = [
+    '/htginfotech-logo.png'
+  ];
+
+  const promises = criticalResources.map((src) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = resolve; // Resolve even on error to not block the app
+      img.src = src;
+    });
+  });
+
+  await Promise.all(promises);
+};
+
+// Hide loading screen
+const hideLoader = () => {
+  const loader = document.getElementById('app-loader');
+  if (loader) {
+    loader.classList.add('hidden');
+    // Remove from DOM after animation completes
+    setTimeout(() => {
+      loader.remove();
+    }, 500);
+  }
+};
+
 // Initialize Redis only in server environments
 const initializeApp = async () => {
   // Only try Redis initialization in server-side environments
@@ -24,10 +54,28 @@ const initializeApp = async () => {
 };
 
 // Initialize app
-initializeApp();
+const startApp = async () => {
+  try {
+    // Preload critical resources first
+    await preloadResources();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+    // Initialize app
+    await initializeApp();
+
+    // Render React app
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+
+    // Wait for React to render, then hide loader
+    setTimeout(hideLoader, 100);
+  } catch (error) {
+    console.error('Error initializing app:', error);
+    // Hide loader even if there's an error
+    hideLoader();
+  }
+};
+
+startApp();
