@@ -164,11 +164,11 @@ const Navbar: React.FC = () => {
                     <img
                         src={settings.logoUrl}
                         alt={settings.siteName}
-                        className="h-8 w-8 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                        className="h-14 w-100 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
                         onError={(e) => {
                           // Fallback to loading GIF with proper sizing
-                          (e.target as HTMLImageElement).src = '/images/loader-1.gif';
-                          (e.target as HTMLImageElement).className = 'h-20 w-100 object-contain animate-pulse';
+                          (e.target as HTMLImageElement).src = '/htginfotech-logo.png';
+                          (e.target as HTMLImageElement).className = 'h-14 w-100 object-contain';
                         }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
