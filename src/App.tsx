@@ -18,6 +18,7 @@ import BackpanelLogin from './pages/backpanel/AdminLogin';
 import BackpanelDashboard from './pages/backpanel/AdminDashboard';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import UpdatePassword from './pages/auth/UpdatePassword';
 import AuthCallback from './pages/auth/AuthCallback';
 import VerifyOTP from './pages/auth/VerifyOTP';
 import Courses from './pages/Courses';
@@ -142,6 +143,11 @@ function App() {
                           {/* Shared Routes */}
                           <Route path="/forgot-password" element={<ForgotPassword />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
+                          <Route path="/update-password" element={
+                            <ProtectedRoute>
+                              <UpdatePassword />
+                            </ProtectedRoute>
+                          } />
                           <Route path="/auth/callback" element={<AuthCallback />} />
                           <Route path="/verify-otp" element={<VerifyOTP />} />
                           <Route path="/payment" element={<Payment />} />

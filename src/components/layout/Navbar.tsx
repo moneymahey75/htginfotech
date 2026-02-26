@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../contexts/AdminContext';
-import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, BookOpen, GraduationCap, Users, Briefcase, LogIn, UserPlus, Phone, Mail, MessageCircle } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, BookOpen, GraduationCap, Users, Briefcase, LogIn, UserPlus, Phone, Mail, MessageCircle, KeyRound } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -291,6 +291,15 @@ const Navbar: React.FC = () => {
                                   <span className="font-medium">Dashboard</span>
                                 </Link>
 
+                                <Link
+                                    to="/update-password"
+                                    className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                                    onClick={() => setIsUserMenuOpen(false)}
+                                >
+                                  <KeyRound className="h-4 w-4" />
+                                  <span className="font-medium">Update Password</span>
+                                </Link>
+
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -413,11 +422,20 @@ const Navbar: React.FC = () => {
 
                           <Link
                               to={getDashboardLink()}
-                              className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 font-medium"
+                              className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium"
                               onClick={() => setIsMenuOpen(false)}
                           >
                             <Settings className="h-5 w-5" />
                             <span>Dashboard</span>
+                          </Link>
+
+                          <Link
+                              to="/update-password"
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200 font-medium"
+                              onClick={() => setIsMenuOpen(false)}
+                          >
+                            <KeyRound className="h-5 w-5" />
+                            <span>Update Password</span>
                           </Link>
 
                           <button
