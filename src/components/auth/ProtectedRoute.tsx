@@ -56,7 +56,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
     console.log('🔒 No user found, redirecting to login');
     // Clear any stale session data
     sessionUtils.clearAllSessions();
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={{ from: location, error: 'Please login to perform this action.' }} />;
   }
 
   // Check if user type matches the required type
@@ -70,7 +70,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
   if (!sessionInfo.isValid) {
     console.log('🔒 Invalid session detected, redirecting to login');
     sessionUtils.clearAllSessions();
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={{ from: location, error: 'Please login to perform this action.' }} />;
   }
 
   // Check if user needs to complete verification or payment (if required)
