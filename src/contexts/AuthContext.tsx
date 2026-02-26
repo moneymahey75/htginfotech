@@ -466,7 +466,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionManager.removeSession(currentUserId);
 
       // Sign out from Supabase
-      supabase.auth.signOut();
+      await supabase.auth.signOut();
 
       // Clear user state
       setUser(null);
@@ -474,6 +474,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       notification.showInfo('Logged Out', 'You have been successfully logged out.');
     } catch (error) {
       console.error('❌ Error during logout:', error);
+      notification.showError('Logout Failed', 'There was an error logging out. Please try again.');
     } finally {
       setLoading(false);
     }
