@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle, RefreshCw } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
@@ -7,6 +7,7 @@ import ReCaptcha from '../../components/ui/ReCaptcha';
 const UnifiedLogin: React.FC = () => {
   const { login, resendConfirmationEmail, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,7 +16,7 @@ const UnifiedLogin: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState((location.state as any)?.error || '');
   const [showEmailConfirmationError, setShowEmailConfirmationError] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState('');
   const [justLoggedIn, setJustLoggedIn] = useState(false);

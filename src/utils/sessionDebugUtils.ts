@@ -8,9 +8,9 @@ export const sessionDebugUtils = {
         console.group('📊 Session Status Debug');
 
         try {
-            const currentUserId = sessionStorage.getItem('current-user-id');
+            const currentUserId = localStorage.getItem('current-user-id');
             const sessionInfo = sessionUtils.getSessionInfo();
-            const adminToken = sessionStorage.getItem('admin_session_token');
+            const adminToken = localStorage.getItem('admin_session_token');
 
             console.log('Current User ID:', currentUserId);
             console.log('Session Valid:', sessionInfo.isValid);
@@ -22,8 +22,8 @@ export const sessionDebugUtils = {
             console.log('Is Admin Area:', sessionUtils.isInAdminArea());
             console.log('Is Login Page:', sessionUtils.isOnLoginPage());
 
-            // List all session-related items in sessionStorage
-            const sessionKeys = Object.keys(sessionStorage).filter(key =>
+            // List all session-related items in localStorage
+            const sessionKeys = Object.keys(localStorage).filter(key =>
                 key.startsWith('supabase-session-') || key === 'current-user-id' || key === 'admin_session_token'
             );
             console.log('Session Storage Keys:', sessionKeys);
@@ -69,11 +69,11 @@ export const sessionDebugUtils = {
         console.group('🔍 Validating Session Storage Integrity');
 
         try {
-            const currentUserId = sessionStorage.getItem('current-user-id');
+            const currentUserId = localStorage.getItem('current-user-id');
 
             if (currentUserId) {
                 const sessionKey = `supabase-session-${currentUserId}`;
-                const sessionData = sessionStorage.getItem(sessionKey);
+                const sessionData = localStorage.getItem(sessionKey);
 
                 if (sessionData) {
                     try {
@@ -100,7 +100,7 @@ export const sessionDebugUtils = {
             }
 
             // Check for orphaned sessions
-            const allKeys = Object.keys(sessionStorage);
+            const allKeys = Object.keys(localStorage);
             const sessionKeys = allKeys.filter(key => key.startsWith('supabase-session-'));
             const orphanedSessions = sessionKeys.filter(key => {
                 const userId = key.replace('supabase-session-', '');

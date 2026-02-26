@@ -67,8 +67,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const notification = useNotification();
 
   useEffect(() => {
-    // Check for existing admin session in sessionStorage
-    const sessionToken = sessionStorage.getItem('admin_session_token');
+    // Check for existing admin session in localStorage (persists across tabs)
+    const sessionToken = localStorage.getItem('admin_session_token');
     if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
       validateSession(sessionToken);
     } else {
@@ -80,7 +80,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       // Check if session token is valid format and not expired
       if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
-        sessionStorage.removeItem('admin_session_token');
+        localStorage.removeItem('admin_session_token');
         setLoading(false);
         return;
       }
@@ -89,7 +89,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const match = sessionToken.match(/^admin-session-(.+)-(\d+)$/);
 
       if (!match) {
-        sessionStorage.removeItem('admin_session_token');
+        localStorage.removeItem('admin_session_token');
         setLoading(false);
         return;
       }
@@ -103,7 +103,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (sessionAge > maxSessionAge) {
         console.log('❌ Session expired');
-        sessionStorage.removeItem('admin_session_token');
+        localStorage.removeItem('admin_session_token');
         setLoading(false);
         return;
       }
@@ -117,14 +117,14 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (error || !user) {
         console.error('❌ Failed to validate session:', error);
-        sessionStorage.removeItem('admin_session_token');
+        localStorage.removeItem('admin_session_token');
         setLoading(false);
         return;
       }
 
       if (!user.tau_is_active) {
         console.log('❌ Admin account is inactive');
-        sessionStorage.removeItem('admin_session_token');
+        localStorage.removeItem('admin_session_token');
         setLoading(false);
         return;
       }
@@ -143,7 +143,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.log('✅ Session validated successfully for:', adminUser.email);
       setAdmin(adminUser);
     } catch (error) {
-      sessionStorage.removeItem('admin_session_token');
+      localStorage.removeItem('admin_session_token');
       console.error('Session validation failed:', error);
       setAdmin(null);
     } finally {
@@ -241,7 +241,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // All checks passed — login success
       const sessionToken = `admin-session-${user.tau_id}-${Date.now()}`;
-      sessionStorage.setItem('admin_session_token', sessionToken);
+      localStorage.setItem('admin_session_token', sessionToken);
 
       const adminUser: AdminUser = {
         id: user.tau_id,
@@ -275,7 +275,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const logout = () => {
-    sessionStorage.removeItem('admin_session_token');
+    localStorage.removeItem('admin_session_token');
     setAdmin(null);
     notification.showInfo('Logged Out', 'Successfully logged out of admin panel.');
   };

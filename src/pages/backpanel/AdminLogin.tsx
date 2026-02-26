@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { Eye, EyeOff, Mail, Lock, Shield, AlertTriangle } from 'lucide-react';
 
 const AdminLogin: React.FC = () => {
   const { login } = useAdminAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: 'admin@mlmplatform.com',
     password: 'Admin@123456'
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState((location.state as any)?.error || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

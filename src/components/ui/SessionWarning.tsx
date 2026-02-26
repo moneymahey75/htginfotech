@@ -36,7 +36,7 @@ const SessionWarning: React.FC = () => {
       if (error) {
         console.error('Failed to refresh session:', error);
         // If refresh fails, clear the session
-        const currentUserId = sessionStorage.getItem('current-user-id');
+        const currentUserId = localStorage.getItem('current-user-id');
         sessionUtils.clearAllSessions();
       } else if (data.session) {
         // Save the refreshed session
