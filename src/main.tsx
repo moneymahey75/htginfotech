@@ -23,11 +23,35 @@ const initializeApp = async () => {
   }
 };
 
+// Add global error handler for production debugging
+window.addEventListener('error', (event) => {
+  console.error('Global error:', {
+    message: event.error?.message || event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    stack: event.error?.stack
+  });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', {
+    reason: event.reason,
+    promise: event.promise
+  });
+});
+
 // Initialize app
 initializeApp();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('Root element not found');
+  document.body.innerHTML = '<div style="padding: 20px; font-family: sans-serif;"><h1>Error: Root element not found</h1><p>The application failed to initialize. Please check the console for errors.</p></div>';
+} else {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+}
