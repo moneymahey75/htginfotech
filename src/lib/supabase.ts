@@ -18,9 +18,39 @@ if (import.meta.env.DEV) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
-    persistSession: false,
+    persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storage: {
+      getItem: (key: string) => {
+        if (typeof window === 'undefined') return null;
+        // Use custom session manager for retrieval
+        const currentUserId = localStorage.getItem('current-user-id');
+        if (!currentUserId) return null;
+        const sessionData = localStorage.getItem(`supabase-session-${currentUserId}`);
+        return sessionData;
+      },
+      setItem: (key: string, value: string) => {
+        // Let our custom sessionManager handle storage
+        // This is called by Supabase internally
+        if (typeof window !== 'undefined' && value) {
+          try {
+            const session = JSON.parse(value);
+            if (session?.user?.id) {
+              sessionManager.saveSession(session);
+            }
+          } catch (e) {
+            console.error('Failed to parse session in setItem:', e);
+          }
+        }
+      },
+      removeItem: (key: string) => {
+        if (typeof window !== 'undefined') {
+          const currentUserId = localStorage.getItem('current-user-id');
+          sessionManager.removeSession(currentUserId);
+        }
+      }
+    }
   },
   global: {
     headers: {
