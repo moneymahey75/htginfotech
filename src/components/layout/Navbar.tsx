@@ -10,11 +10,13 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
     setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
   };
 
   const handleNavClick = (path: string) => {
@@ -246,36 +248,59 @@ const Navbar: React.FC = () => {
                         </Link>
                       </>
                   ) : (
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
-                          <div className="flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                              <User className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="text-sm">
-                              <div className="font-medium text-gray-900">
-                                {user.firstName || 'User'}
-                              </div>
-                              <div className="text-xs text-gray-500 capitalize">{user.userType?.replace('_', ' ')}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Link
-                            to={getDashboardLink()}
-                            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
-                        >
-                          <Settings className="h-4 w-4" />
-                          <span>Dashboard</span>
-                        </Link>
-
+                      <div className="relative">
                         <button
-                            onClick={handleLogout}
-                            className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 font-medium"
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl border border-blue-200 transition-all duration-200"
                         >
-                          <LogOut className="h-4 w-4" />
-                          <span>Logout</span>
+                          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="text-left hidden xl:block">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {user.firstName || 'User'}
+                            </div>
+                            <div className="text-xs text-gray-600 capitalize">{user.userType?.replace('_', ' ')}</div>
+                          </div>
+                          <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
+
+                        {isUserMenuOpen && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setIsUserMenuOpen(false)}
+                              />
+                              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 animate-fade-in">
+                                <div className="px-4 py-3 border-b border-gray-100">
+                                  <div className="font-semibold text-gray-900">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-600">{user.email}</div>
+                                  <div className="text-xs text-gray-500 capitalize mt-1">
+                                    {user.userType?.replace('_', ' ')}
+                                  </div>
+                                </div>
+
+                                <Link
+                                    to={getDashboardLink()}
+                                    className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                    onClick={() => setIsUserMenuOpen(false)}
+                                >
+                                  <Settings className="h-4 w-4" />
+                                  <span className="font-medium">Dashboard</span>
+                                </Link>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                >
+                                  <LogOut className="h-4 w-4" />
+                                  <span className="font-medium">Logout</span>
+                                </button>
+                              </div>
+                            </>
+                        )}
                       </div>
                   )}
                 </div>
