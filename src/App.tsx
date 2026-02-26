@@ -35,6 +35,7 @@ import JobSeekers from './pages/JobSeekers';
 import JobProviders from './pages/JobProviders';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute';
+import AuthenticatedRoute from './components/auth/AuthenticatedRoute';
 
 // Scroll to top component
 function ScrollToTop() {
@@ -144,9 +145,9 @@ function App() {
                           <Route path="/forgot-password" element={<ForgotPassword />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
                           <Route path="/update-password" element={
-                            <ProtectedRoute>
+                            <AuthenticatedRoute>
                               <UpdatePassword />
-                            </ProtectedRoute>
+                            </AuthenticatedRoute>
                           } />
                           <Route path="/auth/callback" element={<AuthCallback />} />
                           <Route path="/verify-otp" element={<VerifyOTP />} />
