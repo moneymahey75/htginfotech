@@ -448,7 +448,7 @@ const Home: React.FC = () => {
                   title: 'Create Account',
                   description: 'Sign up as a learner or tutor and complete your profile with learning goals.',
                   color: 'from-emerald-500 to-teal-600',
-                  image: 'https://images.pexels.com/photos/4145153/pexels-photo-4145153.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                  image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
                 },
                 {
                   step: '2',
