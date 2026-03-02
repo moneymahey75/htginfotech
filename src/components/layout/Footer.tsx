@@ -1,10 +1,11 @@
 import React from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube, MessageCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const { settings } = useAdmin();
+  const location = useLocation();
 
   // Format the full address from individual components
   const formatAddress = () => {
@@ -19,18 +20,30 @@ const Footer: React.FC = () => {
     return parts.join(', ');
   };
 
+  // Handle logo click to scroll to top
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
       <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Company Info */}
             <div className="lg:col-span-2">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="relative">
+              <Link
+                  to="/"
+                  onClick={handleLogoClick}
+                  className="flex items-center space-x-3 mb-6 group"
+              >
+                <div className="relative transition-transform duration-200 group-hover:scale-105">
                   <img
                       src={settings.logoUrl}
                       alt={settings.siteName}
-                      className="h-14 w-100 object-cover rounded-lg shadow-lg"
+                      className="h-14 w-auto object-cover rounded-lg shadow-lg"
                       onError={(e) => {
                         // Fallback to default logo if image fails to load
                         (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop';
@@ -38,11 +51,12 @@ const Footer: React.FC = () => {
                   />
                 </div>
                 <div>
+
                   {settings.tagline && (
                       <p className="text-gray-300 text-sm mt-1">{settings.tagline}</p>
                   )}
                 </div>
-              </div>
+              </Link>
 
               {settings.aboutText ? (
                   <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
