@@ -55,3 +55,9 @@ html {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out;
 }
+
+.icn-align-cnt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
