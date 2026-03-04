@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/adminSupabase';
 import { useNotification } from '../ui/NotificationProvider';
 import { Image as ImageIcon, Search, Filter, Eye, Edit, Trash2, Plus, ArrowLeft, Save, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, Upload, LinkIcon, Text, Type, ListOrdered } from 'lucide-react';
 
