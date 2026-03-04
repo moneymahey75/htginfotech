@@ -264,7 +264,6 @@ const JoinAsLearner: React.FC = () => {
                   />
                   <div>
                     <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-indigo-600 font-semibold">{testimonial.achievement}</p>
                     <div className="flex items-center space-x-1 mt-1">
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
