@@ -1,38 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/adminSupabase';
 import { useNotification } from '../ui/NotificationProvider';
-import {
-  GraduationCap,
-  Search,
-  Filter,
-  Eye,
-  Edit,
-  Trash2,
-  UserCheck,
-  UserX,
-  Mail,
-  Phone,
-  Calendar,
-  ArrowLeft,
-  Save,
-  X,
-  CheckCircle,
-  AlertCircle,
-  User,
-  Settings,
-  TrendingUp,
-  Award,
-  Clock,
-  DollarSign,
-  Star,
-  Users,
-  BookOpen,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  MoreHorizontal
-} from 'lucide-react';
+import { GraduationCap, Search, Filter, Eye, CreditCard as Edit, Trash2, UserCheck, UserX, Mail, Phone, Calendar, ArrowLeft, Save, X, CheckCircle, AlertCircle, User, Settings, TrendingUp, Award, Clock, DollarSign, Star, Users, BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
 interface Tutor {
   tu_id: string;

@@ -1,35 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/adminSupabase';
 import { useNotification } from '../ui/NotificationProvider';
-import {
-  BookOpen,
-  Search,
-  Filter,
-  Eye,
-  Edit,
-  Trash2,
-  UserCheck,
-  UserX,
-  Mail,
-  Phone,
-  Calendar,
-  ArrowLeft,
-  Save,
-  X,
-  CheckCircle,
-  AlertCircle,
-  User,
-  Settings,
-  TrendingUp,
-  Award,
-  Clock,
-  Target,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  MoreHorizontal
-} from 'lucide-react';
+import { BookOpen, Search, Filter, Eye, CreditCard as Edit, Trash2, UserCheck, UserX, Mail, Phone, Calendar, ArrowLeft, Save, X, CheckCircle, AlertCircle, User, Settings, TrendingUp, Award, Clock, Target, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
 interface Learner {
   tu_id: string;
