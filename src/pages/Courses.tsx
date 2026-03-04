@@ -177,7 +177,7 @@ const Courses: React.FC = () => {
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Explore Our Courses</h1>
           <p className="text-xl md:text-2xl text-indigo-100 max-w-3xl mx-auto mb-8">
-            Discover thousands of courses taught by expert tutors in programming, science, mathematics, and more.
+            Discover thousands of courses taught by expert tutors.
           </p>
           
           {/* Search Bar */}
@@ -399,11 +399,12 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
     return (
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100">
         <div className="flex">
-          <div className="w-64 h-48 flex-shrink-0">
+          <div className="w-64 h-48 flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden">
             <img
-              src={course.tc_thumbnail_url}
-              alt={course.tc_title}
-              className="w-full h-full object-cover rounded-l-xl"
+                src={course.tc_thumbnail_url}
+                alt={course.tc_title}
+                className="w-full h-full object-cover"
+                onError={(e) => e.target.style.visibility = 'hidden'}
             />
           </div>
           <div className="flex-1 p-6 flex flex-col justify-between">

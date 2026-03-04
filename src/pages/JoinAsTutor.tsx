@@ -18,22 +18,10 @@ import {
 const JoinAsTutor: React.FC = () => {
   const benefits = [
     {
-      icon: DollarSign,
-      title: "Flexible Earnings",
-      description: "Set your own hourly rates and earn money teaching subjects you're passionate about.",
-      color: "from-green-500 to-emerald-600"
-    },
-    {
       icon: Users,
       title: "Global Reach",
       description: "Teach students from around the world and build a diverse learning community.",
       color: "from-blue-500 to-indigo-600"
-    },
-    {
-      icon: BarChart3,
-      title: "Teaching Analytics",
-      description: "Track your teaching performance, student progress, and earnings with detailed analytics.",
-      color: "from-purple-500 to-pink-600"
     },
     {
       icon: Shield,
@@ -48,25 +36,25 @@ const JoinAsTutor: React.FC = () => {
       step: "1",
       title: "Submit Application",
       description: "Complete our tutor application with your qualifications and teaching experience.",
-      image: "https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      image: "../public/images/tutor1smallbanner.png"
     },
     {
       step: "2",
       title: "Verification Process",
       description: "Our team reviews your credentials and verifies your expertise in your subject areas.",
-      image: "https://images.pexels.com/photos/5212700/pexels-photo-5212700.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      image: "../public/images/tutor2SmallBanner.png"
     },
     {
       step: "3",
       title: "Profile Setup",
       description: "Create your tutor profile, set your rates, and define your availability schedule.",
-      image: "https://images.pexels.com/photos/4144923/pexels-photo-4144923.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      image: "../public/images/tutor3SmallBanner.png"
     },
     {
       step: "4",
       title: "Start Teaching",
       description: "Get matched with students and begin your rewarding teaching journey.",
-      image: "https://images.pexels.com/photos/5212662/pexels-photo-5212662.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
+      image: "../public/images/tutor4SmallBanner.png"
     }
   ];
 
@@ -103,7 +91,7 @@ const JoinAsTutor: React.FC = () => {
       <section className="relative bg-gradient-to-br from-green-900 via-blue-900 to-indigo-900 text-white py-20 overflow-hidden">
         <div className="absolute inset-0">
           <img 
-            src="https://images.pexels.com/photos/5212662/pexels-photo-5212662.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop" 
+            src="../images/newTutorBanner.png"
             alt="Join as Tutor"
             className="w-full h-full object-cover opacity-20"
           />
@@ -123,7 +111,7 @@ const JoinAsTutor: React.FC = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  to="/tutor/register"
+                  to="/register"
                   className="group bg-gradient-to-r from-green-400 to-blue-500 text-white px-8 py-4 rounded-2xl font-bold hover:from-green-300 hover:to-blue-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                 >
                   <span>Apply as Tutor</span>
@@ -276,10 +264,10 @@ const JoinAsTutor: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-gray-300 mb-6 italic">"{testimonial.quote}"</p>
-                <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white p-4 rounded-2xl text-center">
+                {/*<div className="bg-gradient-to-r from-green-500 to-blue-600 text-white p-4 rounded-2xl text-center">
                   <div className="text-2xl font-bold">{testimonial.earnings}</div>
                   <div className="text-sm opacity-90">average monthly earnings</div>
-                </div>
+                </div>*/}
               </div>
             ))}
           </div>
@@ -314,7 +302,7 @@ const JoinAsTutor: React.FC = () => {
             </div>
             <div className="relative">
               <img 
-                src="https://images.pexels.com/photos/5212662/pexels-photo-5212662.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" 
+                src="../public/images/tutorStartTeaching.png"
                 alt="Requirements"
                 className="rounded-2xl shadow-2xl"
               />
@@ -339,7 +327,7 @@ const JoinAsTutor: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
             <Link
-              to="/tutor/register"
+              to="/register"
               className="group bg-white text-green-600 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             >
               <GraduationCap className="h-6 w-6" />

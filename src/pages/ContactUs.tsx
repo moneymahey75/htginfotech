@@ -274,24 +274,7 @@ const ContactUs: React.FC = () => {
                   </div>
               )}
 
-              {/* Quick Links */}
-              <div className="mt-12">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Support</h3>
-                <div className="space-y-3">
-                  <a href="#" className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Live Chat Support</span>
-                  </a>
-                  <a href="#" className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700">
-                    <User className="h-4 w-4" />
-                    <span>Customer Portal</span>
-                  </a>
-                  <a href="#" className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700">
-                    <Building className="h-4 w-4" />
-                    <span>Business Support</span>
-                  </a>
-                </div>
-              </div>
+
             </div>
 
             {/* Contact Form */}

@@ -102,7 +102,7 @@ const CourseDetails: React.FC = () => {
 
   const handleEnroll = async () => {
     if (!user) {
-      navigate('/learner/login');
+      navigate('/login');
       return;
     }
 
@@ -110,7 +110,7 @@ const CourseDetails: React.FC = () => {
 
     if (isEnrolled) {
       alert('You are already enrolled in this course!');
-      navigate('/learner/dashboard');
+      navigate('/dashboard');
       return;
     }
 
