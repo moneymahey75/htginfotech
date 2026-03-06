@@ -270,7 +270,7 @@ const GeneralSettings: React.FC = () => {
                                 <img
                                     src={formData.logoUrl}
                                     alt="Logo Preview"
-                                    className="h-12 w-12 rounded-lg object-cover border border-gray-200"
+                                    className="h-12 rounded-lg object-cover border border-gray-200"
                                 />
                             </div>
                         )}
