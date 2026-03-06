@@ -1,34 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/adminSupabase';
 import { videoStorage } from '../../lib/videoStorage';
 import { useNotification } from '../ui/NotificationProvider';
-import {
-  BookOpen,
-  Search,
-  Filter,
-  Eye,
-  Edit,
-  Trash2,
-  Plus,
-  Save,
-  X,
-  Upload,
-  Play,
-  FileText,
-  Calendar,
-  DollarSign,
-  Users,
-  Clock,
-  Star,
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  MoreHorizontal
-} from 'lucide-react';
+import { BookOpen, Search, Filter, Eye, CreditCard as Edit, Trash2, Plus, Save, X, Upload, Play, FileText, Calendar, DollarSign, Users, Clock, Star, ArrowLeft, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
 interface Course {
   tc_id: string;

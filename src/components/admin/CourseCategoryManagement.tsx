@@ -1,28 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/adminSupabase';
 import { useNotification } from '../ui/NotificationProvider';
-import {
-  Folder,
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Save,
-  X,
-  Eye,
-  EyeOff,
-  Palette,
-  Hash,
-  ArrowUp,
-  ArrowDown,
-  CheckCircle,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  MoreHorizontal
-} from 'lucide-react';
+import { Folder, Search, Plus, CreditCard as Edit, Trash2, Save, X, Eye, EyeOff, Palette, Hash, ArrowUp, ArrowDown, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
 interface CourseCategory {
   tcc_id: string;

@@ -1,6 +1,5 @@
-// Browser-safe Redis stub
-// The actual Redis implementation is in redis.server.ts (server-only)
-// This file provides type definitions and stubs for browser environments
+// This file is only used in server-side environments
+// It will NOT be imported in the browser
 
 export const REDIS_KEYS = {
   AVAILABLE_POSITIONS: 'mlm:available_positions',
@@ -30,6 +29,7 @@ export interface NodeData {
   isActive: boolean;
 }
 
+// Server-only Redis manager - requires Node.js environment
 export class MLMRedisManager {
   private redis: any;
 
@@ -38,12 +38,14 @@ export class MLMRedisManager {
   }
 
   async connect(): Promise<boolean> {
-    console.log('📊 Redis not available in browser environment');
+    console.log('Redis only available in server environments');
     return false;
   }
 
   async disconnect(): Promise<void> {
-    // No-op in browser
+    if (this.redis) {
+      await this.redis.disconnect();
+    }
   }
 
   async getNextAvailablePosition(_sponsorSponsorshipNumber: string): Promise<AvailablePosition | null> {
@@ -51,11 +53,11 @@ export class MLMRedisManager {
   }
 
   async addAvailablePositions(_newNodeData: NodeData): Promise<void> {
-    // No-op in browser
+    return;
   }
 
   async cacheNodeData(_nodeData: NodeData): Promise<void> {
-    // No-op in browser
+    return;
   }
 
   async getCachedNodeData(_nodeId: string): Promise<NodeData | null> {
@@ -63,7 +65,7 @@ export class MLMRedisManager {
   }
 
   async cacheTreeStats(_userId: string, _stats: any): Promise<void> {
-    // No-op in browser
+    return;
   }
 
   async getCachedTreeStats(_userId: string): Promise<any | null> {
@@ -71,7 +73,7 @@ export class MLMRedisManager {
   }
 
   async warmUpCache(): Promise<void> {
-    console.log('📊 Redis cache warm-up skipped in browser');
+    return;
   }
 
   async isConnected(): Promise<boolean> {
@@ -79,11 +81,9 @@ export class MLMRedisManager {
   }
 }
 
-// Create singleton instance
 export const mlmRedisManager = new MLMRedisManager();
 
-// Helper function to initialize Redis (no-op in browser)
 export const initializeRedis = async (): Promise<boolean> => {
-  console.log('📊 Browser environment - Redis not available (this is normal)');
+  console.log('Redis initialization skipped in browser environment');
   return false;
 };

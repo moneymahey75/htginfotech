@@ -96,7 +96,7 @@ const JobSeekers: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-shadow">
+              <div key={index} className="icn-align-cnt bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-shadow">
                 <div className="bg-blue-100 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                   <benefit.icon className="h-8 w-8 text-blue-600" />
                 </div>
@@ -130,7 +130,7 @@ const JobSeekers: React.FC = () => {
             </div>
             <div className="relative">
               <img 
-                src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" 
+                src="/images/banners/pro1.png"
                 alt="Job Search Success"
                 className="rounded-2xl shadow-2xl"
               />
