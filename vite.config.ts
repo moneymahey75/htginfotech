@@ -8,7 +8,14 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    exclude: ['lucide-react', 'ioredis', 'redis'],
+  },
+  resolve: {
+    alias: {
+      // Prevent Redis from being bundled in browser
+      ioredis: false,
+      redis: false,
+    },
   },
   build: {
     rollupOptions: {
