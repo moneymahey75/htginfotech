@@ -103,6 +103,11 @@ function createAdminQueryBuilder(table: string) {
       return builder;
     },
 
+    in(column: string, values: any[]) {
+      filters[`${column}_in`] = values;
+      return builder;
+    },
+
     or(query: string) {
       // Complex queries not yet supported through admin query
       console.warn('⚠️ OR queries not fully supported through admin-query, falling back to regular client');
@@ -225,6 +230,31 @@ function createAdminQueryBuilder(table: string) {
           resolve({ data: result.data, error: result.error });
         } catch (error) {
           resolve({ data: null, error: { message: error instanceof Error ? error.message : 'Delete failed' } });
+        }
+      }
+    };
+  };
+
+  // Add upsert method
+  builder.upsert = (data: any, options?: { onConflict?: string }) => {
+    return {
+      select() {
+        return this;
+      },
+      single() {
+        return this;
+      },
+      async then(resolve: any, reject: any) {
+        try {
+          const result = await executeAdminQuery({
+            table,
+            operation: 'upsert',
+            data,
+            onConflict: options?.onConflict,
+          });
+          resolve({ data: result.data, error: result.error });
+        } catch (error) {
+          resolve({ data: null, error: { message: error instanceof Error ? error.message : 'Upsert failed' } });
         }
       }
     };

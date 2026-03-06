@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/adminSupabase';
 import { Phone, Mail, MapPin, Globe, Save, AlertCircle, CheckCircle, Facebook, Instagram, Linkedin, Twitter, Youtube, MessageCircle, Clock } from 'lucide-react';
 
 const ContactSocialSettings: React.FC = () => {
