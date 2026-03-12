@@ -132,6 +132,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔍 Fetching user data for:', userId);
 
+      // Check if user is still eligible to be logged in
+      const { data: eligibilityResult } = await supabase
+        .rpc('check_user_login_eligibility', { p_user_id: userId });
+
+      if (!eligibilityResult?.success) {
+        console.log('❌ User no longer eligible, logging out:', eligibilityResult?.error);
+        // Force logout if user is no longer eligible
+        await supabase.auth.signOut();
+        sessionManager.removeSession(userId);
+        setUser(null);
+        notification.showError(
+          'Account Access Revoked',
+          eligibilityResult?.error || 'Your account access has been restricted.'
+        );
+        return;
+      }
+
       // Try to get user data, but handle RLS gracefully
       let userData = null;
       try {
@@ -271,6 +288,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!authData.user || !authData.session) {
         throw new Error('Authentication failed - no session created');
       }
+
+      // Check if user is eligible to log in (active status + verification requirements)
+      console.log('🔍 Checking user login eligibility...');
+      const { data: eligibilityResult, error: eligibilityError } = await supabase
+        .rpc('check_user_login_eligibility', { p_user_id: authData.user.id });
+
+      if (eligibilityError) {
+        console.error('❌ Failed to check login eligibility:', eligibilityError);
+        throw new Error('Failed to verify login eligibility. Please try again.');
+      }
+
+      if (!eligibilityResult?.success) {
+        console.log('❌ User not eligible to log in:', eligibilityResult?.error);
+        // Sign out the user immediately
+        await supabase.auth.signOut();
+        sessionManager.removeSession();
+        throw new Error(eligibilityResult?.error || 'Login not allowed');
+      }
+
+      console.log('✅ User is eligible to log in');
 
       // Explicitly save the session
       console.log('💾 Saving session after login...');
