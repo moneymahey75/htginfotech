@@ -126,64 +126,136 @@ const LearnerManagement: React.FC = () => {
 
       console.log('🔍 Loading learners from database...');
 
-      // Build the base query
-      let query = supabase
-          .from('tbl_users')
-          .select(`
-          tu_id,
-          tu_email,
-          tu_user_type,
-          tu_is_verified,
-          tu_email_verified,
-          tu_mobile_verified,
-          tu_is_active,
-          tu_created_at,
-          tu_updated_at,
-          tbl_user_profiles (
-            tup_id,
-            tup_first_name,
-            tup_last_name,
-            tup_middle_name,
-            tup_username,
-            tup_mobile,
-            tup_gender,
-            tup_education_level,
-            tup_interests,
-            tup_learning_goals,
-            tup_created_at,
-            tup_updated_at
-          )
-        `, { count: 'exact' })
-          .eq('tu_user_type', 'learner');
-
-      // Apply filters if any
+      // For search, we need to fetch from profiles table first then join
       if (searchTerm) {
-        query = query.or(`tu_email.ilike.%${searchTerm}%,tbl_user_profiles.tup_first_name.ilike.%${searchTerm}%,tbl_user_profiles.tup_last_name.ilike.%${searchTerm}%,tbl_user_profiles.tup_middle_name.ilike.%${searchTerm}%,tbl_user_profiles.tup_username.ilike.%${searchTerm}%`);
+        // Search in profiles first to get user IDs
+        const { data: profiles, error: profileError } = await supabase
+            .from('tbl_user_profiles')
+            .select('tup_user_id')
+            .or(`tup_first_name.ilike.%${searchTerm}%,tup_last_name.ilike.%${searchTerm}%,tup_middle_name.ilike.%${searchTerm}%,tup_username.ilike.%${searchTerm}%,tup_mobile.ilike.%${searchTerm}%`);
+
+        if (profileError) throw profileError;
+
+        const profileUserIds = profiles?.map(p => p.tup_user_id) || [];
+
+        // Build the base query with combined search
+        let query = supabase
+            .from('tbl_users')
+            .select(`
+            tu_id,
+            tu_email,
+            tu_user_type,
+            tu_is_verified,
+            tu_email_verified,
+            tu_mobile_verified,
+            tu_is_active,
+            tu_created_at,
+            tu_updated_at,
+            tbl_user_profiles (
+              tup_id,
+              tup_first_name,
+              tup_last_name,
+              tup_middle_name,
+              tup_username,
+              tup_mobile,
+              tup_gender,
+              tup_education_level,
+              tup_interests,
+              tup_learning_goals,
+              tup_created_at,
+              tup_updated_at
+            )
+          `, { count: 'exact' })
+            .eq('tu_user_type', 'learner');
+
+        // Apply search: match email OR user IDs from profile search
+        if (profileUserIds.length > 0) {
+          query = query.or(`tu_email.ilike.%${searchTerm}%,tu_id.in.(${profileUserIds.join(',')})`);
+        } else {
+          // Only search by email if no profile matches
+          query = query.ilike('tu_email', `%${searchTerm}%`);
+        }
+
+        // Apply other filters
+        if (statusFilter !== 'all') {
+          query = query.eq('tu_is_active', statusFilter === 'active');
+        }
+
+        if (verificationFilter !== 'all') {
+          query = query.eq('tu_is_verified', verificationFilter === 'verified');
+        }
+
+        // Apply pagination and ordering
+        query = query
+            .order('tu_created_at', { ascending: false })
+            .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
+
+        const { data: learners, error, count } = await query;
+
+        if (error) {
+          console.error('❌ Failed to load learners:', error);
+          throw error;
+        }
+
+        console.log('✅ Learners loaded:', learners);
+        setLearners(learners || []);
+        setTotalCount(count || 0);
+      } else {
+        // No search term - use simpler query
+        let query = supabase
+            .from('tbl_users')
+            .select(`
+            tu_id,
+            tu_email,
+            tu_user_type,
+            tu_is_verified,
+            tu_email_verified,
+            tu_mobile_verified,
+            tu_is_active,
+            tu_created_at,
+            tu_updated_at,
+            tbl_user_profiles (
+              tup_id,
+              tup_first_name,
+              tup_last_name,
+              tup_middle_name,
+              tup_username,
+              tup_mobile,
+              tup_gender,
+              tup_education_level,
+              tup_interests,
+              tup_learning_goals,
+              tup_created_at,
+              tup_updated_at
+            )
+          `, { count: 'exact' })
+            .eq('tu_user_type', 'learner');
+
+        // Apply filters
+        if (statusFilter !== 'all') {
+          query = query.eq('tu_is_active', statusFilter === 'active');
+        }
+
+        if (verificationFilter !== 'all') {
+          query = query.eq('tu_is_verified', verificationFilter === 'verified');
+        }
+
+        // Apply pagination and ordering
+        query = query
+            .order('tu_created_at', { ascending: false })
+            .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
+
+        const { data: learners, error, count } = await query;
+
+        if (error) {
+          console.error('❌ Failed to load learners:', error);
+          throw error;
+        }
+
+        console.log('✅ Learners loaded:', learners);
+        setLearners(learners || []);
+        setTotalCount(count || 0);
       }
-
-      if (statusFilter !== 'all') {
-        query = query.eq('tu_is_active', statusFilter === 'active');
-      }
-
-      if (verificationFilter !== 'all') {
-        query = query.eq('tu_is_verified', verificationFilter === 'verified');
-      }
-
-      // Apply pagination and ordering
-      query = query
-          .order('tu_created_at', { ascending: false })
-          .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-
-      const { data: learners, error, count } = await query;
-
-      if (error) {
-        console.error('❌ Failed to load learners:', error);
-        throw error;
-      }
-
-      console.log('✅ Learners loaded:', learners);
-      setLearners(learners || []);
-      setTotalCount(count || 0);
 
     } catch (error) {
       console.error('❌ Failed to load learners:', error);
