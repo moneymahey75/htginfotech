@@ -170,7 +170,9 @@ const LearnerManagement: React.FC = () => {
 
         // Apply search: match email OR user IDs from profile search
         if (profileUserIds.length > 0) {
-          query = query.or(`tu_email.ilike.%${searchTerm}%,tu_id.in.(${profileUserIds.join(',')})`);
+          // Create OR condition with email search and profile matches
+          const userIdList = profileUserIds.map(id => `"${id}"`).join(',');
+          query = query.or(`tu_email.ilike.%${searchTerm}%,tu_id.in.(${userIdList})`);
         } else {
           // Only search by email if no profile matches
           query = query.ilike('tu_email', `%${searchTerm}%`);
