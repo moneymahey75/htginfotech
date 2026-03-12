@@ -521,6 +521,54 @@ const CourseManagement: React.FC = () => {
     loadLessons(course.tc_id);
   };
 
+  // Learning outcomes handlers
+  const addLearningOutcome = () => {
+    setCourseFormData(prev => ({
+      ...prev,
+      learning_outcomes: [...prev.learning_outcomes, '']
+    }));
+  };
+
+  const updateLearningOutcome = (index: number, value: string) => {
+    setCourseFormData(prev => ({
+      ...prev,
+      learning_outcomes: prev.learning_outcomes.map((outcome, i) =>
+        i === index ? value : outcome
+      )
+    }));
+  };
+
+  const removeLearningOutcome = (index: number) => {
+    setCourseFormData(prev => ({
+      ...prev,
+      learning_outcomes: prev.learning_outcomes.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Tags handlers
+  const addTag = () => {
+    setCourseFormData(prev => ({
+      ...prev,
+      tags: [...prev.tags, '']
+    }));
+  };
+
+  const updateTag = (index: number, value: string) => {
+    setCourseFormData(prev => ({
+      ...prev,
+      tags: prev.tags.map((tag, i) =>
+        i === index ? value : tag
+      )
+    }));
+  };
+
+  const removeTag = (index: number) => {
+    setCourseFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter((_, i) => i !== index)
+    }));
+  };
+
   // Pagination logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -1552,37 +1600,6 @@ const CourseManagement: React.FC = () => {
         )}
       </div>
   );
-};
-
-// Helper functions that were in the component but got cut off
-const addLearningOutcome = () => {
-  // This function is defined in the main component
-  return null;
-};
-
-const updateLearningOutcome = (index: number, value: string) => {
-  // This function is defined in the main component
-  return null;
-};
-
-const removeLearningOutcome = (index: number) => {
-  // This function is defined in the main component
-  return null;
-};
-
-const addTag = () => {
-  // This function is defined in the main component
-  return null;
-};
-
-const updateTag = (index: number, value: string) => {
-  // This function is defined in the main component
-  return null;
-};
-
-const removeTag = (index: number) => {
-  // This function is defined in the main component
-  return null;
 };
 
 export default CourseManagement;
