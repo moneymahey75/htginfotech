@@ -135,7 +135,7 @@ const CourseCategoryManagement: React.FC = () => {
           .from('tbl_course_categories')
           .select(`
           *,
-          tbl_courses(count)
+          tbl_courses!tc_category_id(tc_id)
         `, { count: 'exact' })
           .order('tcc_sort_order');
 
@@ -163,7 +163,7 @@ const CourseCategoryManagement: React.FC = () => {
       // Process the data to include course count
       const processedCategories = data?.map(category => ({
         ...category,
-        course_count: category.tbl_courses?.length || 0
+        course_count: Array.isArray(category.tbl_courses) ? category.tbl_courses.length : 0
       })) || [];
 
       console.log('✅ Categories loaded:', processedCategories);
