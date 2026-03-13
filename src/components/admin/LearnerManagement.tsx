@@ -131,10 +131,27 @@ const LearnerManagement: React.FC = () => {
         // Search in profiles first to get user IDs
         const { data: profiles, error: profileError } = await supabase
             .from('tbl_user_profiles')
-            .select('tup_user_id')
-            .or(`tup_first_name.ilike.%${searchTerm}%,tup_last_name.ilike.%${searchTerm}%,tup_middle_name.ilike.%${searchTerm}%,tup_username.ilike.%${searchTerm}%,tup_mobile.ilike.%${searchTerm}%`);
+            .select(`
+                tup_user_id,
+                tup_first_name,
+                tup_last_name,
+                tup_middle_name,
+                tup_username,
+                tup_mobile,
+               
+                tbl_users!inner(
+                    tu_email,
+                    tu_user_type,
+                    tu_is_verified,
+                    tu_mobile_verified
+                )
+            `)
+            .or(`tup_first_name.ilike.%${searchTerm}%,tup_last_name.ilike.%${searchTerm}%,tup_middle_name.ilike.%${searchTerm}%,tup_username.ilike.%${searchTerm}%,tup_mobile.ilike.%${searchTerm}%`)
+            .limit(50);
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          throw profileError;  // ← only throw on real DB error
+        }
 
         const profileUserIds = profiles?.map(p => p.tup_user_id) || [];
 

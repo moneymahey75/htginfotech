@@ -142,10 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
         sessionManager.removeSession(userId);
         setUser(null);
-        notification.showError(
-          'Account Access Revoked',
-          eligibilityResult?.error || 'Your account access has been restricted.'
-        );
+        // notification.showError(
+        //   'Account Access Revoked',
+        //   eligibilityResult?.error || 'Your account access has been restricted.'
+        // );
         return;
       }
 
