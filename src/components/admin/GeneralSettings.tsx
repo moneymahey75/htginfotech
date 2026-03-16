@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useAdmin } from '../../contexts/AdminContext';
-import { supabase } from '../../lib/adminSupabase';
-import { Settings, Upload, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import React, {useState, useEffect} from 'react';
+import {useAdmin} from '../../contexts/AdminContext';
+import {supabase} from '../../lib/adminSupabase';
+import {Settings, Upload, Save, AlertCircle, CheckCircle} from 'lucide-react';
 
 const GeneralSettings: React.FC = () => {
-    const { settings, updateSettings } = useAdmin();
+    const {settings, updateSettings} = useAdmin();
     const [formData, setFormData] = useState({
         siteName: settings.siteName,
         logoUrl: settings.logoUrl,
@@ -35,16 +35,16 @@ const GeneralSettings: React.FC = () => {
 
         try {
             const updates = [
-                { key: 'site_name', value: JSON.stringify(formData.siteName) },
-                { key: 'logo_url', value: JSON.stringify(formData.logoUrl) },
-                { key: 'date_format', value: JSON.stringify(formData.dateFormat) },
-                { key: 'timezone', value: JSON.stringify(formData.timezone) },
-                { key: 'job_seeker_video_url', value: JSON.stringify(formData.jobSeekerVideoUrl) },
-                { key: 'job_provider_video_url', value: JSON.stringify(formData.jobProviderVideoUrl) }
+                {key: 'site_name', value: JSON.stringify(formData.siteName)},
+                {key: 'logo_url', value: JSON.stringify(formData.logoUrl)},
+                {key: 'date_format', value: JSON.stringify(formData.dateFormat)},
+                {key: 'timezone', value: JSON.stringify(formData.timezone)},
+                {key: 'job_seeker_video_url', value: JSON.stringify(formData.jobSeekerVideoUrl)},
+                {key: 'job_provider_video_url', value: JSON.stringify(formData.jobProviderVideoUrl)}
             ];
 
             for (const update of updates) {
-                const { error } = await supabase
+                const {error} = await supabase
                     .from('tbl_system_settings')
                     .upsert({
                         tss_setting_key: update.key,
@@ -115,7 +115,7 @@ const GeneralSettings: React.FC = () => {
             const fileName = `logo-${Date.now()}.${fileExt}`;
 
             // Upload to Supabase Storage
-            const { data, error } = await supabase.storage
+            const {data, error} = await supabase.storage
                 .from('logos')
                 .upload(fileName, file, {
                     cacheControl: '3600',
@@ -145,7 +145,7 @@ const GeneralSettings: React.FC = () => {
             }
 
             // Get public URL
-            const { data: { publicUrl } } = supabase.storage
+            const {data: {publicUrl}} = supabase.storage
                 .from('logos')
                 .getPublicUrl(fileName);
 
@@ -175,7 +175,7 @@ const GeneralSettings: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center space-x-3 mb-6">
                 <div className="bg-blue-100 p-3 rounded-lg">
-                    <Settings className="h-6 w-6 text-blue-600" />
+                    <Settings className="h-6 w-6 text-blue-600"/>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900">General Settings</h3>
@@ -191,9 +191,9 @@ const GeneralSettings: React.FC = () => {
                 }`}>
                     <div className="flex items-center space-x-2">
                         {saveResult.success ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <CheckCircle className="h-5 w-5 text-green-600"/>
                         ) : (
-                            <AlertCircle className="h-5 w-5 text-red-600" />
+                            <AlertCircle className="h-5 w-5 text-red-600"/>
                         )}
                         <span className={`text-sm font-medium ${
                             saveResult.success ? 'text-green-800' : 'text-red-800'
@@ -254,12 +254,13 @@ const GeneralSettings: React.FC = () => {
                             >
                                 {uploading ? (
                                     <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <div
+                                            className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                         <span>Uploading...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Upload className="h-4 w-4" />
+                                        <Upload className="h-4 w-4"/>
                                         <span>Upload</span>
                                     </>
                                 )}
@@ -366,7 +367,7 @@ const GeneralSettings: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <Save className="h-4 w-4" />
+                                <Save className="h-4 w-4"/>
                                 <span>Save Settings</span>
                             </>
                         )}

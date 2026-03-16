@@ -1,10 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useAdmin } from '../../contexts/AdminContext';
-import { supabase } from '../../lib/adminSupabase';
-import { Phone, Mail, MapPin, Globe, Save, AlertCircle, CheckCircle, Facebook, Instagram, Linkedin, Twitter, Youtube, MessageCircle, Clock } from 'lucide-react';
+import React, {useState, useEffect} from 'react';
+import {useAdmin} from '../../contexts/AdminContext';
+import {supabase} from '../../lib/adminSupabase';
+import {
+    Phone,
+    Mail,
+    MapPin,
+    Globe,
+    Save,
+    AlertCircle,
+    CheckCircle,
+    Facebook,
+    Instagram,
+    Linkedin,
+    Twitter,
+    Youtube,
+    MessageCircle,
+    Clock
+} from 'lucide-react';
 
 const ContactSocialSettings: React.FC = () => {
-    const { settings, updateSettings } = useAdmin();
+    const {settings, updateSettings} = useAdmin();
     const [formData, setFormData] = useState({
         primaryPhone: settings.primaryPhone || '',
         secondaryPhone: settings.secondaryPhone || '',
@@ -67,33 +82,33 @@ const ContactSocialSettings: React.FC = () => {
 
         try {
             const updates = [
-                { key: 'primary_phone', value: JSON.stringify(formData.primaryPhone) },
-                { key: 'secondary_phone', value: JSON.stringify(formData.secondaryPhone) },
-                { key: 'primary_email', value: JSON.stringify(formData.primaryEmail) },
-                { key: 'support_email', value: JSON.stringify(formData.supportEmail) },
-                { key: 'address', value: JSON.stringify(formData.address) },
-                { key: 'city', value: JSON.stringify(formData.city) },
-                { key: 'state', value: JSON.stringify(formData.state) },
-                { key: 'zip_code', value: JSON.stringify(formData.zipCode) },
-                { key: 'country', value: JSON.stringify(formData.country) },
-                { key: 'business_hours', value: JSON.stringify(formData.businessHours) },
-                { key: 'facebook_url', value: JSON.stringify(formData.facebookUrl) },
-                { key: 'instagram_url', value: JSON.stringify(formData.instagramUrl) },
-                { key: 'linkedin_url', value: JSON.stringify(formData.linkedinUrl) },
-                { key: 'twitter_url', value: JSON.stringify(formData.twitterUrl) },
-                { key: 'youtube_url', value: JSON.stringify(formData.youtubeUrl) },
-                { key: 'whatsapp_number', value: JSON.stringify(formData.whatsappNumber) },
-                { key: 'website_url', value: JSON.stringify(formData.websiteUrl) },
-                { key: 'blog_url', value: JSON.stringify(formData.blogUrl) },
+                {key: 'primary_phone', value: JSON.stringify(formData.primaryPhone)},
+                {key: 'secondary_phone', value: JSON.stringify(formData.secondaryPhone)},
+                {key: 'primary_email', value: JSON.stringify(formData.primaryEmail)},
+                {key: 'support_email', value: JSON.stringify(formData.supportEmail)},
+                {key: 'address', value: JSON.stringify(formData.address)},
+                {key: 'city', value: JSON.stringify(formData.city)},
+                {key: 'state', value: JSON.stringify(formData.state)},
+                {key: 'zip_code', value: JSON.stringify(formData.zipCode)},
+                {key: 'country', value: JSON.stringify(formData.country)},
+                {key: 'business_hours', value: JSON.stringify(formData.businessHours)},
+                {key: 'facebook_url', value: JSON.stringify(formData.facebookUrl)},
+                {key: 'instagram_url', value: JSON.stringify(formData.instagramUrl)},
+                {key: 'linkedin_url', value: JSON.stringify(formData.linkedinUrl)},
+                {key: 'twitter_url', value: JSON.stringify(formData.twitterUrl)},
+                {key: 'youtube_url', value: JSON.stringify(formData.youtubeUrl)},
+                {key: 'whatsapp_number', value: JSON.stringify(formData.whatsappNumber)},
+                {key: 'website_url', value: JSON.stringify(formData.websiteUrl)},
+                {key: 'blog_url', value: JSON.stringify(formData.blogUrl)},
                 // New tagline fields
-                { key: 'primary_phone_tagline', value: JSON.stringify(formData.primaryPhoneTagline) },
-                { key: 'secondary_phone_tagline', value: JSON.stringify(formData.secondaryPhoneTagline) },
-                { key: 'primary_email_tagline', value: JSON.stringify(formData.primaryEmailTagline) },
-                { key: 'support_email_tagline', value: JSON.stringify(formData.supportEmailTagline) }
+                {key: 'primary_phone_tagline', value: JSON.stringify(formData.primaryPhoneTagline)},
+                {key: 'secondary_phone_tagline', value: JSON.stringify(formData.secondaryPhoneTagline)},
+                {key: 'primary_email_tagline', value: JSON.stringify(formData.primaryEmailTagline)},
+                {key: 'support_email_tagline', value: JSON.stringify(formData.supportEmailTagline)}
             ];
 
             for (const update of updates) {
-                const { error } = await supabase
+                const {error} = await supabase
                     .from('tbl_system_settings')
                     .upsert({
                         tss_setting_key: update.key,
@@ -136,7 +151,7 @@ const ContactSocialSettings: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center space-x-3 mb-6">
                 <div className="bg-purple-100 p-3 rounded-lg">
-                    <Phone className="h-6 w-6 text-purple-600" />
+                    <Phone className="h-6 w-6 text-purple-600"/>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900">Contact & Social Media</h3>
@@ -150,9 +165,9 @@ const ContactSocialSettings: React.FC = () => {
                 }`}>
                     <div className="flex items-center space-x-2">
                         {saveResult.success ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <CheckCircle className="h-5 w-5 text-green-600"/>
                         ) : (
-                            <AlertCircle className="h-5 w-5 text-red-600" />
+                            <AlertCircle className="h-5 w-5 text-red-600"/>
                         )}
                         <span className={`text-sm font-medium ${
                             saveResult.success ? 'text-green-800' : 'text-red-800'
@@ -167,7 +182,7 @@ const ContactSocialSettings: React.FC = () => {
                 {/* Contact Information Section */}
                 <div>
                     <div className="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-200">
-                        <Phone className="h-5 w-5 text-purple-600" />
+                        <Phone className="h-5 w-5 text-purple-600"/>
                         <h4 className="text-md font-semibold text-gray-900">Contact Information</h4>
                     </div>
 
@@ -189,7 +204,8 @@ const ContactSocialSettings: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="primaryPhoneTagline" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="primaryPhoneTagline"
+                                       className="block text-sm font-medium text-gray-700 mb-2">
                                     Primary Phone Tagline
                                 </label>
                                 <input
@@ -210,7 +226,8 @@ const ContactSocialSettings: React.FC = () => {
                         {/* Secondary Phone with Tagline */}
                         <div className="space-y-3">
                             <div>
-                                <label htmlFor="secondaryPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="secondaryPhone"
+                                       className="block text-sm font-medium text-gray-700 mb-2">
                                     Secondary Phone
                                 </label>
                                 <input
@@ -224,7 +241,8 @@ const ContactSocialSettings: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="secondaryPhoneTagline" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="secondaryPhoneTagline"
+                                       className="block text-sm font-medium text-gray-700 mb-2">
                                     Secondary Phone Tagline
                                 </label>
                                 <input
@@ -259,7 +277,8 @@ const ContactSocialSettings: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="primaryEmailTagline" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="primaryEmailTagline"
+                                       className="block text-sm font-medium text-gray-700 mb-2">
                                     Primary Email Tagline
                                 </label>
                                 <input
@@ -294,7 +313,8 @@ const ContactSocialSettings: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="supportEmailTagline" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="supportEmailTagline"
+                                       className="block text-sm font-medium text-gray-700 mb-2">
                                     Support Email Tagline
                                 </label>
                                 <input
@@ -317,7 +337,7 @@ const ContactSocialSettings: React.FC = () => {
                 {/* Address Section */}
                 <div>
                     <div className="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-200">
-                        <MapPin className="h-5 w-5 text-purple-600" />
+                        <MapPin className="h-5 w-5 text-purple-600"/>
                         <h4 className="text-md font-semibold text-gray-900">Office Address</h4>
                     </div>
 
@@ -404,7 +424,7 @@ const ContactSocialSettings: React.FC = () => {
                 {/* Business Hours Section */}
                 <div>
                     <div className="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-200">
-                        <Clock className="h-5 w-5 text-purple-600" />
+                        <Clock className="h-5 w-5 text-purple-600"/>
                         <h4 className="text-md font-semibold text-gray-900">Business Hours</h4>
                     </div>
 
@@ -430,14 +450,15 @@ const ContactSocialSettings: React.FC = () => {
                 {/* Social Media Section */}
                 <div>
                     <div className="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-200">
-                        <Globe className="h-5 w-5 text-purple-600" />
+                        <Globe className="h-5 w-5 text-purple-600"/>
                         <h4 className="text-md font-semibold text-gray-900">Social Media Links</h4>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="facebookUrl" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <Facebook className="h-4 w-4 mr-2 text-blue-600" />
+                            <label htmlFor="facebookUrl"
+                                   className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                                <Facebook className="h-4 w-4 mr-2 text-blue-600"/>
                                 Facebook
                             </label>
                             <input
@@ -452,8 +473,9 @@ const ContactSocialSettings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="instagramUrl" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <Instagram className="h-4 w-4 mr-2 text-pink-600" />
+                            <label htmlFor="instagramUrl"
+                                   className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                                <Instagram className="h-4 w-4 mr-2 text-pink-600"/>
                                 Instagram
                             </label>
                             <input
@@ -468,8 +490,9 @@ const ContactSocialSettings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="linkedinUrl" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <Linkedin className="h-4 w-4 mr-2 text-blue-700" />
+                            <label htmlFor="linkedinUrl"
+                                   className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                                <Linkedin className="h-4 w-4 mr-2 text-blue-700"/>
                                 LinkedIn
                             </label>
                             <input
@@ -484,8 +507,9 @@ const ContactSocialSettings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="twitterUrl" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <Twitter className="h-4 w-4 mr-2 text-sky-500" />
+                            <label htmlFor="twitterUrl"
+                                   className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                                <Twitter className="h-4 w-4 mr-2 text-sky-500"/>
                                 Twitter / X
                             </label>
                             <input
@@ -500,8 +524,9 @@ const ContactSocialSettings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="youtubeUrl" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <Youtube className="h-4 w-4 mr-2 text-red-600" />
+                            <label htmlFor="youtubeUrl"
+                                   className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                                <Youtube className="h-4 w-4 mr-2 text-red-600"/>
                                 YouTube
                             </label>
                             <input
@@ -516,8 +541,9 @@ const ContactSocialSettings: React.FC = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="whatsappNumber" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                                <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
+                            <label htmlFor="whatsappNumber"
+                                   className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                                <MessageCircle className="h-4 w-4 mr-2 text-green-600"/>
                                 WhatsApp Number
                             </label>
                             <input
@@ -539,7 +565,7 @@ const ContactSocialSettings: React.FC = () => {
                 {/* Additional Links Section */}
                 <div>
                     <div className="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-200">
-                        <Mail className="h-5 w-5 text-purple-600" />
+                        <Mail className="h-5 w-5 text-purple-600"/>
                         <h4 className="text-md font-semibold text-gray-900">Additional Links</h4>
                     </div>
 
@@ -589,7 +615,7 @@ const ContactSocialSettings: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <Save className="h-4 w-4" />
+                                <Save className="h-4 w-4"/>
                                 <span>Save Settings</span>
                             </>
                         )}

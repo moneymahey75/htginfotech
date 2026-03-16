@@ -1,7 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/adminSupabase';
-import { useNotification } from '../ui/NotificationProvider';
-import { Users, Search, Filter, Eye, CreditCard as Edit, Trash2, UserCheck, UserX, Mail, Phone, Calendar, DollarSign, ArrowLeft, Save, X, CheckCircle, AlertCircle, CreditCard, User, Settings } from 'lucide-react';
+import React, {useState, useEffect} from 'react';
+import {supabase} from '../../lib/adminSupabase';
+import {useNotification} from '../ui/NotificationProvider';
+import {
+    Users,
+    Search,
+    Filter,
+    Eye,
+    CreditCard as Edit,
+    Trash2,
+    UserCheck,
+    UserX,
+    Mail,
+    Phone,
+    Calendar,
+    DollarSign,
+    ArrowLeft,
+    Save,
+    X,
+    CheckCircle,
+    AlertCircle,
+    CreditCard,
+    User,
+    Settings
+} from 'lucide-react';
 
 interface Customer {
     tu_id: string;
@@ -60,7 +81,7 @@ const CustomerManagement: React.FC = () => {
 
             // Use the correct table structure with tbl_ prefix
             try {
-                const { data: customers, error } = await supabase
+                const {data: customers, error} = await supabase
                     .from('tbl_users')
                     .select(`
                         tu_id,
@@ -86,7 +107,7 @@ const CustomerManagement: React.FC = () => {
                         )
                       `)
                     .eq('tu_user_type', 'customer')
-                    .order('tu_created_at', { ascending: false });
+                    .order('tu_created_at', {ascending: false});
 
                 if (error) {
                     console.error('❌ Failed to load customers:', error);
@@ -140,16 +161,16 @@ const CustomerManagement: React.FC = () => {
     const handleToggleStatus = async (customer: Customer, currentStatus: boolean) => {
         try {
             // Try new structure first
-            let { error } = await supabase
+            let {error} = await supabase
                 .from('users')
-                .update({ is_active: !currentStatus })
+                .update({is_active: !currentStatus})
                 .eq('id', customer.tu_id);
 
             // If new structure fails, try old structure
             if (error && error.message.includes('relation "users" does not exist')) {
-                const { error: oldError } = await supabase
+                const {error: oldError} = await supabase
                     .from('tbl_users')
-                    .update({ tu_is_active: !currentStatus })
+                    .update({tu_is_active: !currentStatus})
                     .eq('tu_id', customer.tu_id);
 
                 if (oldError) throw oldError;
@@ -189,14 +210,14 @@ const CustomerManagement: React.FC = () => {
         return (
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                    <Users className="h-12 w-12 text-red-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Customers</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
                     <button
                         onClick={loadCustomers}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
                     >
-                        <Users className="h-4 w-4" />
+                        <Users className="h-4 w-4"/>
                         <span>Retry</span>
                     </button>
                 </div>
@@ -228,7 +249,7 @@ const CustomerManagement: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
                         <div className="bg-blue-100 p-3 rounded-lg">
-                            <Users className="h-6 w-6 text-blue-600" />
+                            <Users className="h-6 w-6 text-blue-600"/>
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">Customer Management</h3>
@@ -245,7 +266,7 @@ const CustomerManagement: React.FC = () => {
                     <div className="md:col-span-2">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-gray-400" />
+                                <Search className="h-5 w-5 text-gray-400"/>
                             </div>
                             <input
                                 type="text"
@@ -314,7 +335,8 @@ const CustomerManagement: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0 h-10 w-10">
-                                        <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                        <div
+                                            className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                         <span className="text-white font-medium text-sm">
                           {customer.tbl_user_profiles?.tup_first_name?.charAt(0) || 'U'}
                         </span>
@@ -344,15 +366,16 @@ const CustomerManagement: React.FC = () => {
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                     }`}>
-                      <Mail className="h-3 w-3 mr-1" />
+                      <Mail className="h-3 w-3 mr-1"/>
                         {customer.tu_email_verified ? 'Email ✓' : 'Email ✗'}
                     </span>
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        customer.tu_mobile_verified
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-red-100 text-red-800'
-                                    }`}>
-                      <Phone className="h-3 w-3 mr-1" />
+                                    <span
+                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                            customer.tu_mobile_verified
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-800'
+                                        }`}>
+                      <Phone className="h-3 w-3 mr-1"/>
                                         {customer.tu_mobile_verified ? 'Mobile ✓' : 'Mobile ✗'}
                     </span>
                                 </div>
@@ -365,12 +388,12 @@ const CustomerManagement: React.FC = () => {
                   }`}>
                     {customer.tu_is_active ? (
                         <>
-                            <UserCheck className="h-3 w-3 mr-1" />
+                            <UserCheck className="h-3 w-3 mr-1"/>
                             Active
                         </>
                     ) : (
                         <>
-                            <UserX className="h-3 w-3 mr-1" />
+                            <UserX className="h-3 w-3 mr-1"/>
                             Inactive
                         </>
                     )}
@@ -378,7 +401,7 @@ const CustomerManagement: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <div className="flex items-center">
-                                    <Calendar className="h-4 w-4 mr-1" />
+                                    <Calendar className="h-4 w-4 mr-1"/>
                                     {new Date(customer.tu_created_at).toLocaleDateString()}
                                 </div>
                             </td>
@@ -389,7 +412,7 @@ const CustomerManagement: React.FC = () => {
                                         className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
                                         title="View Details"
                                     >
-                                        <Eye className="h-4 w-4" />
+                                        <Eye className="h-4 w-4"/>
                                     </button>
                                     <button
                                         onClick={() => handleToggleStatus(customer, customer.tu_is_active)}
@@ -400,7 +423,8 @@ const CustomerManagement: React.FC = () => {
                                         }`}
                                         title={customer.tu_is_active ? 'Deactivate' : 'Activate'}
                                     >
-                                        {customer.tu_is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                        {customer.tu_is_active ? <UserX className="h-4 w-4"/> :
+                                            <UserCheck className="h-4 w-4"/>}
                                     </button>
                                 </div>
                             </td>
@@ -412,7 +436,7 @@ const CustomerManagement: React.FC = () => {
 
             {filteredCustomers.length === 0 && (
                 <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No customers found</h3>
                     <p className="text-gray-600">
                         {searchTerm || statusFilter !== 'all' || verificationFilter !== 'all'
@@ -435,7 +459,7 @@ const CustomerDetails: React.FC<{
     setEditMode: (mode: boolean) => void;
     activeTab: string;
     setActiveTab: (tab: string) => void;
-}> = ({ customer, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab }) => {
+}> = ({customer, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab}) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer>(customer);
@@ -464,7 +488,7 @@ const CustomerDetails: React.FC<{
 
     const refetchCustomerData = async () => {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('tbl_users')
                 .select(`
                     tu_id,
@@ -512,7 +536,7 @@ const CustomerDetails: React.FC<{
     const loadTransactions = async () => {
         setLoading(true);
         try {
-            const { data: payments, error } = await supabase
+            const {data: payments, error} = await supabase
                 .from('tbl_payments')
                 .select(`
           tp_id,
@@ -528,7 +552,7 @@ const CustomerDetails: React.FC<{
           )
         `)
                 .eq('tp_user_id', customer.tu_id)
-                .order('tp_created_at', { ascending: false });
+                .order('tp_created_at', {ascending: false});
 
             if (error) throw error;
             setTransactions(payments || []);
@@ -545,7 +569,7 @@ const CustomerDetails: React.FC<{
 
         try {
             // Update tbl_users table
-            const { error: userError } = await supabase
+            const {error: userError} = await supabase
                 .from('tbl_users')
                 .update({
                     tu_email: editData.email,
@@ -559,7 +583,7 @@ const CustomerDetails: React.FC<{
             if (userError) throw userError;
 
             // Update tbl_user_profiles table
-            const { error: profileError } = await supabase
+            const {error: profileError} = await supabase
                 .from('tbl_user_profiles')
                 .update({
                     tup_first_name: editData.firstName,
@@ -583,8 +607,8 @@ const CustomerDetails: React.FC<{
     };
 
     const tabs = [
-        { id: 'profile', label: 'Profile Details', icon: User },
-        { id: 'transactions', label: 'Payment Transactions', icon: CreditCard }
+        {id: 'profile', label: 'Profile Details', icon: User},
+        {id: 'transactions', label: 'Payment Transactions', icon: CreditCard}
     ];
 
     return (
@@ -596,7 +620,7 @@ const CustomerDetails: React.FC<{
                             onClick={onBack}
                             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                         >
-                            <ArrowLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4"/>
                             <span>Back to Customers</span>
                         </button>
                         <div>
@@ -615,14 +639,14 @@ const CustomerDetails: React.FC<{
                                             onClick={handleSaveEdit}
                                             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
                                         >
-                                            <Save className="h-4 w-4" />
+                                            <Save className="h-4 w-4"/>
                                             <span>Save Changes</span>
                                         </button>
                                         <button
                                             onClick={() => setEditMode(false)}
                                             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
                                         >
-                                            <X className="h-4 w-4" />
+                                            <X className="h-4 w-4"/>
                                             <span>Cancel</span>
                                         </button>
                                     </div>
@@ -631,7 +655,7 @@ const CustomerDetails: React.FC<{
                                         onClick={() => setEditMode(true)}
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                                     >
-                                        <Edit className="h-4 w-4" />
+                                        <Edit className="h-4 w-4"/>
                                         <span>Edit Customer</span>
                                     </button>
                                 )}
@@ -653,7 +677,7 @@ const CustomerDetails: React.FC<{
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                             >
-                                <tab.icon className="h-4 w-4" />
+                                <tab.icon className="h-4 w-4"/>
                                 <span>{tab.label}</span>
                             </button>
                         ))}
@@ -668,7 +692,7 @@ const CustomerDetails: React.FC<{
                         <div className="space-y-6">
                             <div className="bg-gray-50 p-6 rounded-lg">
                                 <h4 className="font-medium text-gray-900 mb-4 flex items-center">
-                                    <User className="h-5 w-5 mr-2" />
+                                    <User className="h-5 w-5 mr-2"/>
                                     Personal Information
                                 </h4>
                                 <div className="space-y-4">
@@ -679,7 +703,10 @@ const CustomerDetails: React.FC<{
                                                 <input
                                                     type="text"
                                                     value={editData.first_name}
-                                                    onChange={(e) => setEditData(prev => ({ ...prev, first_name: e.target.value }))}
+                                                    onChange={(e) => setEditData(prev => ({
+                                                        ...prev,
+                                                        first_name: e.target.value
+                                                    }))}
                                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             ) : (
@@ -692,7 +719,10 @@ const CustomerDetails: React.FC<{
                                                 <input
                                                     type="text"
                                                     value={editData.last_name}
-                                                    onChange={(e) => setEditData(prev => ({ ...prev, last_name: e.target.value }))}
+                                                    onChange={(e) => setEditData(prev => ({
+                                                        ...prev,
+                                                        last_name: e.target.value
+                                                    }))}
                                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             ) : (
@@ -706,7 +736,10 @@ const CustomerDetails: React.FC<{
                                             <input
                                                 type="text"
                                                 value={editData.username}
-                                                onChange={(e) => setEditData(prev => ({ ...prev, username: e.target.value }))}
+                                                onChange={(e) => setEditData(prev => ({
+                                                    ...prev,
+                                                    username: e.target.value
+                                                }))}
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         ) : (
@@ -719,7 +752,10 @@ const CustomerDetails: React.FC<{
                                             <input
                                                 type="email"
                                                 value={editData.email}
-                                                onChange={(e) => setEditData(prev => ({ ...prev, email: e.target.value }))}
+                                                onChange={(e) => setEditData(prev => ({
+                                                    ...prev,
+                                                    email: e.target.value
+                                                }))}
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         ) : (
@@ -732,7 +768,10 @@ const CustomerDetails: React.FC<{
                                             <input
                                                 type="tel"
                                                 value={editData.mobile}
-                                                onChange={(e) => setEditData(prev => ({ ...prev, mobile: e.target.value }))}
+                                                onChange={(e) => setEditData(prev => ({
+                                                    ...prev,
+                                                    mobile: e.target.value
+                                                }))}
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         ) : (
@@ -744,7 +783,10 @@ const CustomerDetails: React.FC<{
                                         {editMode ? (
                                             <select
                                                 value={editData.gender}
-                                                onChange={(e) => setEditData(prev => ({ ...prev, gender: e.target.value }))}
+                                                onChange={(e) => setEditData(prev => ({
+                                                    ...prev,
+                                                    gender: e.target.value
+                                                }))}
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
                                                 <option value="">Select gender</option>
@@ -764,7 +806,7 @@ const CustomerDetails: React.FC<{
                         <div className="space-y-6">
                             <div className="bg-gray-50 p-6 rounded-lg">
                                 <h4 className="font-medium text-gray-900 mb-4 flex items-center">
-                                    <Settings className="h-5 w-5 mr-2" />
+                                    <Settings className="h-5 w-5 mr-2"/>
                                     Account Information
                                 </h4>
                                 <div className="space-y-4">
@@ -781,26 +823,30 @@ const CustomerDetails: React.FC<{
                                         {editMode ? (
                                             <select
                                                 value={editData.is_active ? 'active' : 'inactive'}
-                                                onChange={(e) => setEditData(prev => ({ ...prev, is_active: e.target.value === 'active' }))}
+                                                onChange={(e) => setEditData(prev => ({
+                                                    ...prev,
+                                                    is_active: e.target.value === 'active'
+                                                }))}
                                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
                                                 <option value="active">Active</option>
                                                 <option value="inactive">Inactive</option>
                                             </select>
                                         ) : (
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-1 ${
-                                                customer.tu_is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                            }`}>
+                                            <span
+                                                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-1 ${
+                                                    customer.tu_is_active
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                }`}>
                                                 {customer.tu_is_active ? (
                                                     <>
-                                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                                        <CheckCircle className="h-4 w-4 mr-1"/>
                                                         Active
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                                        <AlertCircle className="h-4 w-4 mr-1"/>
                                                         Inactive
                                                     </>
                                                 )}
@@ -817,13 +863,18 @@ const CustomerDetails: React.FC<{
                                                         <input
                                                             type="checkbox"
                                                             checked={editData.email_verified}
-                                                            onChange={(e) => setEditData(prev => ({ ...prev, email_verified: e.target.checked }))}
+                                                            onChange={(e) => setEditData(prev => ({
+                                                                ...prev,
+                                                                email_verified: e.target.checked
+                                                            }))}
                                                             className="sr-only peer"
                                                         />
-                                                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div
+                                                            className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                                                     </label>
                                                 ) : (
-                                                    <span className={`w-2 h-2 rounded-full ${customer.tu_email_verified ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                                    <span
+                                                        className={`w-2 h-2 rounded-full ${customer.tu_email_verified ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                                 )}
                                             </div>
                                             <div className="flex items-center justify-between">
@@ -833,13 +884,18 @@ const CustomerDetails: React.FC<{
                                                         <input
                                                             type="checkbox"
                                                             checked={editData.mobile_verified}
-                                                            onChange={(e) => setEditData(prev => ({ ...prev, mobile_verified: e.target.checked }))}
+                                                            onChange={(e) => setEditData(prev => ({
+                                                                ...prev,
+                                                                mobile_verified: e.target.checked
+                                                            }))}
                                                             className="sr-only peer"
                                                         />
-                                                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        <div
+                                                            className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                                                     </label>
                                                 ) : (
-                                                    <span className={`w-2 h-2 rounded-full ${customer.tu_mobile_verified ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                                    <span
+                                                        className={`w-2 h-2 rounded-full ${customer.tu_mobile_verified ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                                 )}
                                             </div>
                                         </div>
@@ -854,7 +910,7 @@ const CustomerDetails: React.FC<{
                     <div>
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="font-medium text-gray-900 flex items-center">
-                                <CreditCard className="h-5 w-5 mr-2" />
+                                <CreditCard className="h-5 w-5 mr-2"/>
                                 Payment Transaction History
                             </h4>
                             <div className="text-sm text-gray-500">
@@ -864,18 +920,20 @@ const CustomerDetails: React.FC<{
 
                         {loading ? (
                             <div className="text-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                <div
+                                    className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                                 <p className="text-gray-500 mt-2">Loading transactions...</p>
                             </div>
                         ) : transactions.length > 0 ? (
                             <div className="space-y-4">
                                 {transactions.map((transaction) => (
-                                    <div key={transaction.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                    <div key={transaction.id}
+                                         className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-3 mb-2">
                                                     <div className="bg-blue-100 p-2 rounded-lg">
-                                                        <CreditCard className="h-4 w-4 text-blue-600" />
+                                                        <CreditCard className="h-4 w-4 text-blue-600"/>
                                                     </div>
                                                     <div>
                                                         <h5 className="font-medium text-gray-900">
@@ -892,7 +950,8 @@ const CustomerDetails: React.FC<{
                                                         <p className="text-sm text-gray-900 capitalize">{transaction.payment_method}</p>
                                                     </div>
                                                     <div>
-                                                        <span className="text-xs font-medium text-gray-500">Currency</span>
+                                                        <span
+                                                            className="text-xs font-medium text-gray-500">Currency</span>
                                                         <p className="text-sm text-gray-900">{transaction.currency}</p>
                                                     </div>
                                                 </div>
@@ -901,17 +960,20 @@ const CustomerDetails: React.FC<{
                                                 <p className="text-2xl font-bold text-gray-900">
                                                     ${transaction.amount}
                                                 </p>
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                    transaction.payment_status === 'completed'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : transaction.payment_status === 'pending'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : transaction.payment_status === 'failed'
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {transaction.payment_status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
-                                                    {transaction.payment_status === 'failed' && <AlertCircle className="h-3 w-3 mr-1" />}
+                                                <span
+                                                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                                        transaction.payment_status === 'completed'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : transaction.payment_status === 'pending'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : transaction.payment_status === 'failed'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {transaction.payment_status === 'completed' &&
+                                                        <CheckCircle className="h-3 w-3 mr-1"/>}
+                                                    {transaction.payment_status === 'failed' &&
+                                                        <AlertCircle className="h-3 w-3 mr-1"/>}
                                                     {transaction.payment_status.charAt(0).toUpperCase() + transaction.payment_status.slice(1)}
                                                 </span>
                                             </div>
@@ -921,7 +983,7 @@ const CustomerDetails: React.FC<{
                             </div>
                         ) : (
                             <div className="text-center py-12">
-                                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4"/>
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions found</h3>
                                 <p className="text-gray-600">This customer hasn't made any payments yet.</p>
                             </div>

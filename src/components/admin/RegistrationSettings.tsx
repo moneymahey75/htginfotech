@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/adminSupabase';
-import { UserCheck, Mail, Smartphone, Save, AlertCircle, CheckCircle, Key, User, Lock } from 'lucide-react';
+import React, {useState, useEffect} from 'react';
+import {supabase} from '../../lib/adminSupabase';
+import {UserCheck, Mail, Smartphone, Save, AlertCircle, CheckCircle, Key, User, Lock} from 'lucide-react';
 
 const RegistrationSettings: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -46,7 +46,7 @@ const RegistrationSettings: React.FC = () => {
 
     const loadSettings = async () => {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('tbl_system_settings')
                 .select('tss_setting_key, tss_setting_value')
                 .in('tss_setting_key', [
@@ -333,7 +333,7 @@ const RegistrationSettings: React.FC = () => {
             }
 
             for (const update of updates) {
-                const { error } = await supabase
+                const {error} = await supabase
                     .from('tbl_system_settings')
                     .upsert(update, {
                         onConflict: 'tss_setting_key'
@@ -358,11 +358,11 @@ const RegistrationSettings: React.FC = () => {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, type, checked, value } = e.target;
+        const {name, type, checked, value} = e.target;
 
         if (name === 'testOtpCode') {
             if (/^\d{0,6}$/.test(value)) {
-                setFormData(prev => ({ ...prev, [name]: value }));
+                setFormData(prev => ({...prev, [name]: value}));
             }
             return;
         }
@@ -374,13 +374,13 @@ const RegistrationSettings: React.FC = () => {
             name === 'passwordExpiryDays' || name === 'passwordHistoryCount') {
             const numValue = parseInt(value) || 0;
             if (numValue >= 0) {
-                setFormData(prev => ({ ...prev, [name]: numValue }));
+                setFormData(prev => ({...prev, [name]: numValue}));
             }
             return;
         }
 
         if (name === 'usernameAllowedSpecialChars' || name === 'passwordAllowedSpecialChars') {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => ({...prev, [name]: value}));
             return;
         }
 
@@ -456,7 +456,7 @@ const RegistrationSettings: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center space-x-3 mb-6">
                 <div className="bg-green-100 p-3 rounded-lg">
-                    <UserCheck className="h-6 w-6 text-green-600" />
+                    <UserCheck className="h-6 w-6 text-green-600"/>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900">Registration Settings</h3>
@@ -472,9 +472,9 @@ const RegistrationSettings: React.FC = () => {
                 }`}>
                     <div className="flex items-center space-x-2">
                         {saveResult.success ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <CheckCircle className="h-5 w-5 text-green-600"/>
                         ) : (
-                            <AlertCircle className="h-5 w-5 text-red-600" />
+                            <AlertCircle className="h-5 w-5 text-red-600"/>
                         )}
                         <span className={`text-sm font-medium ${
                             saveResult.success ? 'text-green-800' : 'text-red-800'
@@ -491,7 +491,7 @@ const RegistrationSettings: React.FC = () => {
                     <div className="border border-gray-200 rounded-lg p-6">
                         <div className="flex items-start space-x-4">
                             <div className="bg-blue-100 p-2 rounded-lg mt-1">
-                                <Mail className="h-5 w-5 text-blue-600" />
+                                <Mail className="h-5 w-5 text-blue-600"/>
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
@@ -537,7 +537,7 @@ const RegistrationSettings: React.FC = () => {
                     <div className="border border-gray-200 rounded-lg p-6">
                         <div className="flex items-start space-x-4">
                             <div className="bg-green-100 p-2 rounded-lg mt-1">
-                                <Smartphone className="h-5 w-5 text-green-600" />
+                                <Smartphone className="h-5 w-5 text-green-600"/>
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
@@ -583,7 +583,7 @@ const RegistrationSettings: React.FC = () => {
                     <div className="border border-gray-200 rounded-lg p-6">
                         <div className="flex items-start space-x-4">
                             <div className="bg-orange-100 p-2 rounded-lg mt-1">
-                                <UserCheck className="h-5 w-5 text-orange-600" />
+                                <UserCheck className="h-5 w-5 text-orange-600"/>
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
@@ -616,7 +616,8 @@ const RegistrationSettings: React.FC = () => {
                                 </div>
                                 <div className="mt-3 text-sm">
                                     {formData.eitherVerificationRequired ? (
-                                        <span className="text-orange-600">✓ Users can verify either email or mobile</span>
+                                        <span
+                                            className="text-orange-600">✓ Users can verify either email or mobile</span>
                                     ) : (
                                         <span className="text-gray-500">Both verified separately</span>
                                     )}
@@ -629,7 +630,7 @@ const RegistrationSettings: React.FC = () => {
                     <div className="border border-gray-200 rounded-lg p-6">
                         <div className="flex items-start space-x-4">
                             <div className="bg-purple-100 p-2 rounded-lg mt-1">
-                                <UserCheck className="h-5 w-5 text-purple-600" />
+                                <UserCheck className="h-5 w-5 text-purple-600"/>
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
@@ -647,7 +648,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
                                 <div className="mt-3 text-sm">
@@ -665,7 +667,7 @@ const RegistrationSettings: React.FC = () => {
                     <div className="border border-yellow-200 rounded-lg p-6 bg-yellow-50">
                         <div className="flex items-start space-x-4">
                             <div className="bg-yellow-100 p-2 rounded-lg mt-1">
-                                <Key className="h-5 w-5 text-yellow-600" />
+                                <Key className="h-5 w-5 text-yellow-600"/>
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
@@ -683,7 +685,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
                                     </label>
                                 </div>
 
@@ -715,7 +718,7 @@ const RegistrationSettings: React.FC = () => {
                 <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
                     <div className="flex items-start space-x-4">
                         <div className="bg-blue-100 p-2 rounded-lg mt-1">
-                            <User className="h-5 w-5 text-blue-600" />
+                            <User className="h-5 w-5 text-blue-600"/>
                         </div>
                         <div className="flex-1">
                             <h4 className="text-lg font-medium text-gray-900 mb-4">Username Validation Rules</h4>
@@ -767,7 +770,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
                                 </div>
 
@@ -785,7 +789,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
                                 </div>
 
@@ -803,7 +808,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
                                 </div>
 
@@ -821,7 +827,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
                                 </div>
 
@@ -839,7 +846,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
                                 </div>
 
@@ -857,7 +865,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
                                 </div>
 
@@ -875,7 +884,8 @@ const RegistrationSettings: React.FC = () => {
                                             placeholder="._-"
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono"
                                         />
-                                        <p className="text-sm text-gray-500 mt-1">Enter allowed special characters (e.g., ._-)</p>
+                                        <p className="text-sm text-gray-500 mt-1">Enter allowed special characters
+                                            (e.g., ._-)</p>
                                     </div>
                                 )}
                             </div>
@@ -911,7 +921,7 @@ const RegistrationSettings: React.FC = () => {
                 <div className="border border-purple-200 rounded-lg p-6 bg-purple-50">
                     <div className="flex items-start space-x-4">
                         <div className="bg-purple-100 p-2 rounded-lg mt-1">
-                            <Lock className="h-5 w-5 text-purple-600" />
+                            <Lock className="h-5 w-5 text-purple-600"/>
                         </div>
                         <div className="flex-1">
                             <h4 className="text-lg font-medium text-gray-900 mb-4">Password Validation Rules</h4>
@@ -963,7 +973,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
@@ -981,7 +992,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
@@ -999,14 +1011,16 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
                                 {/* Require Special Characters */}
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700">Require Special Chars</label>
+                                        <label className="text-sm font-medium text-gray-700">Require Special
+                                            Chars</label>
                                         <p className="text-sm text-gray-500">At least one special character</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
@@ -1017,7 +1031,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
@@ -1053,7 +1068,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
@@ -1071,7 +1087,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
@@ -1089,7 +1106,8 @@ const RegistrationSettings: React.FC = () => {
                                             onChange={handleChange}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div
+                                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                                     </label>
                                 </div>
 
@@ -1177,7 +1195,9 @@ const RegistrationSettings: React.FC = () => {
                                         <span className="font-medium">Example valid:</span> SecurePass123!
                                     </p>
                                     <p>
-                                        <span className="font-medium">Example invalid:</span> {formData.passwordMinLength > 6 ? 'short' : 'weak'}, common words, sequences
+                                        <span
+                                            className="font-medium">Example invalid:</span> {formData.passwordMinLength > 6 ? 'short' : 'weak'},
+                                        common words, sequences
                                     </p>
                                 </div>
                             </div>
@@ -1227,7 +1247,7 @@ const RegistrationSettings: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <Save className="h-4 w-4" />
+                                <Save className="h-4 w-4"/>
                                 <span>Save Registration Settings</span>
                             </>
                         )}

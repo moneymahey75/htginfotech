@@ -96,8 +96,8 @@ const JobProviders: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-shadow">
-                <div className="bg-green-100 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <div key={index} className="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-shadow text-center">
+                  <div className="bg-green-100 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto">
                   <benefit.icon className="h-8 w-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">{benefit.title}</h3>
