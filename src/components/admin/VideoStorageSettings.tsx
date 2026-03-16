@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/adminSupabase';
+import { supabase } from '../../lib/adminClient';
 import { videoStorage, StorageProvider } from '../../lib/videoStorage';
 import { Save, HardDrive, Cloud, Zap, AlertCircle, CheckCircle } from 'lucide-react';
 

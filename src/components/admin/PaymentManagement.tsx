@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {supabase} from '../../lib/adminSupabase';
+import {supabase} from '../../lib/adminClient';
 import {useNotification} from '../ui/NotificationProvider';
 import {
     DollarSign,

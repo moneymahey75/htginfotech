@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/adminSupabase';
+import { supabase } from '../../lib/adminClient';
 import { CreditCard, Plus, CreditCard as Edit2, Trash2, Save, DollarSign, Key } from 'lucide-react';
 
 interface StripeConfig {

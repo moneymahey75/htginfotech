@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {supabase} from '../../lib/adminSupabase';
+import {supabase} from '../../lib/adminClient';
 import {UserCheck, Mail, Smartphone, Save, AlertCircle, CheckCircle, Key, User, Lock} from 'lucide-react';
 
 const RegistrationSettings: React.FC = () => {

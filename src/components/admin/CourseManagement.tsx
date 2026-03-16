@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {supabase} from '../../lib/adminSupabase';
+import {supabase} from '../../lib/adminClient';
 import {videoStorage} from '../../lib/videoStorage';
 import {useNotification} from '../ui/NotificationProvider';
 import {

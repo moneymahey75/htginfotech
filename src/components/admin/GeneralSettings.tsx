@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {useAdmin} from '../../contexts/AdminContext';
-import {supabase} from '../../lib/adminSupabase';
+import {supabase} from '../../lib/adminClient';
 import {Settings, Upload, Save, AlertCircle, CheckCircle} from 'lucide-react';
 
 const GeneralSettings: React.FC = () => {

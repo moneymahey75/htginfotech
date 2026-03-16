@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/adminSupabase';
+import { supabase } from '../../lib/adminClient';
 import { useNotification } from '../ui/NotificationProvider';
 import { CreditCard, Search, Plus, CreditCard as Edit, Trash2, Save, X, Eye, EyeOff, DollarSign, Calendar, Users, CheckCircle, AlertCircle, Star, Clock } from 'lucide-react';
 

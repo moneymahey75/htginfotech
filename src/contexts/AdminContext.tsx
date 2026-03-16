@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { supabase } from '../lib/adminSupabase';
+import { supabase } from '../lib/adminClient';
 
 interface GeneralSettings {
   siteName: string;
