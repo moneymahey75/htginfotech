@@ -83,7 +83,7 @@ class AdminQueryBuilder {
 
   private async execute() {
     try {
-      const adminSession = localStorage.getItem('adminSession');
+      const adminSession = localStorage.getItem('admin_session_token');
 
       if (!adminSession) {
         return {
