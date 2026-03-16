@@ -1,131 +1,162 @@
-/**
- * Secure Admin Client
- *
- * This client proxies all admin queries through a secure Edge Function
- * that uses the service role key server-side. This prevents exposing
- * the service role key in the frontend code.
- *
- * Usage in admin components:
- * import { adminQuery } from '../lib/adminClient'
- * const result = await adminQuery('SELECT * FROM table WHERE id = $1', [id])
- */
-
-import { supabase } from './supabase';
+import { supabase as regularSupabase } from './supabase';
 
 const ADMIN_QUERY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-query`;
 
-interface AdminQueryResponse<T = any> {
-  data: T | null;
-  error: { message: string; details?: string; hint?: string; code?: string } | null;
-}
+class AdminQueryBuilder {
+  private table: string;
+  private selectFields: string = '*';
+  private filters: Record<string, any> = {};
+  private orderConfig?: { column: string; ascending: boolean };
+  private limitValue?: number;
+  private singleMode: boolean = false;
+  private updateData?: any;
+  private insertData?: any;
+  private deleteMode: boolean = false;
 
-/**
- * Execute a query through the admin Edge Function
- * @param query - SQL query or Supabase query builder chain
- * @param params - Query parameters (for raw SQL queries)
- */
-export async function adminQuery<T = any>(
-  query: string,
-  params?: any[]
-): Promise<AdminQueryResponse<T>> {
-  try {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
+  constructor(table: string) {
+    this.table = table;
+  }
 
-    if (!token) {
+  select(fields: string = '*') {
+    this.selectFields = fields;
+    return this;
+  }
+
+  eq(column: string, value: any) {
+    this.filters[column] = value;
+    return this;
+  }
+
+  neq(column: string, value: any) {
+    this.filters[`${column}_neq`] = value;
+    return this;
+  }
+
+  in(column: string, values: any[]) {
+    this.filters[`${column}_in`] = values;
+    return this;
+  }
+
+  order(column: string, options?: { ascending?: boolean }) {
+    this.orderConfig = { column, ascending: options?.ascending ?? true };
+    return this;
+  }
+
+  limit(count: number) {
+    this.limitValue = count;
+    return this;
+  }
+
+  single() {
+    this.singleMode = true;
+    return this;
+  }
+
+  maybeSingle() {
+    this.singleMode = true;
+    return this;
+  }
+
+  update(data: any) {
+    this.updateData = data;
+    return this;
+  }
+
+  insert(data: any) {
+    this.insertData = data;
+    return this;
+  }
+
+  delete() {
+    this.deleteMode = true;
+    return this;
+  }
+
+  async then(resolve: (value: any) => void, reject: (reason: any) => void) {
+    try {
+      const result = await this.execute();
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
+  }
+
+  private async execute() {
+    try {
+      const adminSession = localStorage.getItem('adminSession');
+
+      if (!adminSession) {
+        return {
+          data: null,
+          error: { message: 'Admin session required' }
+        };
+      }
+
+      let operation: 'select' | 'insert' | 'update' | 'delete' | 'upsert';
+      let requestData: any = {};
+
+      if (this.deleteMode) {
+        operation = 'delete';
+      } else if (this.updateData) {
+        operation = 'update';
+        requestData.data = this.updateData;
+      } else if (this.insertData) {
+        operation = 'insert';
+        requestData.data = this.insertData;
+      } else {
+        operation = 'select';
+        requestData.select = this.selectFields;
+      }
+
+      const payload = {
+        table: this.table,
+        operation,
+        ...requestData,
+        filters: Object.keys(this.filters).length > 0 ? this.filters : undefined,
+        order: this.orderConfig,
+        limit: this.limitValue,
+        single: this.singleMode
+      };
+
+      const response = await fetch(ADMIN_QUERY_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Session': adminSession,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          data: null,
+          error: { message: `HTTP ${response.status}: ${errorText}` }
+        };
+      }
+
+      return await response.json();
+    } catch (error) {
       return {
         data: null,
-        error: { message: 'Not authenticated' }
+        error: { message: error instanceof Error ? error.message : 'Unknown error' }
       };
     }
-
-    const response = await fetch(ADMIN_QUERY_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ query, params }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return {
-        data: null,
-        error: { message: `HTTP ${response.status}: ${errorText}` }
-      };
-    }
-
-    return await response.json();
-  } catch (error) {
-    return {
-      data: null,
-      error: { message: error instanceof Error ? error.message : 'Unknown error' }
-    };
   }
 }
 
-/**
- * Helper to build common admin queries
- */
-export const adminDb = {
-  from: (table: string) => ({
-    select: async <T = any>(columns = '*', options?: { eq?: Record<string, any> }) => {
-      let query = `SELECT ${columns} FROM ${table}`;
-      const params: any[] = [];
+class AdminSupabaseClient {
+  from(table: string) {
+    return new AdminQueryBuilder(table);
+  }
 
-      if (options?.eq) {
-        const conditions = Object.entries(options.eq).map(([key, value], index) => {
-          params.push(value);
-          return `${key} = $${index + 1}`;
-        });
-        query += ` WHERE ${conditions.join(' AND ')}`;
-      }
+  get auth() {
+    return regularSupabase.auth;
+  }
 
-      return adminQuery<T[]>(query, params);
-    },
+  get storage() {
+    return regularSupabase.storage;
+  }
+}
 
-    insert: async <T = any>(values: Record<string, any> | Record<string, any>[]) => {
-      const rows = Array.isArray(values) ? values : [values];
-      const columns = Object.keys(rows[0]);
-      const placeholders = rows.map((_, rowIndex) =>
-        `(${columns.map((_, colIndex) => `$${rowIndex * columns.length + colIndex + 1}`).join(', ')})`
-      ).join(', ');
-      const params = rows.flatMap(row => columns.map(col => row[col]));
-
-      const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${placeholders} RETURNING *`;
-      return adminQuery<T>(query, params);
-    },
-
-    update: async <T = any>(values: Record<string, any>, options: { eq: Record<string, any> }) => {
-      const setColumns = Object.keys(values);
-      const setClause = setColumns.map((col, index) => `${col} = $${index + 1}`).join(', ');
-      const params = [...Object.values(values)];
-
-      const conditions = Object.entries(options.eq).map(([key, value], index) => {
-        params.push(value);
-        return `${key} = $${setColumns.length + index + 1}`;
-      });
-
-      const query = `UPDATE ${table} SET ${setClause} WHERE ${conditions.join(' AND ')} RETURNING *`;
-      return adminQuery<T>(query, params);
-    },
-
-    delete: async (options: { eq: Record<string, any> }) => {
-      const params: any[] = [];
-      const conditions = Object.entries(options.eq).map(([key, value], index) => {
-        params.push(value);
-        return `${key} = $${index + 1}`;
-      });
-
-      const query = `DELETE FROM ${table} WHERE ${conditions.join(' AND ')} RETURNING *`;
-      return adminQuery(query, params);
-    }
-  })
-};
-
-/**
- * Direct Supabase client export for operations that don't need admin privileges
- * (like auth state management)
- */
-export { supabase };
+export const supabase = new AdminSupabaseClient();
