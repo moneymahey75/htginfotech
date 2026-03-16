@@ -8,7 +8,9 @@ class AdminQueryBuilder {
   private filters: Record<string, any> = {};
   private orderConfig?: { column: string; ascending: boolean };
   private limitValue?: number;
+  private rangeValue?: { from: number; to: number };
   private singleMode: boolean = false;
+  private needsCount: boolean = false;
   private updateData?: any;
   private insertData?: any;
   private deleteMode: boolean = false;
@@ -17,8 +19,11 @@ class AdminQueryBuilder {
     this.table = table;
   }
 
-  select(fields: string = '*') {
+  select(fields: string = '*', options?: { count?: 'exact' | 'planned' | 'estimated' }) {
     this.selectFields = fields;
+    if (options?.count) {
+      this.needsCount = true;
+    }
     return this;
   }
 
@@ -47,18 +52,26 @@ class AdminQueryBuilder {
     return this;
   }
 
+  range(from: number, to: number) {
+    this.rangeValue = { from, to };
+    return this;
+  }
+
   single() {
     this.singleMode = true;
+    this.needsCount = false;
     return this;
   }
 
   maybeSingle() {
     this.singleMode = true;
+    this.needsCount = false;
     return this;
   }
 
   update(data: any) {
     this.updateData = data;
+    this.needsCount = false;
     return this;
   }
 
@@ -115,7 +128,9 @@ class AdminQueryBuilder {
         filters: Object.keys(this.filters).length > 0 ? this.filters : undefined,
         order: this.orderConfig,
         limit: this.limitValue,
-        single: this.singleMode
+        range: this.rangeValue,
+        single: this.singleMode,
+        count: this.needsCount
       };
 
       const response = await fetch(ADMIN_QUERY_FUNCTION_URL, {

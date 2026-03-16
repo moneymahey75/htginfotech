@@ -13,7 +13,9 @@ interface QueryRequest {
   filters?: Record<string, any>;
   order?: { column: string; ascending?: boolean };
   limit?: number;
+  range?: { from: number; to: number };
   single?: boolean;
+  count?: boolean;
   data?: any;
   onConflict?: string;
 }
@@ -76,7 +78,7 @@ Deno.serve(async (req: Request) => {
 
     // Parse query request
     const queryRequest: QueryRequest = await req.json();
-    const { table, operation, select, filters, order, limit, single, data, onConflict } = queryRequest;
+    const { table, operation, select, filters, order, limit, range, single, count, data, onConflict } = queryRequest;
 
     let query: any;
 
@@ -85,7 +87,7 @@ Deno.serve(async (req: Request) => {
       case 'select':
         query = supabaseAdmin
           .from(table)
-          .select(select || '*');
+          .select(select || '*', count ? { count: 'exact' } : undefined);
 
         // Apply filters
         if (filters) {
@@ -107,8 +109,10 @@ Deno.serve(async (req: Request) => {
           query = query.order(order.column, { ascending: order.ascending ?? true });
         }
 
-        // Apply limit
-        if (limit) {
+        // Apply range (takes precedence over limit)
+        if (range) {
+          query = query.range(range.from, range.to);
+        } else if (limit) {
           query = query.limit(limit);
         }
 
@@ -168,18 +172,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // Execute query
-    const { data: result, error } = await query;
+    const { data: result, error, count: resultCount } = await query;
 
     if (error) {
       console.error('Query error:', error);
       return new Response(
-        JSON.stringify({ data: null, error: error.message }),
+        JSON.stringify({ data: null, error: error.message, count: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ data: result, error: null }),
+      JSON.stringify({ data: result, error: null, count: resultCount ?? null }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
