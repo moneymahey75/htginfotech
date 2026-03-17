@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getCourseById, enrollInCourse } from '../lib/supabase';
+import { supabase, getCourseById, enrollInCourse } from '../lib/supabase';
 import { 
   Clock, 
   Users, 
@@ -17,7 +17,9 @@ import {
   Share2,
   Heart,
   ArrowLeft,
-  ChevronRight
+  ChevronRight,
+  Copy,
+  Check
 } from 'lucide-react';
 
 interface CourseContent {
@@ -61,6 +63,7 @@ const CourseDetails: React.FC = () => {
   const [enrolling, setEnrolling] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (courseId) {
@@ -159,6 +162,125 @@ const CourseDetails: React.FC = () => {
     }
   };
 
+  const getShareUrl = () => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    const publicSiteUrl = import.meta.env.VITE_SITE_URL;
+
+    if (publicSiteUrl) {
+      const baseUrl = publicSiteUrl.replace(/\/$/, '');
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      return `${baseUrl}${currentPath}`;
+    }
+
+    return window.location.href;
+  };
+
+  const getShareText = () => {
+    if (!course) {
+      return '';
+    }
+
+    return `Check out this course: ${course.tc_title}`;
+  };
+
+  const showShareMessage = (message: string) => {
+    setShareMessage(message);
+    window.setTimeout(() => {
+      setShareMessage(null);
+    }, 3000);
+  };
+
+  const openShareWindow = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const getShareLinks = () => {
+    const shareUrl = encodeURIComponent(getShareUrl());
+    const shareText = encodeURIComponent(getShareText());
+
+    return {
+      whatsapp: `https://wa.me/?text=${shareText}%20${shareUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`,
+      instagram: 'https://www.instagram.com/',
+      twitter: `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`,
+      telegram: `https://t.me/share/url?url=${shareUrl}&text=${shareText}`,
+      email: `mailto:?subject=${encodeURIComponent(course?.tc_title || 'Course')}&body=${shareText}%0A%0A${shareUrl}`
+    };
+  };
+
+  const handleNativeShare = async () => {
+    if (!course || typeof navigator === 'undefined' || !navigator.share) {
+      return false;
+    }
+
+    try {
+      await navigator.share({
+        title: course.tc_title,
+        text: getShareText(),
+        url: getShareUrl()
+      });
+      return true;
+    } catch (error) {
+      console.error('Native share failed:', error);
+      return false;
+    }
+  };
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      showShareMessage('Course link copied.');
+    } catch (error) {
+      console.error('Copy failed:', error);
+      showShareMessage('Unable to copy the link.');
+    }
+  };
+
+  const handleShareOption = async (platform: string) => {
+    if (!course) {
+      return;
+    }
+
+    const shareUrl = encodeURIComponent(getShareUrl());
+    const shareText = encodeURIComponent(getShareText());
+
+    switch (platform) {
+      case 'native':
+        await handleNativeShare();
+        break;
+      case 'whatsapp':
+        openShareWindow(`https://wa.me/?text=${shareText}%20${shareUrl}`);
+        break;
+      case 'facebook':
+        openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`);
+        break;
+      case 'twitter':
+        openShareWindow(`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`);
+        break;
+      case 'linkedin':
+        openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`);
+        break;
+      case 'telegram':
+        openShareWindow(`https://t.me/share/url?url=${shareUrl}&text=${shareText}`);
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent(course.tc_title)}&body=${shareText}%0A%0A${shareUrl}`;
+        break;
+      case 'instagram':
+        openShareWindow('https://www.instagram.com/');
+        break;
+      case 'copy':
+        await copyShareLink();
+        break;
+      default:
+        break;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -199,6 +321,8 @@ const CourseDetails: React.FC = () => {
       </div>
     );
   }
+
+  const shareLinks = getShareLinks();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -548,11 +672,82 @@ const CourseDetails: React.FC = () => {
                   <Heart className="h-4 w-4" />
                   <span>Wishlist</span>
                 </button>
-                <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2">
-                  <Share2 className="h-4 w-4" />
-                  <span>Share</span>
-                </button>
               </div>
+
+              <div className="mt-4 space-y-3">
+                <p className="text-sm font-medium text-gray-900">Share this course</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={shareLinks.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 transition-colors text-center"
+                  >
+                    WhatsApp
+                  </a>
+                  <a
+                    href={shareLinks.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors text-center"
+                  >
+                    Facebook
+                  </a>
+                  <a
+                    href={shareLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-pink-50 px-3 py-2 text-sm font-medium text-pink-700 hover:bg-pink-100 transition-colors text-center"
+                  >
+                    Instagram
+                  </a>
+                  <a
+                    href={shareLinks.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100 transition-colors text-center"
+                  >
+                    Twitter / X
+                  </a>
+                  <a
+                    href={shareLinks.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100 transition-colors text-center"
+                  >
+                    LinkedIn
+                  </a>
+                  <a
+                    href={shareLinks.telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors text-center"
+                  >
+                    Telegram
+                  </a>
+                  <a
+                    href={shareLinks.email}
+                    className="rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors text-center"
+                  >
+                    Email
+                  </a>
+                  <button
+                    onClick={() => copyShareLink()}
+                    className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {shareMessage === 'Course link copied.' ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                    <span>Copy Link</span>
+                  </button>
+                </div>
+              </div>
+
+              {shareMessage && (
+                <p className="mt-3 text-sm text-center text-green-600">{shareMessage}</p>
+              )}
             </div>
           </div>
         </div>

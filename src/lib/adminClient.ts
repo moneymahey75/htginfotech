@@ -13,6 +13,8 @@ class AdminQueryBuilder {
   private needsCount: boolean = false;
   private updateData?: any;
   private insertData?: any;
+  private upsertData?: any;
+  private upsertOptions?: { onConflict?: string };
   private deleteMode: boolean = false;
 
   constructor(table: string) {
@@ -80,6 +82,13 @@ class AdminQueryBuilder {
     return this;
   }
 
+  upsert(data: any, options?: { onConflict?: string }) {
+    this.upsertData = data;
+    this.upsertOptions = options;
+    this.needsCount = false;
+    return this;
+  }
+
   delete() {
     this.deleteMode = true;
     return this;
@@ -110,6 +119,10 @@ class AdminQueryBuilder {
 
       if (this.deleteMode) {
         operation = 'delete';
+      } else if (this.upsertData) {
+        operation = 'upsert';
+        requestData.data = this.upsertData;
+        requestData.onConflict = this.upsertOptions?.onConflict;
       } else if (this.updateData) {
         operation = 'update';
         requestData.data = this.updateData;

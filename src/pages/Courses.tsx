@@ -48,6 +48,18 @@ interface CourseCategory {
   tcc_color: string;
 }
 
+const COURSE_VIEW_MODE_STORAGE_KEY = 'courses-view-mode';
+const COURSE_FALLBACK_IMAGE = '/htginfotech-logo.png';
+
+const getInitialViewMode = (): 'grid' | 'list' => {
+  if (typeof window === 'undefined') {
+    return 'grid';
+  }
+
+  const savedViewMode = window.localStorage.getItem(COURSE_VIEW_MODE_STORAGE_KEY);
+  return savedViewMode === 'list' ? 'list' : 'grid';
+};
+
 const Courses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<CourseCategory[]>([]);
@@ -57,11 +69,19 @@ const Courses: React.FC = () => {
   const [priceFilter, setPriceFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(getInitialViewMode);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(COURSE_VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   const loadData = async () => {
     try {
@@ -366,6 +386,18 @@ const Courses: React.FC = () => {
 
 // Course Card Component
 const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ course, viewMode }) => {
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    if (image.src.endsWith(COURSE_FALLBACK_IMAGE)) {
+      return;
+    }
+
+    image.src = COURSE_FALLBACK_IMAGE;
+    image.classList.remove('object-cover');
+    image.classList.add('object-contain', 'opacity-20', 'p-6');
+    image.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-50');
+  };
+
   const getDifficultyColor = (level: string) => {
     switch (level) {
       case 'beginner': return 'bg-green-100 text-green-800';
@@ -380,9 +412,9 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
       return <span className="text-green-600 font-bold text-xl">Free</span>;
     } else if (course.tc_pricing_type === 'paid_days') {
       return (
-        <div className="text-right">
+        <div className="text-right flex items-baseline gap-2">
           <span className="text-2xl font-bold text-gray-900">${course.tc_price}</span>
-          <span className="text-sm text-gray-600 block">for {course.tc_access_days} days</span>
+          <span className="text-sm text-gray-600">for {course.tc_access_days} days</span>
         </div>
       );
     } else {
@@ -398,29 +430,31 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
   if (viewMode === 'list') {
     return (
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-        <div className="flex">
-          <div className="w-64 h-48 flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden">
+        <div className="flex min-h-[220px]">
+          <div className="w-56 min-h-[220px] flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden">
             <img
                 src={course.tc_thumbnail_url}
                 alt={course.tc_title}
-                className="w-full h-full object-cover"
-                onError={(e) => e.target.style.visibility = 'hidden'}
+                className="w-full h-full min-h-full object-cover"
+                onError={handleImageError}
             />
           </div>
-          <div className="flex-1 p-6 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500">
+          <div className="flex-1 p-5 flex flex-col justify-between">
+            <div className="flex-1 flex flex-col justify-start">
+              <div className="flex items-start justify-between gap-4 mb-1">
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm text-gray-500 block mb-0.5">
                   {course.tbl_course_categories?.tcc_name}
-                </span>
+                  </span>
+                  <h3 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2">{course.tc_title}</h3>
+                </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(course.tc_difficulty_level)}`}>
                   {course.tc_difficulty_level}
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{course.tc_title}</h3>
-              <p className="text-gray-600 mb-4 line-clamp-2">{course.tc_short_description}</p>
+              <p className="text-gray-600 mb-3 line-clamp-2">{course.tc_short_description}</p>
               
-              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+              <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <Clock className="h-4 w-4" />
                   <span>{course.tc_duration_hours}h</span>
@@ -432,7 +466,7 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
               </div>
             </div>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-end justify-between gap-4 pt-3">
               {getPriceDisplay()}
               <Link
                 to={`/courses/${course.tc_id}`}
@@ -455,6 +489,7 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
           src={course.tc_thumbnail_url}
           alt={course.tc_title}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={handleImageError}
         />
         <div className="absolute top-4 left-4">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(course.tc_difficulty_level)}`}>
