@@ -403,6 +403,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (authError) {
         console.error('Supabase auth error:', authError);
+
+        // Handle rate limit error with helpful message
+        if (authError.message.includes('email rate limit') || authError.message.includes('over_email_send_rate_limit')) {
+          throw new Error('Registration email limit reached. Please wait a few minutes and try again, or contact support if the issue persists.');
+        }
+
         throw new Error(authError.message);
       }
 
