@@ -53,12 +53,9 @@ const checkUsernameExists = async (username: string): Promise<boolean> => {
         .from('tbl_user_profiles')
         .select('tup_username')
         .eq('tup_username', username.toLowerCase())
-        .single();
+        .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return false;
-      }
       console.error('Error checking username:', error);
       return false;
     }
