@@ -49,11 +49,9 @@ interface PasswordValidation {
 
 const checkUsernameExists = async (username: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-        .from('tbl_user_profiles')
-        .select('tup_username')
-        .eq('tup_username', username.toLowerCase())
-        .maybeSingle();
+    const { data, error } = await supabase.rpc('check_username_exists', {
+      p_username: username
+    });
 
     if (error) {
       console.error('Error checking username:', error);
