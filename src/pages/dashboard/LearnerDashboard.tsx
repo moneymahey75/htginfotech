@@ -446,8 +446,8 @@ const LearnerDashboard: React.FC = () => {
                         <button className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors" onClick={() => window.location.href = '/courses'}>
                           Browse New Courses
                         </button>
-                        <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors" onClick={() => window.location.href = '/courses'}>
-                          View Certificates
+                        <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors" onClick={() => window.location.href = '/tutors'}>
+                          Browse Tutors
                         </button>
                       </div>
                     </div>

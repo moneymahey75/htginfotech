@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, MessageSquare, User, Building } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext'; // Adjust path as needed
+import { supabase } from '../lib/supabase';
 
 const ContactUs: React.FC = () => {
   const { settings } = useAdmin();
@@ -12,6 +13,7 @@ const ContactUs: React.FC = () => {
     type: 'general'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Format the full address from individual components
   const formatAddress = () => {
@@ -28,14 +30,43 @@ const ContactUs: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitResult(null);
+
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
+      setSubmitResult({
+        success: false,
+        message: 'Please fill in all required fields before submitting.'
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: formData
+      });
 
-    alert('Thank you for your message! We will get back to you within 24 hours.');
-    setFormData({ name: '', email: '', subject: '', message: '', type: 'general' });
-    setIsSubmitting(false);
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Failed to send your message. Please try again.');
+      }
+
+      setSubmitResult({
+        success: true,
+        message: 'Thank you for your message! We will get back to you within 24 hours.'
+      });
+      setFormData({ name: '', email: '', subject: '', message: '', type: 'general' });
+    } catch (error) {
+      console.error('Contact form submission failed:', error);
+      setSubmitResult({
+        success: false,
+        message: error instanceof Error
+          ? `${error.message} Please contact the admin if the issue continues.`
+          : 'There is some error. Please contact the admin.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -62,6 +93,25 @@ const ContactUs: React.FC = () => {
             <div className="w-full">
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+
+                {submitResult && (
+                  <div className={`border rounded-lg p-4 mb-6 ${
+                    submitResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      {submitResult.success ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                      )}
+                      <span className={`text-sm font-medium ${
+                        submitResult.success ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {submitResult.message}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

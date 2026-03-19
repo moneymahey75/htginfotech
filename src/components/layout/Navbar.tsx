@@ -7,6 +7,18 @@ import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, BookOpen,
 
 const hasValue = (value?: string | null) => Boolean(value && value.trim());
 
+const isRouteActive = (pathname: string, route: string) => pathname === route;
+
+const getDesktopNavClassName = (pathname: string, route: string, activeClasses: string, inactiveClasses: string) =>
+  isRouteActive(pathname, route)
+    ? `flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 font-medium ${activeClasses}`
+    : `flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 font-medium ${inactiveClasses}`;
+
+const getMobileNavClassName = (pathname: string, route: string, activeClasses: string, inactiveClasses: string) =>
+  isRouteActive(pathname, route)
+    ? `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${activeClasses}`
+    : `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${inactiveClasses}`;
+
 const getTopSocialLinks = (settings: any) => ([
   {
     key: 'facebook',
@@ -209,7 +221,7 @@ const Navbar: React.FC = () => {
               <div className="hidden lg:flex items-center space-x-1">
                 <Link
                     to="/"
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 font-medium"
+                    className={getDesktopNavClassName(location.pathname, '/', 'bg-indigo-50 text-indigo-600', 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50')}
                 >
                   <Home className="h-4 w-4" />
                   <span>Home</span>
@@ -217,7 +229,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                     to="/job-seekers"
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium"
+                    className={getDesktopNavClassName(location.pathname, '/job-seekers', 'bg-blue-50 text-blue-600', 'text-gray-700 hover:text-blue-600 hover:bg-blue-50')}
                 >
                   <Users className="h-4 w-4" />
                   <span>Job Seekers</span>
@@ -225,7 +237,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                     to="/job-providers"
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-green-600 hover:bg-green-50 transition-all duration-200 font-medium"
+                    className={getDesktopNavClassName(location.pathname, '/job-providers', 'bg-green-50 text-green-600', 'text-gray-700 hover:text-green-600 hover:bg-green-50')}
                 >
                   <Building className="h-4 w-4" />
                   <span>Job Providers</span>
@@ -233,7 +245,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                     to="/tutors"
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 font-medium"
+                    className={getDesktopNavClassName(location.pathname, '/tutors', 'bg-purple-50 text-purple-600', 'text-gray-700 hover:text-purple-600 hover:bg-purple-50')}
                 >
                   <GraduationCap className="h-4 w-4" />
                   <span>Tutors</span>
@@ -241,7 +253,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                     to="/learners"
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-all duration-200 font-medium"
+                    className={getDesktopNavClassName(location.pathname, '/learners', 'bg-orange-50 text-orange-600', 'text-gray-700 hover:text-orange-600 hover:bg-orange-50')}
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>Learners</span>
@@ -249,7 +261,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                     to="/courses"
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:text-pink-600 hover:bg-pink-50 transition-all duration-200 font-medium"
+                    className={getDesktopNavClassName(location.pathname, '/courses', 'bg-pink-50 text-pink-600', 'text-gray-700 hover:text-pink-600 hover:bg-pink-50')}
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>All Courses</span>
@@ -360,7 +372,7 @@ const Navbar: React.FC = () => {
                 <div className="px-4 pt-2 pb-3 space-y-1">
                   <Link
                       to="/"
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-200"
+                      className={getMobileNavClassName(location.pathname, '/', 'bg-indigo-50 text-indigo-600', 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50')}
                       onClick={() => setIsMenuOpen(false)}
                   >
                     <Home className="h-5 w-5" />
@@ -369,7 +381,7 @@ const Navbar: React.FC = () => {
 
                   <Link
                       to="/job-seekers"
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                      className={getMobileNavClassName(location.pathname, '/job-seekers', 'bg-blue-50 text-blue-600', 'text-gray-700 hover:text-blue-600 hover:bg-blue-50')}
                       onClick={() => setIsMenuOpen(false)}
                   >
                     <Users className="h-5 w-5" />
@@ -378,7 +390,7 @@ const Navbar: React.FC = () => {
 
                   <Link
                       to="/job-providers"
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
+                      className={getMobileNavClassName(location.pathname, '/job-providers', 'bg-green-50 text-green-600', 'text-gray-700 hover:text-green-600 hover:bg-green-50')}
                       onClick={() => setIsMenuOpen(false)}
                   >
                     <Building className="h-5 w-5" />
@@ -387,7 +399,7 @@ const Navbar: React.FC = () => {
 
                   <Link
                       to="/tutors"
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all duration-200"
+                      className={getMobileNavClassName(location.pathname, '/tutors', 'bg-purple-50 text-purple-600', 'text-gray-700 hover:text-purple-600 hover:bg-purple-50')}
                       onClick={() => setIsMenuOpen(false)}
                   >
                     <GraduationCap className="h-5 w-5" />
@@ -396,7 +408,7 @@ const Navbar: React.FC = () => {
 
                   <Link
                       to="/learners"
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all duration-200"
+                      className={getMobileNavClassName(location.pathname, '/learners', 'bg-orange-50 text-orange-600', 'text-gray-700 hover:text-orange-600 hover:bg-orange-50')}
                       onClick={() => setIsMenuOpen(false)}
                   >
                     <BookOpen className="h-5 w-5" />
@@ -405,7 +417,7 @@ const Navbar: React.FC = () => {
 
                   <Link
                       to="/courses"
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-all duration-200"
+                      className={getMobileNavClassName(location.pathname, '/courses', 'bg-pink-50 text-pink-600', 'text-gray-700 hover:text-pink-600 hover:bg-pink-50')}
                       onClick={() => setIsMenuOpen(false)}
                   >
                     <BookOpen className="h-5 w-5" />

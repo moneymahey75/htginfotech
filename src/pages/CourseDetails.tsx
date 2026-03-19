@@ -12,10 +12,6 @@ import {
   CheckCircle,
   Lock,
   Calendar,
-  Globe,
-  Download,
-  Share2,
-  Heart,
   ArrowLeft,
   ChevronRight,
   Copy,
@@ -669,13 +665,11 @@ const CourseDetails: React.FC = () => {
               {/* Actions */}
               <div className="flex space-x-2 mt-6 pt-6 border-t border-gray-200">
                 <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2">
-                  <Heart className="h-4 w-4" />
-                  <span>Wishlist</span>
+                  <span>Share this course</span>
                 </button>
               </div>
 
               <div className="mt-4 space-y-3">
-                <p className="text-sm font-medium text-gray-900">Share this course</p>
                 <div className="grid grid-cols-2 gap-2">
                   <a
                     href={shareLinks.whatsapp}
