@@ -209,40 +209,40 @@ const UnifiedRegister: React.FC = () => {
       const errors: string[] = [];
       const suggestions: string[] = [];
 
-      if (username.length < settings.usernameMinLength) {
-        errors.push(`Username must be at least ${settings.usernameMinLength} characters long`);
+      if (username.length < settings.username_min_length) {
+        errors.push(`Username must be at least ${settings.username_min_length} characters long`);
       }
 
-      if (username.length > settings.usernameMaxLength) {
-        errors.push(`Username must not exceed ${settings.usernameMaxLength} characters`);
+      if (username.length > settings.username_max_length) {
+        errors.push(`Username must not exceed ${settings.username_max_length} characters`);
       }
 
-      if (!settings.usernameAllowSpaces && /\s/.test(username)) {
+      if (!settings.username_allow_spaces && /\s/.test(username)) {
         errors.push('Username cannot contain spaces');
       }
 
-      if (settings.usernameMustStartWithLetter && !/^[a-zA-Z]/.test(username)) {
+      if (settings.username_must_start_with_letter && !/^[a-zA-Z]/.test(username)) {
         errors.push('Username must start with a letter');
       }
 
-      if (!settings.usernameAllowNumbers && /\d/.test(username)) {
+      if (!settings.username_allow_numbers && /\d/.test(username)) {
         errors.push('Username cannot contain numbers');
       }
 
-      if (!settings.usernameAllowSpecialChars && /[^a-zA-Z0-9]/.test(username)) {
+      if (!settings.username_allow_special_chars && /[^a-zA-Z0-9]/.test(username)) {
         errors.push('Username cannot contain special characters');
-      } else if (settings.usernameAllowSpecialChars && settings.usernameAllowedSpecialChars) {
-        const allowedCharsPattern = new RegExp(`^[a-zA-Z0-9${settings.usernameAllowedSpecialChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]+$`);
+      } else if (settings.username_allow_special_chars && settings.username_allowed_special_chars) {
+        const allowedCharsPattern = new RegExp(`^[a-zA-Z0-9${settings.username_allowed_special_chars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]+$`);
         if (!allowedCharsPattern.test(username)) {
-          errors.push(`Username can only contain letters, numbers, and these special characters: ${settings.usernameAllowedSpecialChars}`);
+          errors.push(`Username can only contain letters, numbers, and these special characters: ${settings.username_allowed_special_chars}`);
         }
       }
 
-      if (settings.usernameForceLowerCase && username !== username.toLowerCase()) {
+      if (settings.username_force_lower_case && username !== username.toLowerCase()) {
         suggestions.push(`Username will be converted to lowercase: ${username.toLowerCase()}`);
       }
 
-      if (settings.usernameUniqueRequired && errors.length === 0) {
+      if (settings.username_unique_required && errors.length === 0) {
         try {
           const exists = await checkUsernameExists(username);
           if (exists) {
@@ -257,7 +257,7 @@ const UnifiedRegister: React.FC = () => {
           errors.push('Unable to check username availability');
           setUsernameAvailable(null);
         }
-      } else if (!settings.usernameUniqueRequired) {
+      } else if (!settings.username_unique_required) {
         setUsernameAvailable(true);
       }
 
@@ -303,58 +303,58 @@ const UnifiedRegister: React.FC = () => {
 
     const errors: string[] = [];
     const requirements = {
-      minLength: password.length >= settings.passwordMinLength,
-      maxLength: password.length <= settings.passwordMaxLength,
-      hasUppercase: settings.passwordRequireUppercase ? /[A-Z]/.test(password) : true,
-      hasLowercase: settings.passwordRequireLowercase ? /[a-z]/.test(password) : true,
-      hasNumber: settings.passwordRequireNumbers ? /\d/.test(password) : true,
-      hasSpecialChar: settings.passwordRequireSpecialChars ?
-          new RegExp(`[${settings.passwordAllowedSpecialChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password) : true,
-      noCommon: settings.passwordPreventCommon ? !isCommonPassword(password) : true,
-      noSequences: settings.passwordPreventSequences ? !hasSequences(password) : true,
-      noRepeats: settings.passwordPreventRepeats ? !hasRepeatedChars(password, settings.passwordMaxConsecutive) : true,
-      minUniqueChars: getUniqueCharsCount(password) >= settings.passwordMinUniqueChars
+      minLength: password.length >= settings.password_min_length,
+      maxLength: password.length <= settings.password_max_length,
+      hasUppercase: settings.password_require_uppercase ? /[A-Z]/.test(password) : true,
+      hasLowercase: settings.password_require_lowercase ? /[a-z]/.test(password) : true,
+      hasNumber: settings.password_require_numbers ? /\d/.test(password) : true,
+      hasSpecialChar: settings.password_require_special_chars ?
+          new RegExp(`[${settings.password_allowed_special_chars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password) : true,
+      noCommon: settings.password_prevent_common ? !isCommonPassword(password) : true,
+      noSequences: settings.password_prevent_sequences ? !hasSequences(password) : true,
+      noRepeats: settings.password_prevent_repeats ? !hasRepeatedChars(password, settings.password_max_consecutive) : true,
+      minUniqueChars: getUniqueCharsCount(password) >= settings.password_min_unique_chars
     };
 
     // Check individual requirements and add errors
     if (!requirements.minLength) {
-      errors.push(`Password must be at least ${settings.passwordMinLength} characters`);
+      errors.push(`Password must be at least ${settings.password_min_length} characters`);
     }
 
     if (!requirements.maxLength) {
-      errors.push(`Password must not exceed ${settings.passwordMaxLength} characters`);
+      errors.push(`Password must not exceed ${settings.password_max_length} characters`);
     }
 
-    if (settings.passwordRequireUppercase && !requirements.hasUppercase) {
+    if (settings.password_require_uppercase && !requirements.hasUppercase) {
       errors.push('Password must contain at least one uppercase letter (A-Z)');
     }
 
-    if (settings.passwordRequireLowercase && !requirements.hasLowercase) {
+    if (settings.password_require_lowercase && !requirements.hasLowercase) {
       errors.push('Password must contain at least one lowercase letter (a-z)');
     }
 
-    if (settings.passwordRequireNumbers && !requirements.hasNumber) {
+    if (settings.password_require_numbers && !requirements.hasNumber) {
       errors.push('Password must contain at least one number (0-9)');
     }
 
-    if (settings.passwordRequireSpecialChars && !requirements.hasSpecialChar) {
-      errors.push(`Password must contain at least one special character: ${settings.passwordAllowedSpecialChars}`);
+    if (settings.password_require_special_chars && !requirements.hasSpecialChar) {
+      errors.push(`Password must contain at least one special character: ${settings.password_allowed_special_chars}`);
     }
 
-    if (settings.passwordPreventCommon && !requirements.noCommon) {
+    if (settings.password_prevent_common && !requirements.noCommon) {
       errors.push('Password is too common. Please choose a stronger password');
     }
 
-    if (settings.passwordPreventSequences && !requirements.noSequences) {
+    if (settings.password_prevent_sequences && !requirements.noSequences) {
       errors.push('Password contains sequential characters (abc, 123, etc.)');
     }
 
-    if (settings.passwordPreventRepeats && !requirements.noRepeats) {
-      errors.push(`Password contains more than ${settings.passwordMaxConsecutive} consecutive identical characters`);
+    if (settings.password_prevent_repeats && !requirements.noRepeats) {
+      errors.push(`Password contains more than ${settings.password_max_consecutive} consecutive identical characters`);
     }
 
     if (!requirements.minUniqueChars) {
-      errors.push(`Password must contain at least ${settings.passwordMinUniqueChars} unique characters`);
+      errors.push(`Password must contain at least ${settings.password_min_unique_chars} unique characters`);
     }
 
     setPasswordValidation({
@@ -443,7 +443,7 @@ const UnifiedRegister: React.FC = () => {
       return;
     }
 
-    if (settings.usernameUniqueRequired && usernameAvailable === false) {
+    if (settings.username_unique_required && usernameAvailable === false) {
       setError('Username is already taken. Please choose a different one.');
       setIsSubmitting(false);
       return;
@@ -488,7 +488,7 @@ const UnifiedRegister: React.FC = () => {
           null;
 
       let finalUsername = formData.userName;
-      if (settings.usernameForceLowerCase) {
+      if (settings.username_force_lower_case) {
         finalUsername = finalUsername.toLowerCase();
       }
 
@@ -532,7 +532,7 @@ const UnifiedRegister: React.FC = () => {
       return;
     }
 
-    if (name === 'userName' && !settings.usernameAllowSpaces) {
+    if (name === 'userName' && !settings.username_allow_spaces) {
       const sanitizedValue = value.replace(/\s/g, '');
       setFormData(prev => ({
         ...prev,
@@ -545,7 +545,7 @@ const UnifiedRegister: React.FC = () => {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
-  }, [settings.usernameAllowSpaces]);
+  }, [settings.username_allow_spaces]);
 
   const handleCountryCodeSelect = useCallback((code: string) => {
     setFormData(prev => ({ ...prev, phoneCountryCode: code }));
@@ -658,17 +658,17 @@ const UnifiedRegister: React.FC = () => {
                         <div className="absolute z-10 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg bottom-full mb-2 left-1/2 transform -translate-x-1/2">
                           <div className="font-medium mb-1">Username Requirements:</div>
                           <ul className="space-y-1">
-                            <li>• {settings.usernameMinLength}-{settings.usernameMaxLength} characters</li>
-                            {!settings.usernameAllowSpaces && <li>• No spaces allowed</li>}
-                            {settings.usernameMustStartWithLetter && <li>• Must start with a letter</li>}
-                            {!settings.usernameAllowNumbers && <li>• No numbers allowed</li>}
-                            {!settings.usernameAllowSpecialChars ? (
+                            <li>• {settings.username_min_length}-{settings.username_max_length} characters</li>
+                            {!settings.username_allow_spaces && <li>• No spaces allowed</li>}
+                            {settings.username_must_start_with_letter && <li>• Must start with a letter</li>}
+                            {!settings.username_allow_numbers && <li>• No numbers allowed</li>}
+                            {!settings.username_allow_special_chars ? (
                                 <li>• No special characters allowed</li>
                             ) : (
-                                <li>• Allowed: {settings.usernameAllowedSpecialChars || 'none'}</li>
+                                <li>• Allowed: {settings.username_allowed_special_chars || 'none'}</li>
                             )}
-                            {settings.usernameForceLowerCase && <li>• Will be converted to lowercase</li>}
-                            {settings.usernameUniqueRequired && <li>• Must be unique</li>}
+                            {settings.username_force_lower_case && <li>• Will be converted to lowercase</li>}
+                            {settings.username_unique_required && <li>• Must be unique</li>}
                           </ul>
                           <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                         </div>
@@ -693,7 +693,7 @@ const UnifiedRegister: React.FC = () => {
                               'border-gray-300'
                       }`}
                       placeholder="Choose a username"
-                      maxLength={settings.usernameMaxLength}
+                      maxLength={settings.username_max_length}
                   />
 
                   {formData.userName && (
@@ -741,13 +741,13 @@ const UnifiedRegister: React.FC = () => {
                       )}
 
                       <p className={`text-xs mt-1 ${
-                          formData.userName.length > settings.usernameMaxLength ? 'text-red-600' :
-                              formData.userName.length < settings.usernameMinLength ? 'text-yellow-600' :
+                          formData.userName.length > settings.username_max_length ? 'text-red-600' :
+                              formData.userName.length < settings.username_min_length ? 'text-yellow-600' :
                                   'text-gray-500'
                       }`}>
-                        {formData.userName.length} / {settings.usernameMaxLength} characters
-                        {formData.userName.length < settings.usernameMinLength &&
-                            ` (minimum ${settings.usernameMinLength} required)`}
+                        {formData.userName.length} / {settings.username_max_length} characters
+                        {formData.userName.length < settings.username_min_length &&
+                            ` (minimum ${settings.username_min_length} required)`}
                       </p>
                     </div>
                 )}
@@ -871,19 +871,19 @@ const UnifiedRegister: React.FC = () => {
                           <div className="absolute z-10 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg bottom-full mb-2 left-1/2 transform -translate-x-1/2">
                             <div className="font-medium mb-1">Password Requirements:</div>
                             <ul className="space-y-1">
-                              <li>• {settings.passwordMinLength}-{settings.passwordMaxLength} characters</li>
-                              {settings.passwordRequireUppercase && <li>• At least one uppercase letter (A-Z)</li>}
-                              {settings.passwordRequireLowercase && <li>• At least one lowercase letter (a-z)</li>}
-                              {settings.passwordRequireNumbers && <li>• At least one number (0-9)</li>}
-                              {settings.passwordRequireSpecialChars && (
-                                  <li>• At least one special character: {settings.passwordAllowedSpecialChars}</li>
+                              <li>• {settings.password_min_length}-{settings.password_max_length} characters</li>
+                              {settings.password_require_uppercase && <li>• At least one uppercase letter (A-Z)</li>}
+                              {settings.password_require_lowercase && <li>• At least one lowercase letter (a-z)</li>}
+                              {settings.password_require_numbers && <li>• At least one number (0-9)</li>}
+                              {settings.password_require_special_chars && (
+                                  <li>• At least one special character: {settings.password_allowed_special_chars}</li>
                               )}
-                              {settings.passwordPreventCommon && <li>• Cannot be a common password</li>}
-                              {settings.passwordPreventSequences && <li>• Cannot contain sequences (abc, 123)</li>}
-                              {settings.passwordPreventRepeats && (
-                                  <li>• Max {settings.passwordMaxConsecutive} consecutive identical characters</li>
+                              {settings.password_prevent_common && <li>• Cannot be a common password</li>}
+                              {settings.password_prevent_sequences && <li>• Cannot contain sequences (abc, 123)</li>}
+                              {settings.password_prevent_repeats && (
+                                  <li>• Max {settings.password_max_consecutive} consecutive identical characters</li>
                               )}
-                              <li>• At least {settings.passwordMinUniqueChars} unique characters</li>
+                              <li>• At least {settings.password_min_unique_chars} unique characters</li>
                             </ul>
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                           </div>
@@ -928,7 +928,7 @@ const UnifiedRegister: React.FC = () => {
                             ) : (
                                 <XCircle className="h-3 w-3 mr-2" />
                             )}
-                            {settings.passwordMinLength}+ characters
+                            {settings.password_min_length}+ characters
                           </div>
 
                           <div className={`flex items-center ${passwordValidation.requirements.maxLength ? 'text-green-600' : 'text-red-600'}`}>
@@ -937,10 +937,10 @@ const UnifiedRegister: React.FC = () => {
                             ) : (
                                 <XCircle className="h-3 w-3 mr-2" />
                             )}
-                            Max {settings.passwordMaxLength} characters
+                            Max {settings.password_max_length} characters
                           </div>
 
-                          {settings.passwordRequireUppercase && (
+                          {settings.password_require_uppercase && (
                               <div className={`flex items-center ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.hasUppercase ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
@@ -951,7 +951,7 @@ const UnifiedRegister: React.FC = () => {
                               </div>
                           )}
 
-                          {settings.passwordRequireLowercase && (
+                          {settings.password_require_lowercase && (
                               <div className={`flex items-center ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.hasLowercase ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
@@ -962,7 +962,7 @@ const UnifiedRegister: React.FC = () => {
                               </div>
                           )}
 
-                          {settings.passwordRequireNumbers && (
+                          {settings.password_require_numbers && (
                               <div className={`flex items-center ${passwordValidation.requirements.hasNumber ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.hasNumber ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
@@ -973,7 +973,7 @@ const UnifiedRegister: React.FC = () => {
                               </div>
                           )}
 
-                          {settings.passwordRequireSpecialChars && (
+                          {settings.password_require_special_chars && (
                               <div className={`flex items-center ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.hasSpecialChar ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
@@ -984,7 +984,7 @@ const UnifiedRegister: React.FC = () => {
                               </div>
                           )}
 
-                          {settings.passwordPreventCommon && (
+                          {settings.password_prevent_common && (
                               <div className={`flex items-center ${passwordValidation.requirements.noCommon ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.noCommon ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
@@ -995,7 +995,7 @@ const UnifiedRegister: React.FC = () => {
                               </div>
                           )}
 
-                          {settings.passwordPreventSequences && (
+                          {settings.password_prevent_sequences && (
                               <div className={`flex items-center ${passwordValidation.requirements.noSequences ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.noSequences ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
@@ -1006,14 +1006,14 @@ const UnifiedRegister: React.FC = () => {
                               </div>
                           )}
 
-                          {settings.passwordPreventRepeats && (
+                          {settings.password_prevent_repeats && (
                               <div className={`flex items-center ${passwordValidation.requirements.noRepeats ? 'text-green-600' : 'text-red-600'}`}>
                                 {passwordValidation.requirements.noRepeats ? (
                                     <CheckCircle className="h-3 w-3 mr-2" />
                                 ) : (
                                     <XCircle className="h-3 w-3 mr-2" />
                                 )}
-                                Max {settings.passwordMaxConsecutive} repeats
+                                Max {settings.password_max_consecutive} repeats
                               </div>
                           )}
 
@@ -1023,7 +1023,7 @@ const UnifiedRegister: React.FC = () => {
                             ) : (
                                 <XCircle className="h-3 w-3 mr-2" />
                             )}
-                            {settings.passwordMinUniqueChars}+ unique chars
+                            {settings.password_min_unique_chars}+ unique chars
                           </div>
                         </div>
 

@@ -1,20 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { Link, useLocation } from 'react-router-dom';
+import { getSystemSettings } from '../../lib/supabase';
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube, MessageCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const { settings } = useAdmin();
   const location = useLocation();
+  const [publicSettings, setPublicSettings] = useState<any>(settings);
+
+  useEffect(() => {
+    setPublicSettings(settings);
+  }, [settings]);
+
+  useEffect(() => {
+    const loadPublicSettings = async () => {
+      try {
+        const publicSystemSettings = await getSystemSettings();
+        setPublicSettings((prev: any) => ({ ...prev, ...publicSystemSettings }));
+      } catch (error) {
+        console.warn('Failed to load public system settings for footer:', error);
+      }
+    };
+
+    loadPublicSettings();
+  }, []);
 
   // Format the full address from individual components
   const formatAddress = () => {
     const parts = [
-      settings.address,
-      settings.city,
-      settings.state,
-      settings.zipCode,
-      settings.country
+      publicSettings.address,
+      publicSettings.city,
+      publicSettings.state,
+      publicSettings.zip_code,
+      publicSettings.country
     ].filter(part => part && part.trim() !== '');
 
     return parts.join(', ');
@@ -41,8 +60,8 @@ const Footer: React.FC = () => {
               >
                 <div className="relative transition-transform duration-200 group-hover:scale-105">
                   <img
-                      src={settings.logoUrl}
-                      alt={settings.siteName}
+                      src={publicSettings.logo_url}
+                      alt={publicSettings.site_name}
                       className="h-14 w-auto object-cover rounded-lg shadow-lg"
                       onError={(e) => {
                         // Fallback to default logo if image fails to load
@@ -51,102 +70,93 @@ const Footer: React.FC = () => {
                   />
                 </div>
                 <div>
-
-                  {settings.tagline && (
-                      <p className="text-gray-300 text-sm mt-1">{settings.tagline}</p>
-                  )}
+                  <p className="text-gray-300 text-sm mt-1">{publicSettings.site_name}</p>
                 </div>
               </Link>
 
-              {settings.aboutText ? (
-                  <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
-                    {settings.aboutText}
-                  </p>
-              ) : (
-                  <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
-                    {settings.siteName} is your gateway to growth - a comprehensive platform connecting learners, trainers, job seekers, and job providers.
-                    We bridge the gap between education and opportunities, empowering you to learn, get hired, build teams, and share knowledge - all in one place.
-                  </p>
-              )}
+              <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
+                {publicSettings.site_name} is your gateway to growth - a comprehensive platform connecting learners, trainers, job seekers, and job providers.
+                We bridge the gap between education and opportunities, empowering you to learn, get hired, build teams, and share knowledge - all in one place.
+              </p>
 
               {/* Contact Info */}
               <div className="space-y-3">
                 {/* Primary Email */}
-                {settings.primaryEmail && (
+                {publicSettings.primary_email && (
                     <a
-                        href={`mailto:${settings.primaryEmail}`}
+                        href={`mailto:${publicSettings.primary_email}`}
                         className="flex items-center space-x-3 text-gray-300 hover:text-emerald-400 transition-colors duration-200 group"
                     >
                       <div className="bg-emerald-600 p-2 rounded-lg group-hover:bg-emerald-500 transition-colors">
                         <Mail className="h-4 w-4" />
                       </div>
                       <div>
-                        <span>{settings.primaryEmail}</span>
-                        {settings.primaryEmailTagline && (
-                            <span className="text-sm text-gray-400 block">{settings.primaryEmailTagline}</span>
+                        <span>{publicSettings.primary_email}</span>
+                        {publicSettings.primary_email_tagline && (
+                            <span className="text-sm text-gray-400 block">{publicSettings.primary_email_tagline}</span>
                         )}
                       </div>
                     </a>
                 )}
 
                 {/* Support Email */}
-                {settings.supportEmail && settings.supportEmail !== settings.primaryEmail && (
+                {publicSettings.support_email && publicSettings.support_email !== publicSettings.primary_email && (
                     <a
-                        href={`mailto:${settings.supportEmail}`}
+                        href={`mailto:${publicSettings.support_email}`}
                         className="flex items-center space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-200 group"
                     >
                       <div className="bg-blue-600 p-2 rounded-lg group-hover:bg-blue-500 transition-colors">
                         <Mail className="h-4 w-4" />
                       </div>
                       <div>
-                        <span>{settings.supportEmail}</span>
-                        {settings.supportEmailTagline && (
-                            <span className="text-sm text-gray-400 block">{settings.supportEmailTagline}</span>
+                        <span>{publicSettings.support_email}</span>
+                        {publicSettings.support_email_tagline && (
+                            <span className="text-sm text-gray-400 block">{publicSettings.support_email_tagline}</span>
                         )}
                       </div>
                     </a>
                 )}
 
                 {/* Primary Phone */}
-                {settings.primaryPhone && (
+                {publicSettings.primary_phone && (
                     <a
-                        href={`tel:${settings.primaryPhone}`}
+                        href={`tel:${publicSettings.primary_phone}`}
                         className="flex items-center space-x-3 text-gray-300 hover:text-teal-400 transition-colors duration-200 group"
                     >
                       <div className="bg-teal-600 p-2 rounded-lg group-hover:bg-teal-500 transition-colors">
                         <Phone className="h-4 w-4" />
                       </div>
                       <div>
-                        <span>{settings.primaryPhone}</span>
-                        {settings.primaryPhoneTagline && (
-                            <span className="text-sm text-gray-400 block">{settings.primaryPhoneTagline}</span>
+                        <span>{publicSettings.primary_phone}</span>
+                        {publicSettings.primary_phone_tagline && (
+                            <span className="text-sm text-gray-400 block">{publicSettings.primary_phone_tagline}</span>
                         )}
                       </div>
                     </a>
                 )}
 
                 {/* Secondary Phone */}
-                {settings.secondaryPhone && (
+                {publicSettings.secondary_phone && (
                     <a
-                        href={`tel:${settings.secondaryPhone}`}
+                        href={`tel:${publicSettings.secondary_phone}`}
                         className="flex items-center space-x-3 text-gray-300 hover:text-cyan-400 transition-colors duration-200 group"
                     >
                       <div className="bg-cyan-600 p-2 rounded-lg group-hover:bg-cyan-500 transition-colors">
                         <Phone className="h-4 w-4" />
                       </div>
                       <div>
-                        <span>{settings.secondaryPhone}</span>
-                        {settings.secondaryPhoneTagline && (
-                            <span className="text-sm text-gray-400 block">{settings.secondaryPhoneTagline}</span>
+                        <span>{publicSettings.secondary_phone}</span>
+                        {publicSettings.secondary_phone_tagline && (
+                            <span className="text-sm text-gray-400 block">{publicSettings.secondary_phone_tagline}</span>
                         )}
                       </div>
                     </a>
                 )}
 
                 {/* WhatsApp */}
-                {settings.whatsappNumber && (
+                {publicSettings.whatsapp_number && (
                     <a
-                        href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}`}
+                        href={`https://wa.me/${publicSettings.whatsapp_number.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center space-x-3 text-gray-300 hover:text-green-400 transition-colors duration-200 group"
@@ -155,14 +165,14 @@ const Footer: React.FC = () => {
                         <MessageCircle className="h-4 w-4" />
                       </div>
                       <div>
-                        <span>WhatsApp: {settings.whatsappNumber}</span>
+                        <span>WhatsApp: {publicSettings.whatsapp_number}</span>
                         <span className="text-sm text-gray-400 block">Chat with us</span>
                       </div>
                     </a>
                 )}
 
                 {/* Address */}
-                {settings.address && (
+                {publicSettings.address && (
                     <div className="flex items-start space-x-3 text-gray-300">
                       <div className="bg-purple-600 p-2 rounded-lg">
                         <MapPin className="h-4 w-4" />
@@ -227,11 +237,11 @@ const Footer: React.FC = () => {
               </ul>
 
               {/* Business Hours */}
-              {settings.businessHours && (
+              {publicSettings.business_hours && (
                   <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
                     <h4 className="font-semibold text-white mb-2">Business Hours</h4>
                     <p className="text-gray-300 text-sm whitespace-pre-line">
-                      {settings.businessHours}
+                      {publicSettings.business_hours}
                     </p>
                   </div>
               )}
@@ -246,31 +256,31 @@ const Footer: React.FC = () => {
                 {[
                   {
                     icon: Facebook,
-                    href: settings.facebookUrl,
+                    href: publicSettings.facebook_url,
                     color: "hover:text-blue-400",
                     label: "Facebook"
                   },
                   {
                     icon: Twitter,
-                    href: settings.twitterUrl,
+                    href: publicSettings.twitter_url,
                     color: "hover:text-sky-400",
                     label: "Twitter"
                   },
                   {
                     icon: Linkedin,
-                    href: settings.linkedinUrl,
+                    href: publicSettings.linkedin_url,
                     color: "hover:text-blue-500",
                     label: "LinkedIn"
                   },
                   {
                     icon: Instagram,
-                    href: settings.instagramUrl,
+                    href: publicSettings.instagram_url,
                     color: "hover:text-pink-400",
                     label: "Instagram"
                   },
                   {
                     icon: Youtube,
-                    href: settings.youtubeUrl,
+                    href: publicSettings.youtube_url,
                     color: "hover:text-red-400",
                     label: "YouTube"
                   }
@@ -292,7 +302,7 @@ const Footer: React.FC = () => {
 
               <div className="text-center md:text-right">
                 <p className="text-gray-400 text-sm">
-                  © {new Date().getFullYear()} {settings.siteName || 'HTG Infotech'}. All rights reserved.
+                  © {new Date().getFullYear()} {publicSettings.site_name || 'HTG Infotech'}. All rights reserved.
                 </p>
               </div>
             </div>

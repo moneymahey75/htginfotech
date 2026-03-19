@@ -19,7 +19,7 @@ const ContactUs: React.FC = () => {
       settings.address,
       settings.city,
       settings.state,
-      settings.zipCode,
+      settings.zip_code,
       settings.country
     ].filter(part => part && part.trim() !== '');
 
@@ -190,7 +190,7 @@ const ContactUs: React.FC = () => {
                 },
                 {
                   question: "Do you offer phone support?",
-                  answer: `Yes, we offer phone support. You can reach us at ${settings.primaryPhone || 'our support number'}.`
+                  answer: `Yes, we offer phone support. You can reach us at ${settings.primary_phone || 'our support number'}.`
                 },
                 {
                   question: "Can I schedule a consultation?",

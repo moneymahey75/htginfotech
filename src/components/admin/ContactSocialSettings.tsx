@@ -18,60 +18,111 @@ import {
     Clock
 } from 'lucide-react';
 
+const buildContactSocialUpdates = (formData: {
+    primaryPhone: string;
+    secondaryPhone: string;
+    primaryEmail: string;
+    supportEmail: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    businessHours: string;
+    facebookUrl: string;
+    instagramUrl: string;
+    linkedinUrl: string;
+    twitterUrl: string;
+    youtubeUrl: string;
+    whatsappNumber: string;
+    websiteUrl: string;
+    blogUrl: string;
+    primaryPhoneTagline: string;
+    secondaryPhoneTagline: string;
+    primaryEmailTagline: string;
+    supportEmailTagline: string;
+}) => ([
+    {tss_setting_key: 'primary_phone', tss_setting_value: JSON.stringify(formData.primaryPhone)},
+    {tss_setting_key: 'secondary_phone', tss_setting_value: JSON.stringify(formData.secondaryPhone)},
+    {tss_setting_key: 'primary_email', tss_setting_value: JSON.stringify(formData.primaryEmail)},
+    {tss_setting_key: 'support_email', tss_setting_value: JSON.stringify(formData.supportEmail)},
+    {tss_setting_key: 'address', tss_setting_value: JSON.stringify(formData.address)},
+    {tss_setting_key: 'city', tss_setting_value: JSON.stringify(formData.city)},
+    {tss_setting_key: 'state', tss_setting_value: JSON.stringify(formData.state)},
+    {tss_setting_key: 'zip_code', tss_setting_value: JSON.stringify(formData.zipCode)},
+    {tss_setting_key: 'country', tss_setting_value: JSON.stringify(formData.country)},
+    {tss_setting_key: 'business_hours', tss_setting_value: JSON.stringify(formData.businessHours)},
+    {tss_setting_key: 'facebook_url', tss_setting_value: JSON.stringify(formData.facebookUrl)},
+    {tss_setting_key: 'instagram_url', tss_setting_value: JSON.stringify(formData.instagramUrl)},
+    {tss_setting_key: 'linkedin_url', tss_setting_value: JSON.stringify(formData.linkedinUrl)},
+    {tss_setting_key: 'twitter_url', tss_setting_value: JSON.stringify(formData.twitterUrl)},
+    {tss_setting_key: 'youtube_url', tss_setting_value: JSON.stringify(formData.youtubeUrl)},
+    {tss_setting_key: 'whatsapp_number', tss_setting_value: JSON.stringify(formData.whatsappNumber)},
+    {tss_setting_key: 'website_url', tss_setting_value: JSON.stringify(formData.websiteUrl)},
+    {tss_setting_key: 'blog_url', tss_setting_value: JSON.stringify(formData.blogUrl)},
+    {tss_setting_key: 'primary_phone_tagline', tss_setting_value: JSON.stringify(formData.primaryPhoneTagline)},
+    {tss_setting_key: 'secondary_phone_tagline', tss_setting_value: JSON.stringify(formData.secondaryPhoneTagline)},
+    {tss_setting_key: 'primary_email_tagline', tss_setting_value: JSON.stringify(formData.primaryEmailTagline)},
+    {tss_setting_key: 'support_email_tagline', tss_setting_value: JSON.stringify(formData.supportEmailTagline)}
+].map((update) => ({
+    ...update,
+    tss_description: `${update.tss_setting_key.replace(/_/g, ' ')} setting`
+})));
+
 const ContactSocialSettings: React.FC = () => {
     const {settings, updateSettings} = useAdmin();
     const [formData, setFormData] = useState({
-        primaryPhone: settings.primaryPhone || '',
-        secondaryPhone: settings.secondaryPhone || '',
-        primaryEmail: settings.primaryEmail || '',
-        supportEmail: settings.supportEmail || '',
+        primaryPhone: settings.primary_phone || '',
+        secondaryPhone: settings.secondary_phone || '',
+        primaryEmail: settings.primary_email || '',
+        supportEmail: settings.support_email || '',
         address: settings.address || '',
         city: settings.city || '',
         state: settings.state || '',
-        zipCode: settings.zipCode || '',
+        zipCode: settings.zip_code || '',
         country: settings.country || '',
-        businessHours: settings.businessHours || '',
-        facebookUrl: settings.facebookUrl || '',
-        instagramUrl: settings.instagramUrl || '',
-        linkedinUrl: settings.linkedinUrl || '',
-        twitterUrl: settings.twitterUrl || '',
-        youtubeUrl: settings.youtubeUrl || '',
-        whatsappNumber: settings.whatsappNumber || '',
-        websiteUrl: settings.websiteUrl || '',
-        blogUrl: settings.blogUrl || '',
+        businessHours: settings.business_hours || '',
+        facebookUrl: settings.facebook_url || '',
+        instagramUrl: settings.instagram_url || '',
+        linkedinUrl: settings.linkedin_url || '',
+        twitterUrl: settings.twitter_url || '',
+        youtubeUrl: settings.youtube_url || '',
+        whatsappNumber: settings.whatsapp_number || '',
+        websiteUrl: settings.website_url || '',
+        blogUrl: settings.blog_url || '',
         // New tagline fields
-        primaryPhoneTagline: settings.primaryPhoneTagline || '',
-        secondaryPhoneTagline: settings.secondaryPhoneTagline || '',
-        primaryEmailTagline: settings.primaryEmailTagline || '',
-        supportEmailTagline: settings.supportEmailTagline || ''
+        primaryPhoneTagline: settings.primary_phone_tagline || '',
+        secondaryPhoneTagline: settings.secondary_phone_tagline || '',
+        primaryEmailTagline: settings.primary_email_tagline || '',
+        supportEmailTagline: settings.support_email_tagline || ''
     });
     const [saving, setSaving] = useState(false);
     const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
 
     useEffect(() => {
         setFormData({
-            primaryPhone: settings.primaryPhone || '',
-            secondaryPhone: settings.secondaryPhone || '',
-            primaryEmail: settings.primaryEmail || '',
-            supportEmail: settings.supportEmail || '',
+            primaryPhone: settings.primary_phone || '',
+            secondaryPhone: settings.secondary_phone || '',
+            primaryEmail: settings.primary_email || '',
+            supportEmail: settings.support_email || '',
             address: settings.address || '',
             city: settings.city || '',
             state: settings.state || '',
-            zipCode: settings.zipCode || '',
+            zipCode: settings.zip_code || '',
             country: settings.country || '',
-            businessHours: settings.businessHours || '',
-            facebookUrl: settings.facebookUrl || '',
-            instagramUrl: settings.instagramUrl || '',
-            linkedinUrl: settings.linkedinUrl || '',
-            twitterUrl: settings.twitterUrl || '',
-            youtubeUrl: settings.youtubeUrl || '',
-            whatsappNumber: settings.whatsappNumber || '',
-            websiteUrl: settings.websiteUrl || '',
-            blogUrl: settings.blogUrl || '',
-            primaryPhoneTagline: settings.primaryPhoneTagline || '',
-            secondaryPhoneTagline: settings.secondaryPhoneTagline || '',
-            primaryEmailTagline: settings.primaryEmailTagline || '',
-            supportEmailTagline: settings.supportEmailTagline || ''
+            businessHours: settings.business_hours || '',
+            facebookUrl: settings.facebook_url || '',
+            instagramUrl: settings.instagram_url || '',
+            linkedinUrl: settings.linkedin_url || '',
+            twitterUrl: settings.twitter_url || '',
+            youtubeUrl: settings.youtube_url || '',
+            whatsappNumber: settings.whatsapp_number || '',
+            websiteUrl: settings.website_url || '',
+            blogUrl: settings.blog_url || '',
+            primaryPhoneTagline: settings.primary_phone_tagline || '',
+            secondaryPhoneTagline: settings.secondary_phone_tagline || '',
+            primaryEmailTagline: settings.primary_email_tagline || '',
+            supportEmailTagline: settings.support_email_tagline || ''
         });
     }, [settings]);
 
@@ -81,49 +132,40 @@ const ContactSocialSettings: React.FC = () => {
         setSaveResult(null);
 
         try {
-            const updates = [
-                {key: 'primary_phone', value: JSON.stringify(formData.primaryPhone)},
-                {key: 'secondary_phone', value: JSON.stringify(formData.secondaryPhone)},
-                {key: 'primary_email', value: JSON.stringify(formData.primaryEmail)},
-                {key: 'support_email', value: JSON.stringify(formData.supportEmail)},
-                {key: 'address', value: JSON.stringify(formData.address)},
-                {key: 'city', value: JSON.stringify(formData.city)},
-                {key: 'state', value: JSON.stringify(formData.state)},
-                {key: 'zip_code', value: JSON.stringify(formData.zipCode)},
-                {key: 'country', value: JSON.stringify(formData.country)},
-                {key: 'business_hours', value: JSON.stringify(formData.businessHours)},
-                {key: 'facebook_url', value: JSON.stringify(formData.facebookUrl)},
-                {key: 'instagram_url', value: JSON.stringify(formData.instagramUrl)},
-                {key: 'linkedin_url', value: JSON.stringify(formData.linkedinUrl)},
-                {key: 'twitter_url', value: JSON.stringify(formData.twitterUrl)},
-                {key: 'youtube_url', value: JSON.stringify(formData.youtubeUrl)},
-                {key: 'whatsapp_number', value: JSON.stringify(formData.whatsappNumber)},
-                {key: 'website_url', value: JSON.stringify(formData.websiteUrl)},
-                {key: 'blog_url', value: JSON.stringify(formData.blogUrl)},
-                // New tagline fields
-                {key: 'primary_phone_tagline', value: JSON.stringify(formData.primaryPhoneTagline)},
-                {key: 'secondary_phone_tagline', value: JSON.stringify(formData.secondaryPhoneTagline)},
-                {key: 'primary_email_tagline', value: JSON.stringify(formData.primaryEmailTagline)},
-                {key: 'support_email_tagline', value: JSON.stringify(formData.supportEmailTagline)}
-            ];
+            const {error} = await supabase
+                .from('tbl_system_settings')
+                .upsert(buildContactSocialUpdates(formData), {
+                    onConflict: 'tss_setting_key'
+                });
 
-            for (const update of updates) {
-                const {error} = await supabase
-                    .from('tbl_system_settings')
-                    .upsert({
-                        tss_setting_key: update.key,
-                        tss_setting_value: update.value,
-                        tss_description: `${update.key.replace(/_/g, ' ')} setting`
-                    }, {
-                        onConflict: 'tss_setting_key'
-                    });
-
-                if (error) {
-                    throw error;
-                }
+            if (error) {
+                throw error;
             }
 
-            updateSettings(formData);
+            updateSettings({
+                primary_phone: formData.primaryPhone,
+                secondary_phone: formData.secondaryPhone,
+                primary_email: formData.primaryEmail,
+                support_email: formData.supportEmail,
+                address: formData.address,
+                city: formData.city,
+                state: formData.state,
+                zip_code: formData.zipCode,
+                country: formData.country,
+                business_hours: formData.businessHours,
+                facebook_url: formData.facebookUrl,
+                instagram_url: formData.instagramUrl,
+                linkedin_url: formData.linkedinUrl,
+                twitter_url: formData.twitterUrl,
+                youtube_url: formData.youtubeUrl,
+                whatsapp_number: formData.whatsappNumber,
+                website_url: formData.websiteUrl,
+                blog_url: formData.blogUrl,
+                primary_phone_tagline: formData.primaryPhoneTagline,
+                secondary_phone_tagline: formData.secondaryPhoneTagline,
+                primary_email_tagline: formData.primaryEmailTagline,
+                support_email_tagline: formData.supportEmailTagline
+            });
 
             setSaveResult({
                 success: true,

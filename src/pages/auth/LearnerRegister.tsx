@@ -216,7 +216,7 @@ const LearnerRegister: React.FC = () => {
 
               <div>
                 <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-2">
-                  Mobile Number {settings.mobileVerificationRequired ? '*' : ''}
+                  Mobile Number {settings.mobile_verification_required ? '*' : ''}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -226,7 +226,7 @@ const LearnerRegister: React.FC = () => {
                     id="mobile"
                     name="mobile"
                     type="tel"
-                    required={settings.mobileVerificationRequired}
+                    required={settings.mobile_verification_required}
                     value={formData.mobile}
                     onChange={handleChange}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"

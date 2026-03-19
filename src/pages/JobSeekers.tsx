@@ -9,7 +9,7 @@ const JobSeekers: React.FC = () => {
 
     useEffect(() => {
         // Get video URL from admin settings
-        setVideoUrl(settings.jobSeekerVideoUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ');
+        setVideoUrl(settings.job_seeker_video_url || 'https://www.youtube.com/embed/dQw4w9WgXcQ');
     }, [settings]);
 
     const benefits = [

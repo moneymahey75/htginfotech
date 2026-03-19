@@ -225,7 +225,7 @@ const Home: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                   <div className="max-w-3xl">
                     <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                      Welcome to {settings.siteName}
+                      Welcome to {settings.site_name}
                     </h1>
                     <p className="text-xl md:text-2xl text-gray-200 mb-8 leading-relaxed">
                       Discover amazing learning opportunities with our expert tutors and comprehensive courses.
@@ -297,7 +297,7 @@ const Home: React.FC = () => {
             <div className="text-center mb-16">
 
               <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                Why Choose <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">{settings.siteName}</span>?
+                Why Choose <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">{settings.site_name}</span>?
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Upskill → Grow → Succeed

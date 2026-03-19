@@ -694,13 +694,24 @@ export const getSystemSettings = async () => {
   const { data, error } = await supabase
       .from('tbl_system_settings')
       .select('*')
+      .eq('tss_is_public', true)
 
   if (error) throw error
 
   // Convert to key-value object
   const settings: Record<string, any> = {}
   data.forEach(setting => {
-    settings[setting.tss_setting_key] = setting.tss_setting_value
+    let value = setting.tss_setting_value
+
+    if (typeof value === 'string') {
+      try {
+        value = JSON.parse(value)
+      } catch {
+        // Keep original string if it is not JSON-encoded
+      }
+    }
+
+    settings[setting.tss_setting_key] = value
   })
 
   return settings

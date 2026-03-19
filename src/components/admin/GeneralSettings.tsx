@@ -6,12 +6,12 @@ import {Settings, Upload, Save, AlertCircle, CheckCircle} from 'lucide-react';
 const GeneralSettings: React.FC = () => {
     const {settings, updateSettings} = useAdmin();
     const [formData, setFormData] = useState({
-        siteName: settings.siteName,
-        logoUrl: settings.logoUrl,
-        dateFormat: settings.dateFormat,
+        siteName: settings.site_name,
+        logoUrl: settings.logo_url,
+        dateFormat: settings.date_format,
         timezone: settings.timezone,
-        jobSeekerVideoUrl: settings.jobSeekerVideoUrl,
-        jobProviderVideoUrl: settings.jobProviderVideoUrl
+        jobSeekerVideoUrl: settings.job_seeker_video_url,
+        jobProviderVideoUrl: settings.job_provider_video_url
     });
     const [saving, setSaving] = useState(false);
     const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -19,12 +19,12 @@ const GeneralSettings: React.FC = () => {
 
     useEffect(() => {
         setFormData({
-            siteName: settings.siteName,
-            logoUrl: settings.logoUrl,
-            dateFormat: settings.dateFormat,
+            siteName: settings.site_name,
+            logoUrl: settings.logo_url,
+            dateFormat: settings.date_format,
             timezone: settings.timezone,
-            jobSeekerVideoUrl: settings.jobSeekerVideoUrl,
-            jobProviderVideoUrl: settings.jobProviderVideoUrl
+            jobSeekerVideoUrl: settings.job_seeker_video_url,
+            jobProviderVideoUrl: settings.job_provider_video_url
         });
     }, [settings]);
 
@@ -60,7 +60,14 @@ const GeneralSettings: React.FC = () => {
             }
 
             // Update context
-            updateSettings(formData);
+            updateSettings({
+                site_name: formData.siteName,
+                logo_url: formData.logoUrl,
+                date_format: formData.dateFormat,
+                timezone: formData.timezone,
+                job_seeker_video_url: formData.jobSeekerVideoUrl,
+                job_provider_video_url: formData.jobProviderVideoUrl
+            });
 
             setSaveResult({
                 success: true,

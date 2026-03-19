@@ -1,16 +1,97 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../contexts/AdminContext';
-import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, BookOpen, GraduationCap, Users, Briefcase, LogIn, UserPlus, Phone, Mail, MessageCircle, KeyRound } from 'lucide-react';
+import { getSystemSettings } from '../../lib/supabase';
+import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, BookOpen, GraduationCap, Users, LogIn, UserPlus, Phone, Mail, MessageCircle, KeyRound } from 'lucide-react';
+
+const hasValue = (value?: string | null) => Boolean(value && value.trim());
+
+const getTopSocialLinks = (settings: any) => ([
+  {
+    key: 'facebook',
+    href: settings.facebook_url?.trim(),
+    label: 'Facebook',
+    className: 'inline-flex items-center justify-center text-white hover:text-blue-400 transition-colors duration-200',
+    icon: (
+      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M22 12.07C22 6.5 17.52 2 12 2S2 6.5 2 12.07c0 5.02 3.66 9.18 8.44 9.93v-7.03H7.9v-2.9h2.54V9.85c0-2.52 1.49-3.91 3.78-3.91 1.1 0 2.25.2 2.25.2v2.47h-1.27c-1.24 0-1.63.78-1.63 1.57v1.89h2.77l-.44 2.9h-2.33V22c4.78-.75 8.43-4.91 8.43-9.93Z" />
+      </svg>
+    )
+  },
+  {
+    key: 'instagram',
+    href: settings.instagram_url?.trim(),
+    label: 'Instagram',
+    className: 'inline-flex items-center justify-center text-white hover:text-pink-400 transition-colors duration-200',
+    icon: (
+      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.8A3.95 3.95 0 0 0 3.8 7.75v8.5a3.95 3.95 0 0 0 3.95 3.95h8.5a3.95 3.95 0 0 0 3.95-3.95v-8.5a3.95 3.95 0 0 0-3.95-3.95h-8.5Zm8.95 1.35a1.1 1.1 0 1 1 0 2.2a1.1 1.1 0 0 1 0-2.2ZM12 7a5 5 0 1 1 0 10a5 5 0 0 1 0-10Zm0 1.8A3.2 3.2 0 1 0 12 15.2A3.2 3.2 0 0 0 12 8.8Z" />
+      </svg>
+    )
+  },
+  {
+    key: 'linkedin',
+    href: settings.linkedin_url?.trim(),
+    label: 'LinkedIn',
+    className: 'inline-flex items-center justify-center text-white hover:text-blue-400 transition-colors duration-200',
+    icon: (
+      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M6.94 8.5a1.56 1.56 0 1 1 0-3.12a1.56 1.56 0 0 1 0 3.12ZM5.5 9.75h2.88V19H5.5V9.75Zm4.68 0h2.76V11h.04c.38-.73 1.32-1.5 2.72-1.5c2.91 0 3.45 1.92 3.45 4.42V19h-2.87v-4.5c0-1.07-.02-2.45-1.5-2.45c-1.5 0-1.73 1.16-1.73 2.37V19h-2.87V9.75Z" />
+      </svg>
+    )
+  },
+  {
+    key: 'twitter',
+    href: settings.twitter_url?.trim(),
+    label: 'Twitter / X',
+    className: 'inline-flex items-center justify-center text-white hover:text-sky-400 transition-colors duration-200',
+    icon: (
+      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M18.9 2H22l-6.77 7.73L23.2 22h-6.24l-4.9-7.43L5.56 22H2.44l7.24-8.27L2 2h6.4l4.43 6.77L18.9 2Zm-1.09 18h1.73L7.46 3.9H5.61L17.81 20Z" />
+      </svg>
+    )
+  },
+  {
+    key: 'youtube',
+    href: settings.youtube_url?.trim(),
+    label: 'YouTube',
+    className: 'inline-flex items-center justify-center text-white hover:text-red-400 transition-colors duration-200',
+    icon: (
+      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M21.58 7.19a2.96 2.96 0 0 0-2.08-2.1C17.66 4.6 12 4.6 12 4.6s-5.66 0-7.5.49a2.96 2.96 0 0 0-2.08 2.1C1.93 9.04 1.93 12 1.93 12s0 2.96.49 4.81a2.96 2.96 0 0 0 2.08 2.1c1.84.49 7.5.49 7.5.49s5.66 0 7.5-.49a2.96 2.96 0 0 0 2.08-2.1c.49-1.85.49-4.81.49-4.81s0-2.96-.49-4.81ZM9.9 15.46V8.54L15.96 12L9.9 15.46Z" />
+      </svg>
+    )
+  }
+]).filter((item) => hasValue(item.href));
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { settings } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
+  const [publicSettings, setPublicSettings] = useState<any>(settings);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const topSocialLinks = getTopSocialLinks(publicSettings);
+  const hasTopStrip = hasValue(publicSettings.primary_phone) || hasValue(publicSettings.primary_email) || topSocialLinks.length > 0;
+
+  useEffect(() => {
+    setPublicSettings(settings);
+  }, [settings]);
+
+  useEffect(() => {
+    const loadPublicSettings = async () => {
+      try {
+        const publicSystemSettings = await getSystemSettings();
+        setPublicSettings((prev: any) => ({ ...prev, ...publicSystemSettings }));
+      } catch (error) {
+        console.warn('Failed to load public system settings for navbar:', error);
+      }
+    };
+
+    loadPublicSettings();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -54,118 +135,64 @@ const Navbar: React.FC = () => {
   return (
       <>
         {/* Top Contact Strip - Fixed */}
+        {hasTopStrip && (
         <div className="bg-gray-900 text-white py-2 text-sm fixed w-full top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-2 min-h-14 md:min-h-0">
               {/* Left Side - Contact Info */}
-              <div className="flex items-center space-x-6">
-                {settings.primaryPhone && (
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2">
+                {publicSettings.primary_phone && (
                     <a
-                        href={`tel:${settings.primaryPhone}`}
+                        href={`tel:${publicSettings.primary_phone}`}
                         className="flex items-center space-x-2 hover:text-indigo-300 transition-colors duration-200"
                     >
                       <Phone className="h-3 w-3" />
-                      <span>{settings.primaryPhone}</span>
+                      <span>{publicSettings.primary_phone}</span>
                     </a>
                 )}
 
-                {settings.primaryEmail && (
+                {publicSettings.primary_email && (
                     <a
-                        href={`mailto:${settings.primaryEmail}`}
+                        href={`mailto:${publicSettings.primary_email}`}
                         className="flex items-center space-x-2 hover:text-indigo-300 transition-colors duration-200"
                     >
                       <Mail className="h-3 w-3" />
-                      <span>{settings.primaryEmail}</span>
+                      <span>{publicSettings.primary_email}</span>
                     </a>
                 )}
               </div>
 
-              {/* Right Side - Social Media Icons */}
-              <div className="flex items-center space-x-4">
-                {settings.facebookUrl && (
+              {topSocialLinks.length > 0 && (
+                <div className="flex items-center flex-wrap justify-center gap-4">
+                  {topSocialLinks.map((social) => (
                     <a
-                        href={settings.facebookUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-400 transition-colors duration-200"
-                        aria-label="Facebook"
+                      key={social.key}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={social.className}
+                      aria-label={social.label}
                     >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                      </svg>
+                      {social.icon}
                     </a>
-                )}
-
-                {settings.twitterUrl && (
-                    <a
-                        href={settings.twitterUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-sky-400 transition-colors duration-200"
-                        aria-label="Twitter"
-                    >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                      </svg>
-                    </a>
-                )}
-
-                {settings.instagramUrl && (
-                    <a
-                        href={settings.instagramUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-pink-400 transition-colors duration-200"
-                        aria-label="Instagram"
-                    >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path fillRule="evenodd" d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987c6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.611-3.189-1.551-.741-.94-.741-2.137 0-3.077.741-.94 1.892-1.551 3.189-1.551 1.297 0 2.448.611 3.189 1.551.741.94.741 2.137 0 3.077-.741.94-1.892 1.551-3.189 1.551z" clipRule="evenodd" />
-                      </svg>
-                    </a>
-                )}
-
-                {settings.linkedinUrl && (
-                    <a
-                        href={settings.linkedinUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-400 transition-colors duration-200"
-                        aria-label="LinkedIn"
-                    >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                      </svg>
-                    </a>
-                )}
-
-                {settings.youtubeUrl && (
-                    <a
-                        href={settings.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-red-400 transition-colors duration-200"
-                        aria-label="YouTube"
-                    >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                      </svg>
-                    </a>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
+        )}
 
         {/* Main Navigation - Fixed with top offset */}
-        <nav className="bg-white/95 backdrop-blur-md shadow-lg fixed w-full top-8 z-40 border-b border-gray-100">
+        <nav className={`bg-white/95 backdrop-blur-md shadow-lg fixed w-full z-40 border-b border-gray-100 ${hasTopStrip ? 'top-14 md:top-8' : 'top-0'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
                 <Link to="/" className="flex items-center space-x-3 group">
                   <div className="relative">
                     <img
-                        src={settings.logoUrl}
-                        alt={settings.siteName}
+                        src={publicSettings.logo_url}
+                        alt={publicSettings.site_name}
                         className="h-14 w-100 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
                         onError={(e) => {
                           // Fallback to loading GIF with proper sizing

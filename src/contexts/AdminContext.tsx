@@ -2,73 +2,71 @@ import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/adminClient';
 
 interface GeneralSettings {
-  siteName: string;
-  logoUrl: string;
-  dateFormat: string;
+  site_name: string;
+  logo_url: string;
+  date_format: string;
   timezone: string;
-  emailVerificationRequired: boolean;
-  mobileVerificationRequired: boolean;
-  eitherVerificationRequired: boolean;
-  referralMandatory: boolean;
-  autoTutorAssignment: boolean;
-  maxStudentsPerTutor: number;
-  jobSeekerVideoUrl: string;
-  jobProviderVideoUrl: string;
+  email_verification_required: boolean;
+  mobile_verification_required: boolean;
+  either_verification_required: boolean;
+  referral_mandatory: boolean;
+  job_seeker_video_url: string;
+  job_provider_video_url: string;
 
   // Contact Information
-  primaryPhone: string;
-  primaryPhoneTagline: string;
-  secondaryPhone: string;
-  secondaryPhoneTagline: string;
-  primaryEmail: string;
-  primaryEmailTagline: string;
-  supportEmail: string;
-  supportEmailTagline: string;
+  primary_phone: string;
+  primary_phone_tagline: string;
+  secondary_phone: string;
+  secondary_phone_tagline: string;
+  primary_email: string;
+  primary_email_tagline: string;
+  support_email: string;
+  support_email_tagline: string;
   address: string;
   city: string;
   state: string;
-  zipCode: string;
+  zip_code: string;
   country: string;
-  businessHours: string;
+  business_hours: string;
 
   // Social Media Links
-  facebookUrl: string;
-  instagramUrl: string;
-  linkedinUrl: string;
-  twitterUrl: string;
-  youtubeUrl: string;
-  whatsappNumber: string;
+  facebook_url: string;
+  instagram_url: string;
+  linkedin_url: string;
+  twitter_url: string;
+  youtube_url: string;
+  whatsapp_number: string;
 
   // Additional Links
-  websiteUrl: string;
-  blogUrl: string;
+  website_url: string;
+  blog_url: string;
 
   // Username validation settings
-  usernameMinLength: number;
-  usernameMaxLength: number;
-  usernameAllowSpaces: boolean;
-  usernameAllowSpecialChars: boolean;
-  usernameAllowedSpecialChars: string;
-  usernameForceLowerCase: boolean;
-  usernameUniqueRequired: boolean;
-  usernameAllowNumbers: boolean;
-  usernameMustStartWithLetter: boolean;
+  username_min_length: number;
+  username_max_length: number;
+  username_allow_spaces: boolean;
+  username_allow_special_chars: boolean;
+  username_allowed_special_chars: string;
+  username_force_lower_case: boolean;
+  username_unique_required: boolean;
+  username_allow_numbers: boolean;
+  username_must_start_with_letter: boolean;
 
   // Password validation settings
-  passwordMinLength: number;
-  passwordMaxLength: number;
-  passwordRequireUppercase: boolean;
-  passwordRequireLowercase: boolean;
-  passwordRequireNumbers: boolean;
-  passwordRequireSpecialChars: boolean;
-  passwordAllowedSpecialChars: string;
-  passwordPreventCommon: boolean;
-  passwordPreventSequences: boolean;
-  passwordPreventRepeats: boolean;
-  passwordMaxConsecutive: number;
-  passwordMinUniqueChars: number;
-  passwordExpiryDays: number;
-  passwordHistoryCount: number;
+  password_min_length: number;
+  password_max_length: number;
+  password_require_uppercase: boolean;
+  password_require_lowercase: boolean;
+  password_require_numbers: boolean;
+  password_require_special_chars: boolean;
+  password_allowed_special_chars: string;
+  password_prevent_common: boolean;
+  password_prevent_sequences: boolean;
+  password_prevent_repeats: boolean;
+  password_max_consecutive: number;
+  password_min_unique_chars: number;
+  password_expiry_days: number;
+  password_history_count: number;
 }
 
 interface SMSGateway {
@@ -122,73 +120,71 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [loading, setLoading] = useState(true);
 
   const defaultSettings: GeneralSettings = {
-    siteName: 'HTG Infotech',
-    logoUrl: '',
-    dateFormat: 'DD/MM/YYYY',
+    site_name: 'HTG Infotech',
+    logo_url: '',
+    date_format: 'DD/MM/YYYY',
     timezone: 'UTC',
-    emailVerificationRequired: true,
-    mobileVerificationRequired: true,
-    eitherVerificationRequired: false,
-    referralMandatory: false,
-    autoTutorAssignment: true,
-    maxStudentsPerTutor: 20,
-    jobSeekerVideoUrl: '',
-    jobProviderVideoUrl: '',
+    email_verification_required: true,
+    mobile_verification_required: true,
+    either_verification_required: false,
+    referral_mandatory: false,
+    job_seeker_video_url: '',
+    job_provider_video_url: '',
 
     // Contact Information defaults
-    primaryPhone: '',
-    primaryPhoneTagline: '',
-    secondaryPhone: '',
-    secondaryPhoneTagline: '',
-    primaryEmail: '',
-    primaryEmailTagline: '',
-    supportEmail: '',
-    supportEmailTagline: '',
+    primary_phone: '',
+    primary_phone_tagline: '',
+    secondary_phone: '',
+    secondary_phone_tagline: '',
+    primary_email: '',
+    primary_email_tagline: '',
+    support_email: '',
+    support_email_tagline: '',
     address: '',
     city: '',
     state: '',
-    zipCode: '',
+    zip_code: '',
     country: '',
-    businessHours: '',
+    business_hours: '',
 
     // Social Media defaults
-    facebookUrl: '',
-    instagramUrl: '',
-    linkedinUrl: '',
-    twitterUrl: '',
-    youtubeUrl: '',
-    whatsappNumber: '',
+    facebook_url: '',
+    instagram_url: '',
+    linkedin_url: '',
+    twitter_url: '',
+    youtube_url: '',
+    whatsapp_number: '',
 
     // Additional Links defaults
-    websiteUrl: '',
-    blogUrl: '',
+    website_url: '',
+    blog_url: '',
 
     // Username validation defaults
-    usernameMinLength: 8,
-    usernameMaxLength: 30,
-    usernameAllowSpaces: false,
-    usernameAllowSpecialChars: true,
-    usernameAllowedSpecialChars: '._-',
-    usernameForceLowerCase: true,
-    usernameUniqueRequired: true,
-    usernameAllowNumbers: true,
-    usernameMustStartWithLetter: true,
+    username_min_length: 8,
+    username_max_length: 30,
+    username_allow_spaces: false,
+    username_allow_special_chars: true,
+    username_allowed_special_chars: '._-',
+    username_force_lower_case: true,
+    username_unique_required: true,
+    username_allow_numbers: true,
+    username_must_start_with_letter: true,
 
     // Password validation defaults
-    passwordMinLength: 8,
-    passwordMaxLength: 128,
-    passwordRequireUppercase: true,
-    passwordRequireLowercase: true,
-    passwordRequireNumbers: true,
-    passwordRequireSpecialChars: true,
-    passwordAllowedSpecialChars: '!@#$%^&*()_+-=[]{};:\'"|,.<>?/~`',
-    passwordPreventCommon: true,
-    passwordPreventSequences: true,
-    passwordPreventRepeats: true,
-    passwordMaxConsecutive: 3,
-    passwordMinUniqueChars: 5,
-    passwordExpiryDays: 90,
-    passwordHistoryCount: 5
+    password_min_length: 8,
+    password_max_length: 128,
+    password_require_uppercase: true,
+    password_require_lowercase: true,
+    password_require_numbers: true,
+    password_require_special_chars: true,
+    password_allowed_special_chars: '!@#$%^&*()_+-=[]{};:\'"|,.<>?/~`',
+    password_prevent_common: true,
+    password_prevent_sequences: true,
+    password_prevent_repeats: true,
+    password_max_consecutive: 3,
+    password_min_unique_chars: 5,
+    password_expiry_days: 90,
+    password_history_count: 5
   };
 
   const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
@@ -271,70 +267,61 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }, {});
 
         setSettings({
-          siteName: settingsMap.site_name || defaultSettings.siteName,
-          logoUrl: settingsMap.logo_url || defaultSettings.logoUrl,
-          dateFormat: settingsMap.date_format || defaultSettings.dateFormat,
+          site_name: settingsMap.site_name || defaultSettings.site_name,
+          logo_url: settingsMap.logo_url || defaultSettings.logo_url,
+          date_format: settingsMap.date_format || defaultSettings.date_format,
           timezone: settingsMap.timezone || defaultSettings.timezone,
-          emailVerificationRequired: settingsMap.email_verification_required ?? defaultSettings.emailVerificationRequired,
-          mobileVerificationRequired: settingsMap.mobile_verification_required ?? defaultSettings.mobileVerificationRequired,
-          eitherVerificationRequired: settingsMap.either_verification_required ?? defaultSettings.eitherVerificationRequired,
-          referralMandatory: settingsMap.referral_mandatory ?? defaultSettings.referralMandatory,
-          autoTutorAssignment: settingsMap.auto_tutor_assignment ?? defaultSettings.autoTutorAssignment,
-          maxStudentsPerTutor: settingsMap.max_students_per_tutor ?? defaultSettings.maxStudentsPerTutor,
-          jobSeekerVideoUrl: settingsMap.job_seeker_video_url || defaultSettings.jobSeekerVideoUrl,
-          jobProviderVideoUrl: settingsMap.job_provider_video_url || defaultSettings.jobProviderVideoUrl,
-
-          primaryPhone: settingsMap.primary_phone || defaultSettings.primaryPhone,
-          primaryPhoneTagline: settingsMap.primary_phone_tagline || defaultSettings.primaryPhoneTagline,
-          secondaryPhone: settingsMap.secondary_phone || defaultSettings.secondaryPhone,
-          secondaryPhoneTagline: settingsMap.secondary_phone || defaultSettings.secondaryPhoneTagline,
-          primaryEmail: settingsMap.primary_email || defaultSettings.primaryEmail,
-          primaryEmailTagline: settingsMap.primary_email_tagline || defaultSettings.primaryEmailTagline,
-          supportEmail: settingsMap.support_email || defaultSettings.supportEmail,
-          supportEmailTagline: settingsMap.support_email_tagline || defaultSettings.supportEmailTagline,
+          email_verification_required: settingsMap.email_verification_required ?? defaultSettings.email_verification_required,
+          mobile_verification_required: settingsMap.mobile_verification_required ?? defaultSettings.mobile_verification_required,
+          either_verification_required: settingsMap.either_verification_required ?? defaultSettings.either_verification_required,
+          referral_mandatory: settingsMap.referral_mandatory ?? defaultSettings.referral_mandatory,
+          job_seeker_video_url: settingsMap.job_seeker_video_url || defaultSettings.job_seeker_video_url,
+          job_provider_video_url: settingsMap.job_provider_video_url || defaultSettings.job_provider_video_url,
+          primary_phone: settingsMap.primary_phone || defaultSettings.primary_phone,
+          primary_phone_tagline: settingsMap.primary_phone_tagline || defaultSettings.primary_phone_tagline,
+          secondary_phone: settingsMap.secondary_phone || defaultSettings.secondary_phone,
+          secondary_phone_tagline: settingsMap.secondary_phone_tagline || defaultSettings.secondary_phone_tagline,
+          primary_email: settingsMap.primary_email || defaultSettings.primary_email,
+          primary_email_tagline: settingsMap.primary_email_tagline || defaultSettings.primary_email_tagline,
+          support_email: settingsMap.support_email || defaultSettings.support_email,
+          support_email_tagline: settingsMap.support_email_tagline || defaultSettings.support_email_tagline,
           address: settingsMap.address || defaultSettings.address,
           city: settingsMap.city || defaultSettings.city,
           state: settingsMap.state || defaultSettings.state,
-          zipCode: settingsMap.zip_code || defaultSettings.zipCode,
+          zip_code: settingsMap.zip_code || defaultSettings.zip_code,
           country: settingsMap.country || defaultSettings.country,
-          businessHours: settingsMap.business_hours || defaultSettings.businessHours,
-
-          facebookUrl: settingsMap.facebook_url || defaultSettings.facebookUrl,
-          instagramUrl: settingsMap.instagram_url || defaultSettings.instagramUrl,
-          linkedinUrl: settingsMap.linkedin_url || defaultSettings.linkedinUrl,
-          twitterUrl: settingsMap.twitter_url || defaultSettings.twitterUrl,
-          youtubeUrl: settingsMap.youtube_url || defaultSettings.youtubeUrl,
-          whatsappNumber: settingsMap.whatsapp_number || defaultSettings.whatsappNumber,
-
-          websiteUrl: settingsMap.website_url || defaultSettings.websiteUrl,
-          blogUrl: settingsMap.blog_url || defaultSettings.blogUrl,
-
-          // Username validation settings
-          usernameMinLength: settingsMap.username_min_length ?? defaultSettings.usernameMinLength,
-          usernameMaxLength: settingsMap.username_max_length ?? defaultSettings.usernameMaxLength,
-          usernameAllowSpaces: settingsMap.username_allow_spaces ?? defaultSettings.usernameAllowSpaces,
-          usernameAllowSpecialChars: settingsMap.username_allow_special_chars ?? defaultSettings.usernameAllowSpecialChars,
-          usernameAllowedSpecialChars: settingsMap.username_allowed_special_chars || defaultSettings.usernameAllowedSpecialChars,
-          usernameForceLowerCase: settingsMap.username_force_lower_case ?? defaultSettings.usernameForceLowerCase,
-          usernameUniqueRequired: settingsMap.username_unique_required ?? defaultSettings.usernameUniqueRequired,
-          usernameAllowNumbers: settingsMap.username_allow_numbers ?? defaultSettings.usernameAllowNumbers,
-          usernameMustStartWithLetter: settingsMap.username_must_start_with_letter ?? defaultSettings.usernameMustStartWithLetter,
-
-          // Password validation settings
-          passwordMinLength: settingsMap.password_min_length ?? defaultSettings.passwordMinLength,
-          passwordMaxLength: settingsMap.password_max_length ?? defaultSettings.passwordMaxLength,
-          passwordRequireUppercase: settingsMap.password_require_uppercase ?? defaultSettings.passwordRequireUppercase,
-          passwordRequireLowercase: settingsMap.password_require_lowercase ?? defaultSettings.passwordRequireLowercase,
-          passwordRequireNumbers: settingsMap.password_require_numbers ?? defaultSettings.passwordRequireNumbers,
-          passwordRequireSpecialChars: settingsMap.password_require_special_chars ?? defaultSettings.passwordRequireSpecialChars,
-          passwordAllowedSpecialChars: settingsMap.password_allowed_special_chars || defaultSettings.passwordAllowedSpecialChars,
-          passwordPreventCommon: settingsMap.password_prevent_common ?? defaultSettings.passwordPreventCommon,
-          passwordPreventSequences: settingsMap.password_prevent_sequences ?? defaultSettings.passwordPreventSequences,
-          passwordPreventRepeats: settingsMap.password_prevent_repeats ?? defaultSettings.passwordPreventRepeats,
-          passwordMaxConsecutive: settingsMap.password_max_consecutive ?? defaultSettings.passwordMaxConsecutive,
-          passwordMinUniqueChars: settingsMap.password_min_unique_chars ?? defaultSettings.passwordMinUniqueChars,
-          passwordExpiryDays: settingsMap.password_expiry_days ?? defaultSettings.passwordExpiryDays,
-          passwordHistoryCount: settingsMap.password_history_count ?? defaultSettings.passwordHistoryCount
+          business_hours: settingsMap.business_hours || defaultSettings.business_hours,
+          facebook_url: settingsMap.facebook_url || defaultSettings.facebook_url,
+          instagram_url: settingsMap.instagram_url || defaultSettings.instagram_url,
+          linkedin_url: settingsMap.linkedin_url || defaultSettings.linkedin_url,
+          twitter_url: settingsMap.twitter_url || defaultSettings.twitter_url,
+          youtube_url: settingsMap.youtube_url || defaultSettings.youtube_url,
+          whatsapp_number: settingsMap.whatsapp_number || defaultSettings.whatsapp_number,
+          website_url: settingsMap.website_url || defaultSettings.website_url,
+          blog_url: settingsMap.blog_url || defaultSettings.blog_url,
+          username_min_length: settingsMap.username_min_length ?? defaultSettings.username_min_length,
+          username_max_length: settingsMap.username_max_length ?? defaultSettings.username_max_length,
+          username_allow_spaces: settingsMap.username_allow_spaces ?? defaultSettings.username_allow_spaces,
+          username_allow_special_chars: settingsMap.username_allow_special_chars ?? defaultSettings.username_allow_special_chars,
+          username_allowed_special_chars: settingsMap.username_allowed_special_chars || defaultSettings.username_allowed_special_chars,
+          username_force_lower_case: settingsMap.username_force_lower_case ?? defaultSettings.username_force_lower_case,
+          username_unique_required: settingsMap.username_unique_required ?? defaultSettings.username_unique_required,
+          username_allow_numbers: settingsMap.username_allow_numbers ?? defaultSettings.username_allow_numbers,
+          username_must_start_with_letter: settingsMap.username_must_start_with_letter ?? defaultSettings.username_must_start_with_letter,
+          password_min_length: settingsMap.password_min_length ?? defaultSettings.password_min_length,
+          password_max_length: settingsMap.password_max_length ?? defaultSettings.password_max_length,
+          password_require_uppercase: settingsMap.password_require_uppercase ?? defaultSettings.password_require_uppercase,
+          password_require_lowercase: settingsMap.password_require_lowercase ?? defaultSettings.password_require_lowercase,
+          password_require_numbers: settingsMap.password_require_numbers ?? defaultSettings.password_require_numbers,
+          password_require_special_chars: settingsMap.password_require_special_chars ?? defaultSettings.password_require_special_chars,
+          password_allowed_special_chars: settingsMap.password_allowed_special_chars || defaultSettings.password_allowed_special_chars,
+          password_prevent_common: settingsMap.password_prevent_common ?? defaultSettings.password_prevent_common,
+          password_prevent_sequences: settingsMap.password_prevent_sequences ?? defaultSettings.password_prevent_sequences,
+          password_prevent_repeats: settingsMap.password_prevent_repeats ?? defaultSettings.password_prevent_repeats,
+          password_max_consecutive: settingsMap.password_max_consecutive ?? defaultSettings.password_max_consecutive,
+          password_min_unique_chars: settingsMap.password_min_unique_chars ?? defaultSettings.password_min_unique_chars,
+          password_expiry_days: settingsMap.password_expiry_days ?? defaultSettings.password_expiry_days,
+          password_history_count: settingsMap.password_history_count ?? defaultSettings.password_history_count
         });
 
         console.log('✅ Settings loaded from database');
