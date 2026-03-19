@@ -93,11 +93,11 @@ const Navbar: React.FC = () => {
     loadPublicSettings();
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
     setIsMenuOpen(false);
     setIsUserMenuOpen(false);
+    await logout();
+    navigate('/');
   };
 
   const handleNavClick = (path: string) => {
