@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/adminClient';
-import { emailTemplateDefaults } from '../../lib/emailTemplateDefaults';
+import { emailTemplateDefaults, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
 import { Eye, Mail, Pencil, Save, X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface EmailTemplateRow {
@@ -46,25 +46,7 @@ const EmailTemplateManager: React.FC = () => {
     setResult(null);
 
     try {
-      const payload = emailTemplateDefaults.map((template) => ({
-        tet_name: template.name,
-        tet_subject: template.subject,
-        tet_body: template.body,
-        tet_template_type: template.templateType,
-        tet_variables: template.variables,
-        tet_is_active: true,
-        tet_updated_at: new Date().toISOString(),
-      }));
-
-      const { error: upsertError } = await supabase
-        .from('tbl_email_templates')
-        .upsert(payload, { onConflict: 'tet_name' });
-
-      if (upsertError) {
-        throw new Error(upsertError.message);
-      }
-
-      const { data, error } = await supabase
+      const { data: existingTemplates, error } = await supabase
         .from('tbl_email_templates')
         .select('*')
         .in('tet_name', ['verification_email', 'welcome_email'])
@@ -74,7 +56,63 @@ const EmailTemplateManager: React.FC = () => {
         throw new Error(error.message);
       }
 
-      setTemplates((data || []) as EmailTemplateRow[]);
+      const existingNames = new Set((existingTemplates || []).map((template: any) => template.tet_name));
+      const missingTemplates = emailTemplateDefaults
+        .filter((template) => !existingNames.has(template.name))
+        .map((template) => ({
+          tet_name: template.name,
+          tet_subject: template.subject,
+          tet_body: template.body,
+          tet_template_type: template.templateType,
+          tet_variables: template.variables,
+          tet_is_active: true,
+          tet_updated_at: new Date().toISOString(),
+        }));
+
+      let finalTemplates = (existingTemplates || []) as EmailTemplateRow[];
+
+      if (missingTemplates.length > 0) {
+        const { data: insertedTemplates, error: insertError } = await supabase
+          .from('tbl_email_templates')
+          .insert(missingTemplates)
+          .select('*');
+
+        if (insertError) {
+          throw new Error(insertError.message);
+        }
+
+        finalTemplates = [...finalTemplates, ...((insertedTemplates || []) as EmailTemplateRow[])];
+      }
+
+      const templatesNeedingCleanup = finalTemplates.filter((template) => {
+        const cleanedSubject = stripWordBreakTags(template.tet_subject || '');
+        const cleanedBody = stripWordBreakTags(template.tet_body || '');
+        return cleanedSubject !== template.tet_subject || cleanedBody !== template.tet_body;
+      });
+
+      if (templatesNeedingCleanup.length > 0) {
+        await Promise.all(
+          templatesNeedingCleanup.map((template) =>
+            supabase
+              .from('tbl_email_templates')
+              .update({
+                tet_subject: stripWordBreakTags(template.tet_subject || ''),
+                tet_body: stripWordBreakTags(template.tet_body || ''),
+                tet_updated_at: new Date().toISOString(),
+              })
+              .eq('tet_name', template.tet_name)
+          )
+        );
+
+        finalTemplates = finalTemplates.map((template) => ({
+          ...template,
+          tet_subject: stripWordBreakTags(template.tet_subject || ''),
+          tet_body: stripWordBreakTags(template.tet_body || ''),
+        }));
+      }
+
+      finalTemplates.sort((a, b) => a.tet_name.localeCompare(b.tet_name));
+      setTemplates(finalTemplates);
     } catch (error) {
       console.error('Failed to load email templates:', error);
       setResult({
@@ -138,8 +176,8 @@ const EmailTemplateManager: React.FC = () => {
       const { error } = await supabase
         .from('tbl_email_templates')
         .update({
-          tet_subject: editForm.subject,
-          tet_body: editForm.body,
+          tet_subject: stripWordBreakTags(editForm.subject),
+          tet_body: stripWordBreakTags(editForm.body),
           tet_updated_at: new Date().toISOString(),
         })
         .eq('tet_name', editingTemplate.tet_name);

@@ -28,12 +28,12 @@ const buildEmailShell = ({
       <td align="center">
         <table role="presentation" style="width:100%;max-width:720px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
-            <td style="background:linear-gradient(135deg, #4f46e5, #7c3aed);color:#ffffff;padding:24px;text-align:center;">
-              <div style="margin-bottom:16px;">
-                <img src="{{logo_url}}" alt="Brand Logo" style="display:block;max-width:160px;width:auto;height:auto;max-height:64px;margin:0 auto;">
+            <td style="background:linear-gradient(135deg, #312e81 0%, #4f46e5 48%, #7c3aed 100%);color:#ffffff;padding:28px 24px 30px;text-align:center;">
+              <div style="margin:0 auto 18px;display:inline-block;padding:12px 20px;border-radius:18px;background:rgba(255,255,255,0.96);box-shadow:0 14px 30px rgba(15,23,42,0.18);border:1px solid rgba(255,255,255,0.7);">
+                <img src="{{logo_url}}" alt="Brand Logo" style="display:block;max-width:176px;width:auto;height:auto;max-height:68px;margin:0 auto;">
               </div>
-              <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;">${eyebrow}</p>
-              <h1 style="margin:0;font-size:28px;line-height:1.3;font-weight:700;">${title}</h1>
+              <p style="margin:0 0 10px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(224,231,255,0.96);">${eyebrow}</p>
+              <h1 style="margin:0;font-size:28px;line-height:1.3;font-weight:700;color:#ffffff;">${title}</h1>
             </td>
           </tr>
           <tr>
@@ -81,7 +81,7 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
           </p>
         </div>
         <div style="text-align:center;margin:28px 0;">
-          <a href="{{verification_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:700;">Verify Email</a>
+          <a href="{{verification_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Verify Email</a>
         </div>
         <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
           If the button doesn’t work, click the link below:
@@ -122,7 +122,7 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
           </ul>
         </div>
         <div style="text-align:center;margin:28px 0;">
-          <a href="{{site_url}}/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:700;">Browse Courses</a>
+          <a href="{{site_url}}/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Browse Courses</a>
         </div>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>{{site_name}} Team</p>
       `,
@@ -135,6 +135,56 @@ export const replaceTemplatePlaceholders = (
   variables: Record<string, string>,
 ) =>
   template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => variables[key] ?? '');
+
+export const normalizeEmailMarkup = (value: string) =>
+  value
+    .replace(/<wbr\b[^>]*>/gi, '')
+    .replace(/<\/wbr>/gi, '')
+    .replace(/&lt;\s*\/?\s*wbr\s*&gt;/gi, '')
+    .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, '')
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+    .replace(
+      /(<a\b[^>]*style="[^"]*?)border-radius:\s*[^;"]+;?([^"]*"[^>]*>\s*Verify Email\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style="[^"]*?)border-radius:\s*[^;"]+;?([^"]*"[^>]*>\s*Browse Courses\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*Verify Email\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*Browse Courses\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*Verify Email\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string) => {
+        const needsSemicolon = styleValue.trim() !== '' && !styleValue.trim().endsWith(';');
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, 'border-radius:999px;')
+          : `${styleValue}${needsSemicolon ? ';' : ''}border-radius:999px;`;
+        return `<a${beforeStyle}style="${withRadius}"${afterStyle}>Verify Email</a>`;
+      },
+    )
+    .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*Browse Courses\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string) => {
+        const needsSemicolon = styleValue.trim() !== '' && !styleValue.trim().endsWith(';');
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, 'border-radius:999px;')
+          : `${styleValue}${needsSemicolon ? ';' : ''}border-radius:999px;`;
+        return `<a${beforeStyle}style="${withRadius}"${afterStyle}>Browse Courses</a>`;
+      },
+    )
+    .replace(/>\s+</g, '><')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim();
+
+export const stripWordBreakTags = (value: string) =>
+  normalizeEmailMarkup(value);
 
 export const getDefaultEmailTemplate = (name: 'verification_email' | 'welcome_email') =>
   emailTemplateDefaults.find((template) => template.name === name);

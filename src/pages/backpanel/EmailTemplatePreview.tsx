@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/adminClient';
 import { useAdmin } from '../../contexts/AdminContext';
-import { replaceTemplatePlaceholders } from '../../lib/emailTemplateDefaults';
+import { replaceTemplatePlaceholders, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface EmailTemplateRow {
@@ -23,11 +23,11 @@ const EmailTemplatePreview: React.FC = () => {
   const previewVariables = useMemo(() => ({
     user_name: 'Test User',
     verification_link: `${settings.website_url || window.location.origin}/auth/callback?type=email_verification&token=preview-token`,
-    logo_url: settings.logo_url || '',
+    logo_url: `${settings.website_url || window.location.origin}/htgsvglogo.svg`,
     site_name: settings.site_name || 'HTG Infotech',
     site_url: settings.website_url || window.location.origin,
     current_year: String(new Date().getFullYear()),
-  }), [settings.logo_url, settings.site_name, settings.website_url]);
+  }), [settings.site_name, settings.website_url]);
 
   useEffect(() => {
     const loadTemplate = async () => {
@@ -64,7 +64,9 @@ const EmailTemplatePreview: React.FC = () => {
     loadTemplate();
   }, [templateId]);
 
-  const renderedHtml = template ? replaceTemplatePlaceholders(template.tet_body, previewVariables) : '';
+  const renderedHtml = template
+    ? stripWordBreakTags(replaceTemplatePlaceholders(template.tet_body, previewVariables))
+    : '';
 
   useEffect(() => {
     if (template?.tet_subject) {
