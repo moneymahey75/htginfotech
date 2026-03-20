@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../components/ui/NotificationProvider';
@@ -10,8 +10,15 @@ const AuthCallback: React.FC = () => {
   const notification = useNotification();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const hasProcessedCallback = useRef(false);
 
   useEffect(() => {
+    if (hasProcessedCallback.current) {
+      return;
+    }
+
+    hasProcessedCallback.current = true;
+
     const handleAuthCallback = async () => {
       try {
         const token = searchParams.get('token');
@@ -45,17 +52,12 @@ const AuthCallback: React.FC = () => {
           }
 
           if (!verificationResult?.success) {
-            throw new Error(verificationResult?.error || 'Failed to verify email');
+            navigate('/login?error=invalid', { replace: true });
+            return;
           }
 
-          notification.showSuccess(
-            'Email Confirmed!',
-            'Your email has been verified successfully. Please log in to continue.'
-          );
-
-          setTimeout(() => {
-            navigate('/login');
-          }, 2000);
+          navigate('/login?verified=true', { replace: true });
+          return;
         } else if (type === 'signup') {
           // This is an email confirmation callback
           console.log('📧 Processing email confirmation...');
@@ -165,6 +167,10 @@ const AuthCallback: React.FC = () => {
         setError(error.message || 'Authentication failed');
 
         const type = searchParams.get('type');
+        if (type === 'email_verification') {
+          navigate('/login?error=invalid', { replace: true });
+          return;
+        }
         if (type === 'signup') {
           notification.showError(
             'Verification Failed',

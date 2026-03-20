@@ -66,12 +66,12 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
     label: 'Verification Email',
     subject: 'Verify your email address - {{site_name}}',
     templateType: 'email_verification',
-    variables: ['user_name', 'verification_link', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    variables: ['user_name', 'first_name', 'verification_link', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
       eyebrow: '{{site_name}} Account Verification',
       title: 'Verify Your Email',
       body: `
-        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{user_name}},</p>
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
           Thank you for signing up with {{site_name}}. Please verify your email address to complete your registration and activate your account.
         </p>
@@ -84,13 +84,10 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
           <a href="{{verification_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Verify Email</a>
         </div>
         <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
-          If the button doesn’t work, click the link below:
+          If the button above is not clickable, please copy the following URL and paste it into your browser.
         </p>
         <p style="margin:0 0 20px;word-break:break-word;">
           <a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a>
-        </p>
-        <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.7;">
-          If you did not create this account, you can safely ignore this email.
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
           Regards,<br>{{site_name}} Team
@@ -103,12 +100,12 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
     label: 'Welcome Email',
     subject: 'Welcome to {{site_name}}!',
     templateType: 'user_registration',
-    variables: ['user_name', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    variables: ['user_name', 'first_name', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
-      eyebrow: '{{site_name}} Welcome Message',
+      eyebrow: '',
       title: 'Welcome to {{site_name}}!',
       body: `
-        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{user_name}},</p>
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
           Welcome to {{site_name}}. Your email has been verified successfully, and your account is now ready to use.
         </p>
@@ -179,6 +176,15 @@ export const normalizeEmailMarkup = (value: string) =>
         return `<a${beforeStyle}style="${withRadius}"${afterStyle}>Browse Courses</a>`;
       },
     )
+    .replace(
+      /<p\b[^>]*>\s*If you did not create this account, you can safely ignore this email\.\s*<\/p>/gi,
+      '<p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">If the button above is not clickable, please copy the following URL and paste it into your browser.</p><p style="margin:0 0 20px;word-break:break-word;"><a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a></p>',
+    )
+    .replace(
+      /<p\b[^>]*>\s*[^<]*Welcome Message\s*<\/p>/gi,
+      '',
+    )
+    .replace(/Hello\s+User,/gi, 'Hello {{first_name}},')
     .replace(/>\s+</g, '><')
     .replace(/\n\s*\n+/g, '\n')
     .trim();

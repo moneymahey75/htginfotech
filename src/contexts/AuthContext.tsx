@@ -19,6 +19,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, userType: string) => Promise<void>;
   register: (userData: any, userType: string) => Promise<string>;
+  resendVerificationEmail: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
@@ -303,7 +304,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Sign out the user immediately
         await supabase.auth.signOut();
         sessionManager.removeSession();
-        throw new Error(eligibilityResult?.error || 'Login not allowed');
+
+        const eligibilityErrorMessage = eligibilityResult?.error || 'Login not allowed';
+        if (
+          eligibilityErrorMessage === 'Please verify either your email or mobile number to continue.' ||
+          eligibilityErrorMessage === 'Please verify your email address to continue. Check your inbox for the verification link.'
+        ) {
+          const confirmError = new Error('EMAIL_NOT_CONFIRMED');
+          (confirmError as any).email = actualEmail;
+          throw confirmError;
+        }
+
+        throw new Error(eligibilityErrorMessage);
       }
 
       console.log('✅ User is eligible to log in');
@@ -399,6 +411,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendVerificationEmail = async (email: string) => {
+    try {
+      const normalizedEmail = email.trim();
+
+      if (!normalizedEmail) {
+        throw new Error('Email is required');
+      }
+
+      const { data, error } = await supabase.functions.invoke('resend-verification-email', {
+        body: {
+          email: normalizedEmail,
+          siteUrl: window.location.origin,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to resend verification email');
+      }
+
+      notification.showSuccess(
+        'Verification Email Sent',
+        'Please check your inbox and click the verification link.',
+      );
+    } catch (error: any) {
+      notification.showError(
+        'Resend Failed',
+        error?.message || 'Failed to resend verification email',
+      );
+      throw error;
     }
   };
 
@@ -515,6 +563,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     login,
     register,
+    resendVerificationEmail,
     logout,
     forgotPassword,
     resetPassword,

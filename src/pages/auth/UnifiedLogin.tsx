@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
 const UnifiedLogin: React.FC = () => {
-  const { login, user } = useAuth();
+  const { login, resendVerificationEmail, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     emailOrUsername: '',
@@ -18,6 +19,30 @@ const UnifiedLogin: React.FC = () => {
   const [error, setError] = useState((location.state as any)?.error || '');
   const [showEmailConfirmationError, setShowEmailConfirmationError] = useState(false);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
+  const [verificationResentMessage, setVerificationResentMessage] = useState('');
+  const [redirectMessage, setRedirectMessage] = useState('');
+  const [redirectMessageType, setRedirectMessageType] = useState<'success' | 'error'>('success');
+
+  React.useEffect(() => {
+    const verified = searchParams.get('verified');
+    const invalid = searchParams.get('error');
+
+    if (verified === 'true') {
+      setRedirectMessage('Your email has been successfully verified. Please login.');
+      setRedirectMessageType('success');
+      navigate(location.pathname, { replace: true });
+      return;
+    }
+
+    if (invalid === 'invalid') {
+      setRedirectMessage('Invalid or expired verification link.');
+      setRedirectMessageType('error');
+      navigate(location.pathname, { replace: true });
+    }
+  }, [searchParams, navigate, location.pathname]);
 
   // Redirect if user is already logged in (but not during the login process)
   React.useEffect(() => {
@@ -81,6 +106,10 @@ const UnifiedLogin: React.FC = () => {
     e.preventDefault();
     setError('');
     setShowEmailConfirmationError(false);
+    setUnverifiedEmail('');
+    setVerificationResent(false);
+    setVerificationResentMessage('');
+    setRedirectMessage('');
     setIsSubmitting(true);
     setJustLoggedIn(false);
 
@@ -99,6 +128,9 @@ const UnifiedLogin: React.FC = () => {
       // Check if it's the email confirmation error
       if (err.message === 'EMAIL_NOT_CONFIRMED') {
         setShowEmailConfirmationError(true);
+        setUnverifiedEmail(err.email || formData.emailOrUsername);
+        setVerificationResent(false);
+        setVerificationResentMessage('');
         setError('Your email address has not been verified yet. Please check your inbox for the verification link.');
       } else {
         // Other errors are handled by notification system
@@ -113,6 +145,22 @@ const UnifiedLogin: React.FC = () => {
       ...prev,
       [e.target.name]: e.target.value
     }));
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail || isResendingVerification) {
+      return;
+    }
+
+    setIsResendingVerification(true);
+
+    try {
+      await resendVerificationEmail(unverifiedEmail);
+      setVerificationResent(true);
+      setVerificationResentMessage('Verification email sent successfully. Please check your inbox.');
+    } finally {
+      setIsResendingVerification(false);
+    }
   };
 
   return (
@@ -142,6 +190,42 @@ const UnifiedLogin: React.FC = () => {
                           showEmailConfirmationError ? 'text-yellow-800' : 'text-red-600'
                       }`}>
                         {error}
+                      </p>
+                      {showEmailConfirmationError && verificationResentMessage && (
+                          <p className="mt-3 text-sm font-medium text-green-700">
+                            {verificationResentMessage}
+                          </p>
+                      )}
+                      {showEmailConfirmationError && unverifiedEmail && !verificationResent && (
+                          <button
+                              type="button"
+                              onClick={handleResendVerification}
+                              disabled={isResendingVerification}
+                              className="mt-3 inline-flex items-center rounded-lg bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isResendingVerification ? 'Sending...' : 'Resend Verification Email'}
+                          </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+            )}
+
+            {redirectMessage && (
+                <div className={`mb-6 p-4 rounded-lg border ${
+                    redirectMessageType === 'success'
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-start">
+                    <AlertCircle className={`h-5 w-5 mt-0.5 mr-3 flex-shrink-0 ${
+                        redirectMessageType === 'success' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                    <div className="flex-1">
+                      <p className={`text-sm ${
+                          redirectMessageType === 'success' ? 'text-green-800' : 'text-red-600'
+                      }`}>
+                        {redirectMessage}
                       </p>
                     </div>
                   </div>
