@@ -499,22 +499,7 @@ const UnifiedRegister: React.FC = () => {
         mobile: fullPhone // Add this for backward compatibility
       }, formData.userType as any);
 
-      switch (formData.userType) {
-        case 'learner':
-          navigate('/learner/dashboard');
-          break;
-        case 'tutor':
-          navigate('/tutor/dashboard');
-          break;
-        case 'job_seeker':
-          navigate('/job-seeker/dashboard');
-          break;
-        case 'job_provider':
-          navigate('/job-provider/dashboard');
-          break;
-        default:
-          navigate('/');
-      }
+      navigate('/login');
     } catch (err) {
       // Error is handled by notification system
     } finally {

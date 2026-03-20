@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
 const UnifiedLogin: React.FC = () => {
-  const { login, resendConfirmationEmail, user } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const [formData, setFormData] = useState({
     emailOrUsername: '',
     password: ''
@@ -18,7 +17,6 @@ const UnifiedLogin: React.FC = () => {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState((location.state as any)?.error || '');
   const [showEmailConfirmationError, setShowEmailConfirmationError] = useState(false);
-  const [unconfirmedEmail, setUnconfirmedEmail] = useState('');
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   // Redirect if user is already logged in (but not during the login process)
@@ -101,25 +99,12 @@ const UnifiedLogin: React.FC = () => {
       // Check if it's the email confirmation error
       if (err.message === 'EMAIL_NOT_CONFIRMED') {
         setShowEmailConfirmationError(true);
-        setUnconfirmedEmail(err.email || formData.emailOrUsername);
-        setError('Your email address has not been confirmed yet. Please check your inbox for the confirmation link.');
+        setError('Your email address has not been verified yet. Please check your inbox for the verification link.');
       } else {
         // Other errors are handled by notification system
         setError(err.message || 'Login failed. Please try again.');
       }
       setIsSubmitting(false);
-    }
-  };
-
-  const handleResendConfirmation = async () => {
-    setIsResendingEmail(true);
-    try {
-      await resendConfirmationEmail(unconfirmedEmail);
-      setError(''); // Clear the error message on success
-    } catch (err) {
-      // Error is handled by the notification system
-    } finally {
-      setIsResendingEmail(false);
     }
   };
 
@@ -158,26 +143,6 @@ const UnifiedLogin: React.FC = () => {
                       }`}>
                         {error}
                       </p>
-                      {showEmailConfirmationError && (
-                          <button
-                              type="button"
-                              onClick={handleResendConfirmation}
-                              disabled={isResendingEmail}
-                              className="mt-3 inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isResendingEmail ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-2"></div>
-                                  <span>Sending...</span>
-                                </>
-                            ) : (
-                                <>
-                                  <RefreshCw className="h-4 w-4 mr-2" />
-                                  <span>Resend Confirmation Email</span>
-                                </>
-                            )}
-                          </button>
-                      )}
                     </div>
                   </div>
                 </div>

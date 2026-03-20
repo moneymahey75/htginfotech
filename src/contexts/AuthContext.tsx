@@ -24,7 +24,6 @@ interface AuthContextType {
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyOTP: (otp: string) => Promise<void>;
   sendOTPToUser: (userId: string, contactInfo: string, otpType: 'email' | 'mobile') => Promise<any>;
-  resendConfirmationEmail: (email: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -348,36 +347,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const resendConfirmationEmail = async (email: string) => {
-    try {
-      console.log('📧 Resending confirmation email to:', email);
-
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      notification.showSuccess(
-          'Confirmation Email Sent',
-          'Please check your email inbox and spam folder for the confirmation link.'
-      );
-    } catch (error: any) {
-      console.error('❌ Failed to resend confirmation email:', error);
-      notification.showError(
-          'Resend Failed',
-          error?.message || 'Failed to resend confirmation email'
-      );
-      throw error;
-    }
-  };
-
   const register = async (userData: any, userType: string) => {
     setLoading(true);
     try {
@@ -387,93 +356,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionManager.removeSession();
       await supabase.auth.signOut();
 
-      // Register with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
-          data: {
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            user_type: userType
-          }
+      const { data: registerResult, error: registerError } = await supabase.functions.invoke('register-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          firstName: userData.firstName,
+          middleName: userData.middleName || '',
+          lastName: userData.lastName,
+          userName: userData.userName,
+          phoneNumber: userData.phoneNumber && userData.phoneNumber.trim() !== '' ? userData.phoneNumber : null,
+          gender: userData.gender || null,
+          userType,
+          siteUrl: window.location.origin
         }
       });
 
-      if (authError) {
-        console.error('Supabase auth error:', authError);
-
-        // Handle rate limit error with helpful message
-        if (authError.message.includes('email rate limit') || authError.message.includes('over_email_send_rate_limit')) {
-          throw new Error('Registration email limit reached. Please wait a few minutes and try again, or contact support if the issue persists.');
-        }
-
-        throw new Error(authError.message);
+      if (registerError) {
+        console.error('Registration edge function error:', registerError);
+        throw new Error(registerError.message);
       }
 
-      if (!authData.user) {
-        console.error('No user data returned from Supabase');
-        throw new Error('Registration failed');
+      if (!registerResult?.success) {
+        throw new Error(registerResult?.error || 'Registration failed');
       }
 
-      console.log('✅ Supabase auth successful, user ID:', authData.user.id);
+      notification.showSuccess(
+        'Registration Successful!',
+        'Please check your email and click the verification link to activate your account.'
+      );
 
-      // Save session immediately if available
-      if (authData.session) {
-        console.log('💾 Saving session to localStorage');
-        sessionManager.saveSession(authData.session);
-      }
-
-      // Use unified registration function
-      console.log('📝 Registering user profile...');
-      const { data: regResult, error: regError } = await supabase.rpc('register_user', {
-        p_user_id: authData.user.id,
-        p_email: userData.email,
-        p_first_name: userData.firstName,
-        p_middle_name: userData.middleName || '',
-        p_last_name: userData.lastName,
-        p_username: userData.userName,
-        p_mobile: userData.phoneNumber && userData.phoneNumber.trim() !== '' ? userData.phoneNumber : null,
-        p_gender: userData.gender || null,
-        p_user_type: userType
-      });
-
-      if (regError) {
-        console.error('User registration error:', regError);
-        throw new Error(regError.message);
-      }
-
-      // Check if the function returned an error
-      if (regResult && !regResult.success) {
-        console.error('Registration function returned error:', regResult);
-        throw new Error(regResult.error || 'Registration failed');
-      }
-
-      console.log('✅ Registration function result:', regResult);
-
-      // Log registration activity
-      try {
-        await logUserActivity(authData.user.id, 'registration');
-      } catch (logError) {
-        console.warn('Failed to log registration activity:', logError);
-      }
-
-      console.log('✅ Registration completed successfully:', regResult);
-
-      // Check if email confirmation is required
-      if (!authData.session) {
-        notification.showSuccess(
-          'Registration Successful!',
-          'Please check your email to confirm your account. After confirmation, you can log in.'
-        );
-      } else {
-        notification.showSuccess('Registration Successful!', 'Your account has been created successfully.');
-        // Fetch user data immediately after successful registration
-        await fetchUserData(authData.user.id);
-      }
-
-      return authData.user.id;
+      return registerResult.user_id;
 
     } catch (error: any) {
       console.error('❌ Registration failed:', error);
@@ -608,7 +520,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetPassword,
     verifyOTP,
     sendOTPToUser,
-    resendConfirmationEmail,
     loading
   };
 

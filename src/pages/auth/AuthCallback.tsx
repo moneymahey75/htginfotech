@@ -35,6 +35,27 @@ const AuthCallback: React.FC = () => {
           } else {
             throw new Error('Failed to verify reset token');
           }
+        } else if (type === 'email_verification' && token) {
+          const { data: verificationResult, error: verificationError } = await supabase.functions.invoke('verify-email', {
+            body: { token }
+          });
+
+          if (verificationError) {
+            throw verificationError;
+          }
+
+          if (!verificationResult?.success) {
+            throw new Error(verificationResult?.error || 'Failed to verify email');
+          }
+
+          notification.showSuccess(
+            'Email Confirmed!',
+            'Your email has been verified successfully. Please log in to continue.'
+          );
+
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
         } else if (type === 'signup') {
           // This is an email confirmation callback
           console.log('📧 Processing email confirmation...');
@@ -48,6 +69,11 @@ const AuthCallback: React.FC = () => {
 
           if (session?.user) {
             console.log('✅ Email confirmed for user:', session.user.id);
+
+            await supabase
+              .from('tbl_users')
+              .update({ tu_email_verified: true })
+              .eq('tu_id', session.user.id);
 
             // Get user metadata
             const firstName = session.user.user_metadata?.first_name || '';
@@ -69,6 +95,7 @@ const AuthCallback: React.FC = () => {
                     firstName: firstName,
                     lastName: lastName,
                     userType: userType,
+                    siteUrl: window.location.origin
                   }),
                 }
               );
@@ -169,7 +196,7 @@ const AuthCallback: React.FC = () => {
               <Loader className="h-8 w-8 text-indigo-600 animate-spin" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Verifying...</h2>
-            <p className="text-gray-600">Please wait while we verify your reset link.</p>
+            <p className="text-gray-600">Please wait while we verify your request.</p>
           </div>
         </div>
       </div>
@@ -186,7 +213,7 @@ const AuthCallback: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Verification Failed</h2>
             <p className="text-gray-600 mb-6">{error}</p>
-            <p className="text-sm text-gray-500">You will be redirected to the forgot password page shortly.</p>
+            <p className="text-sm text-gray-500">You will be redirected shortly.</p>
           </div>
         </div>
       </div>

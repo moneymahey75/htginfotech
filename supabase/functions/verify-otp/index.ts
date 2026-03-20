@@ -1,4 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import {
+  buildBranding,
+  buildWelcomeEmailHtml,
+  loadSystemSettings,
+  sendSmtpEmail,
+} from "../_shared/email.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -156,14 +162,14 @@ async function sendWelcomeEmail(userId: string, supabase: any) {
   try {
     console.log('📧 Sending welcome email for user:', userId)
 
-    // Get user data using correct table and column names
     const { data: userData } = await supabase
       .from('tbl_users')
       .select(`
         tu_email,
+        tu_user_type,
         tbl_user_profiles (
           tup_first_name,
-          tup_sponsorship_number
+          tup_last_name
         )
       `)
       .eq('tu_id', userId)
@@ -174,156 +180,23 @@ async function sendWelcomeEmail(userId: string, supabase: any) {
       return
     }
 
-    // Get system settings
-    const { data: settings } = await supabase
-      .from('tbl_system_settings')
-      .select('tss_setting_key, tss_setting_value')
+    const settingsMap = await loadSystemSettings(supabase)
+    const branding = buildBranding(settingsMap)
 
-    const settingsMap = settings?.reduce((acc: any, setting: any) => {
-      acc[setting.tss_setting_key] = setting.tss_setting_value
-      return acc
-    }, {}) || {}
-
-    const siteName = settingsMap.site_name?.replace(/"/g, '') || 'HanakhaDeals'
-    const firstName = userData.tbl_user_profiles?.tup_first_name || 'User'
-    const sponsorshipNumber = userData.tbl_user_profiles?.tup_sponsorship_number || 'N/A'
-
-    // Create welcome email content
-    const emailSubject = `Welcome to ${siteName}! Your Account is Ready`
-    const emailBody = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Welcome to ${siteName}</title>
-        <style>
-          body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            max-width: 600px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background-color: #f8f9fa;
-          }
-          .container {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          }
-          .header { 
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
-            color: white; 
-            padding: 40px 30px; 
-            text-align: center; 
-          }
-          .content { 
-            padding: 40px 30px; 
-          }
-          .welcome-box {
-            background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
-            border: 2px solid #28a745;
-            padding: 30px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-          }
-          .sponsorship-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #28a745;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-          }
-          .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 15px 30px;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin: 20px 0;
-          }
-          .footer { 
-            text-align: center; 
-            margin-top: 30px; 
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #6c757d; 
-            font-size: 14px; 
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🎉 Welcome to ${siteName}!</h1>
-            <p>Your Leearning/Teaching journey starts here</p>
-          </div>
-          <div class="content">
-            <h2 style="color: #495057;">Hello ${firstName}!</h2>
-            <p style="color: #6c757d; font-size: 16px; line-height: 1.6;">
-              Congratulations! Your account has been successfully created and verified. 
-              You're now part of our growing community of entrepreneurs.
-            </p>
-            
-            <div class="welcome-box">
-              <h3 style="color: #28a745; margin-top: 0;">Your Account Details</h3>
-              <p style="margin: 10px 0;"><strong>Sponsorship Number:</strong></p>
-              <div class="sponsorship-number">${sponsorshipNumber}</div>
-              <p style="color: #6c757d; font-size: 14px; margin-top: 15px;">
-                Keep this number safe - you'll need it for referrals!
-              </p>
-            </div>
-            
-            <h3 style="color: #495057;">What's Next?</h3>
-            <ul style="color: #6c757d; line-height: 1.8;">
-              <li>Choose your subscription plan to activate your account</li>
-              <li>Complete your profile information</li>
-              <li>Start building your network</li>
-              <li>Explore our training materials and resources</li>
-            </ul>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${Deno.env.get('SITE_URL') || 'https://mlmplatform.com'}/customer/dashboard" class="cta-button">
-                Access Your Dashboard
-              </a>
-            </div>
-            
-            <p style="color: #495057;">
-              If you have any questions, our support team is here to help. 
-              Welcome aboard and here's to your success!
-            </p>
-          </div>
-          <div class="footer">
-            <p>This email was sent to ${userData.tu_email}</p>
-            <p>&copy; ${new Date().getFullYear()} ${siteName}. All rights reserved.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `
-
-    // Send welcome email via Resend through Supabase
-    const { data, error } = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/resend`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: `${siteName} <onboarding@resend.dev>`,
-        to: userData.tu_email,
-        subject: emailSubject,
-        html: emailBody,
+    await sendSmtpEmail({
+      to: userData.tu_email,
+      subject: `Welcome to ${branding.siteName}!`,
+      html: buildWelcomeEmailHtml({
+        email: userData.tu_email,
+        firstName: userData.tbl_user_profiles?.tup_first_name || 'User',
+        lastName: userData.tbl_user_profiles?.tup_last_name || '',
+        userType: userData.tu_user_type || 'learner',
+        branding,
       }),
-    }).then(res => res.json())
+      siteName: branding.siteName,
+    })
 
-    if (error) {
-      console.error('Failed to send welcome email via Resend:', error)
-    } else {
-      console.log('✅ Welcome email sent successfully')
-    }
+    console.log('✅ Welcome email sent successfully')
 
   } catch (error) {
     console.error('❌ Failed to send welcome email:', error)
