@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildBranding,
-  buildWelcomeEmailHtml,
+  buildWelcomeEmailContent,
   loadSystemSettings,
   sendSmtpEmail,
 } from "../_shared/email.ts";
@@ -43,17 +43,19 @@ Deno.serve(async (req: Request) => {
 
     const settings = await loadSystemSettings(supabase);
     const branding = buildBranding(settings, siteUrl);
+    const welcomeEmail = await buildWelcomeEmailContent({
+      supabase,
+      email,
+      firstName,
+      lastName,
+      userType,
+      branding,
+    });
 
     await sendSmtpEmail({
       to: email,
-      subject: `Welcome to ${branding.siteName}!`,
-      html: buildWelcomeEmailHtml({
-        email,
-        firstName,
-        lastName,
-        userType,
-        branding,
-      }),
+      subject: welcomeEmail.subject,
+      html: welcomeEmail.html,
       siteName: branding.siteName,
     });
 

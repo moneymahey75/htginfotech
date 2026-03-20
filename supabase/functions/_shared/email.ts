@@ -8,6 +8,14 @@ export interface BrandingSettings {
   logoUrl: string;
 }
 
+export interface EmailTemplateRecord {
+  tet_name: string;
+  tet_subject: string;
+  tet_body: string;
+  tet_template_type?: string;
+  tet_variables?: string[];
+}
+
 export interface WelcomeEmailPayload {
   email: string;
   firstName: string;
@@ -22,6 +30,127 @@ export interface VerificationEmailPayload {
   verificationLink: string;
   branding: BrandingSettings;
 }
+
+const defaultTemplateShell = ({
+  eyebrow,
+  title,
+  body,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+}) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+</head>
+<body style="margin:0;padding:24px;background:#f5f7fb;font-family:Arial,sans-serif;">
+  <table role="presentation" style="width:100%;border-collapse:collapse;">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="width:100%;max-width:720px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+          <tr>
+            <td style="background:linear-gradient(135deg, #4f46e5, #7c3aed);color:#ffffff;padding:24px;text-align:center;">
+              <div style="margin-bottom:16px;">
+                <img src="{{logo_url}}" alt="Brand Logo" style="display:block;max-width:160px;width:auto;height:auto;max-height:64px;margin:0 auto;">
+              </div>
+              <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;">${eyebrow}</p>
+              <h1 style="margin:0;font-size:28px;line-height:1.3;font-weight:700;">${title}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              ${body}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:600;">${eyebrow}</p>
+              <p style="margin:0 0 12px;color:#6b7280;font-size:13px;">Thank you for choosing us.</p>
+              <div style="margin:0 0 12px;">
+                <a href="{{site_url}}" style="color:#4f46e5;text-decoration:none;font-size:13px;margin:0 8px;">Visit Website</a>
+                <span style="color:#d1d5db;">|</span>
+                <a href="{{site_url}}/contact" style="color:#4f46e5;text-decoration:none;font-size:13px;margin:0 8px;">Contact Us</a>
+              </div>
+              <p style="margin:0;color:#9ca3af;font-size:12px;">© {{current_year}} {{site_name}}. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
+  verification_email: {
+    tet_name: "verification_email",
+    tet_subject: "Verify your email address - {{site_name}}",
+    tet_body: defaultTemplateShell({
+      eyebrow: "{{site_name}} Account Verification",
+      title: "Verify Your Email",
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{user_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          Thank you for signing up with {{site_name}}. Please verify your email address to complete your registration and activate your account.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
+            Click the button below to verify your email securely. This link is unique to your account and will expire automatically.
+          </p>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{verification_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:700;">Verify Email</a>
+        </div>
+        <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
+          If the button doesn’t work, click the link below:
+        </p>
+        <p style="margin:0 0 20px;word-break:break-word;">
+          <a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a>
+        </p>
+        <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.7;">
+          If you did not create this account, you can safely ignore this email.
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          Regards,<br>{{site_name}} Team
+        </p>
+      `,
+    }),
+    tet_template_type: "email_verification",
+    tet_variables: ["user_name", "verification_link", "logo_url", "site_name", "site_url", "current_year"],
+  },
+  welcome_email: {
+    tet_name: "welcome_email",
+    tet_subject: "Welcome to {{site_name}}!",
+    tet_body: defaultTemplateShell({
+      eyebrow: "{{site_name}} Welcome Message",
+      title: "Welcome to {{site_name}}!",
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{user_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          Welcome to {{site_name}}. Your email has been verified successfully, and your account is now ready to use.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <h3 style="margin:0 0 12px;color:#111827;font-size:18px;">What You Can Do Next</h3>
+          <ul style="margin:0;padding-left:20px;color:#374151;font-size:15px;line-height:1.8;">
+            <li>Browse our available courses and services</li>
+            <li>Complete your profile information</li>
+            <li>Explore your dashboard</li>
+            <li>Connect with the {{site_name}} community</li>
+          </ul>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{site_url}}/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:700;">Browse Courses</a>
+        </div>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>{{site_name}} Team</p>
+      `,
+    }),
+    tet_template_type: "user_registration",
+    tet_variables: ["user_name", "logo_url", "site_name", "site_url", "current_year"],
+  },
+};
 
 const parseSettingValue = (value: unknown) => {
   if (typeof value !== "string") {
@@ -58,7 +187,7 @@ export const buildBranding = (
     String(settings.website_url || settings.site_url || fallbackSiteUrl || Deno.env.get("SITE_URL") || "https://htginfotech.com").trim();
   const siteUrl = rawSiteUrl.replace(/\/+$/, "");
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const logoUrl = String(settings.logo_url || `${siteUrl}/htginfotech-logo.png`).trim();
+  const logoUrl = String(settings.logo_url || "").trim();
 
   return {
     siteName,
@@ -116,160 +245,85 @@ export const sendSmtpEmail = async ({
   });
 };
 
-const buildEmailShell = ({
-  logoUrl,
-  headerBackground,
-  title,
-  body,
-  footerLinks,
-}: {
-  logoUrl: string;
-  headerBackground: string;
-  title: string;
-  body: string;
-  footerLinks: string;
-}) => `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,sans-serif;">
-  <table role="presentation" style="width:100%;border-collapse:collapse;">
-    <tr>
-      <td align="center" style="padding:40px 12px;">
-        <table role="presentation" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-          <tr>
-            <td align="center" style="padding:40px 30px;background:${headerBackground};">
-              <img src="${logoUrl}" alt="HTG Infotech Logo" style="max-width:150px;height:auto;margin-bottom:20px;">
-              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:bold;">${title}</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:40px 30px;">
-              ${body}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:30px;background-color:#f8fafc;text-align:center;">
-              ${footerLinks}
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+const replaceTemplatePlaceholders = (
+  template: string,
+  variables: Record<string, string>,
+) => template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => variables[key] ?? "");
 
-export const buildVerificationEmailHtml = ({
+export const getEmailTemplate = async (
+  supabase: any,
+  templateName: "verification_email" | "welcome_email",
+) => {
+  const { data, error } = await supabase
+    .from("tbl_email_templates")
+    .select("tet_name, tet_subject, tet_body, tet_template_type, tet_variables")
+    .eq("tet_name", templateName)
+    .eq("tet_is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? DEFAULT_TEMPLATES[templateName];
+};
+
+export const renderEmailTemplate = async ({
+  supabase,
+  templateName,
+  variables,
+  branding,
+}: {
+  supabase: any;
+  templateName: "verification_email" | "welcome_email";
+  variables: Record<string, string>;
+  branding: BrandingSettings;
+}) => {
+  const template = await getEmailTemplate(supabase, templateName);
+  const mergedVariables = {
+    logo_url: branding.logoUrl,
+    site_name: branding.siteName,
+    site_url: branding.siteUrl,
+    current_year: String(new Date().getFullYear()),
+    ...variables,
+  };
+
+  return {
+    subject: replaceTemplatePlaceholders(template.tet_subject, mergedVariables),
+    html: replaceTemplatePlaceholders(template.tet_body, mergedVariables),
+  };
+};
+
+export const buildVerificationEmailContent = async ({
+  supabase,
   firstName,
   verificationLink,
   branding,
-}: VerificationEmailPayload) => buildEmailShell({
-  logoUrl: branding.logoUrl,
-  headerBackground: "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
-  title: "Verify Your Email Address",
-  body: `
-    <h2 style="margin:0 0 20px 0;color:#1e293b;font-size:24px;">Hello ${firstName || "there"},</h2>
-    <p style="margin:0 0 20px 0;color:#475569;font-size:16px;line-height:1.6;">
-      Thank you for registering with ${branding.siteName}. Please confirm your email address to activate your account.
-    </p>
-    <div style="text-align:center;margin:30px 0;">
-      <a href="${verificationLink}" style="display:inline-block;padding:14px 30px;background:linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Verify Email</a>
-    </div>
-    <p style="margin:0 0 16px 0;color:#475569;font-size:15px;line-height:1.6;">
-      If the button does not work, use this link:
-    </p>
-    <p style="margin:0 0 20px 0;word-break:break-word;">
-      <a href="${verificationLink}" style="color:#2563eb;text-decoration:none;">${verificationLink}</a>
-    </p>
-    <div style="background-color:#f8fafc;border-left:4px solid #3b82f6;padding:16px;border-radius:4px;">
-      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
-        This verification link will expire automatically. If you did not create this account, you can safely ignore this email.
-      </p>
-    </div>
-  `,
-  footerLinks: `
-    <p style="margin:0 0 10px 0;color:#64748b;font-size:14px;">
-      <strong style="color:#1e293b;">${branding.siteName}</strong>
-    </p>
-    <div style="margin:16px 0;">
-      <a href="${branding.siteUrl}" style="color:#3b82f6;text-decoration:none;margin:0 10px;font-size:14px;">Visit Website</a>
-      <span style="color:#cbd5e1;">|</span>
-      <a href="${branding.siteUrl}/contact" style="color:#3b82f6;text-decoration:none;margin:0 10px;font-size:14px;">Contact Us</a>
-    </div>
-    <p style="margin:16px 0 0 0;color:#94a3b8;font-size:12px;">© ${new Date().getFullYear()} ${branding.siteName}. All rights reserved.</p>
-  `,
-});
+}: VerificationEmailPayload & { supabase: any }) =>
+  renderEmailTemplate({
+    supabase,
+    templateName: "verification_email",
+    branding,
+    variables: {
+      user_name: firstName || "there",
+      verification_link: verificationLink,
+    },
+  });
 
-export const buildWelcomeEmailHtml = ({
+export const buildWelcomeEmailContent = async ({
+  supabase,
   firstName,
   lastName,
-  userType,
   branding,
-}: WelcomeEmailPayload) => {
-  const fullName = `${firstName} ${lastName || ""}`.trim();
-  const isTutor = userType === "tutor";
-
-  return buildEmailShell({
-    logoUrl: branding.logoUrl,
-    headerBackground: isTutor
-      ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-      : "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
-    title: `Welcome to ${branding.siteName}!`,
-    body: isTutor
-      ? `
-        <h2 style="margin:0 0 20px 0;color:#1e293b;font-size:24px;">Hello ${fullName},</h2>
-        <p style="margin:0 0 20px 0;color:#475569;font-size:16px;line-height:1.6;">
-          Congratulations on joining ${branding.siteName} as a tutor. We're excited to have you as part of our teaching community.
-        </p>
-        <div style="background-color:#f0fdf4;border-left:4px solid #10b981;padding:20px;margin:30px 0;border-radius:4px;">
-          <h3 style="margin:0 0 15px 0;color:#1e293b;font-size:18px;">Getting Started as a Tutor</h3>
-          <ul style="margin:0;padding-left:20px;color:#475569;font-size:15px;line-height:1.8;">
-            <li>Complete your tutor profile</li>
-            <li>Create your first course</li>
-            <li>Upload course materials and videos</li>
-            <li>Set your teaching schedule</li>
-            <li>Connect with eager learners</li>
-          </ul>
-        </div>
-        <div style="text-align:center;margin:30px 0;">
-          <a href="${branding.siteUrl}/tutor/dashboard" style="display:inline-block;padding:14px 30px;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Go to Dashboard</a>
-        </div>
-      `
-      : `
-        <h2 style="margin:0 0 20px 0;color:#1e293b;font-size:24px;">Hello ${fullName},</h2>
-        <p style="margin:0 0 20px 0;color:#475569;font-size:16px;line-height:1.6;">
-          We're thrilled to have you join ${branding.siteName}. Your account is now verified and ready to use.
-        </p>
-        <div style="background-color:#f8fafc;border-left:4px solid #3b82f6;padding:20px;margin:30px 0;border-radius:4px;">
-          <h3 style="margin:0 0 15px 0;color:#1e293b;font-size:18px;">What's Next?</h3>
-          <ul style="margin:0;padding-left:20px;color:#475569;font-size:15px;line-height:1.8;">
-            <li>Browse our available courses and services</li>
-            <li>Complete your profile information</li>
-            <li>Explore your dashboard</li>
-            <li>Connect with the ${branding.siteName} community</li>
-          </ul>
-        </div>
-        <div style="text-align:center;margin:30px 0;">
-          <a href="${branding.siteUrl}/courses" style="display:inline-block;padding:14px 30px;background:linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Browse Courses</a>
-        </div>
-      `,
-    footerLinks: `
-      <p style="margin:0 0 10px 0;color:#64748b;font-size:14px;">
-        <strong style="color:#1e293b;">The ${branding.siteName} Team</strong>
-      </p>
-      <div style="margin:16px 0;">
-        <a href="${branding.siteUrl}" style="color:${isTutor ? "#10b981" : "#3b82f6"};text-decoration:none;margin:0 10px;font-size:14px;">Visit Website</a>
-        <span style="color:#cbd5e1;">|</span>
-        <a href="${branding.siteUrl}/contact" style="color:${isTutor ? "#10b981" : "#3b82f6"};text-decoration:none;margin:0 10px;font-size:14px;">Contact Us</a>
-      </div>
-      <p style="margin:16px 0 0 0;color:#94a3b8;font-size:12px;">© ${new Date().getFullYear()} ${branding.siteName}. All rights reserved.</p>
-    `,
+}: WelcomeEmailPayload & { supabase: any }) =>
+  renderEmailTemplate({
+    supabase,
+    templateName: "welcome_email",
+    branding,
+    variables: {
+      user_name: `${firstName} ${lastName || ""}`.trim() || "User",
+    },
   });
-};
 
 export const createVerificationToken = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(24));

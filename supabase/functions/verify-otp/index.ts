@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import {
   buildBranding,
-  buildWelcomeEmailHtml,
+  buildWelcomeEmailContent,
   loadSystemSettings,
   sendSmtpEmail,
 } from "../_shared/email.ts"
@@ -182,17 +182,19 @@ async function sendWelcomeEmail(userId: string, supabase: any) {
 
     const settingsMap = await loadSystemSettings(supabase)
     const branding = buildBranding(settingsMap)
+    const welcomeEmail = await buildWelcomeEmailContent({
+      supabase,
+      email: userData.tu_email,
+      firstName: userData.tbl_user_profiles?.tup_first_name || 'User',
+      lastName: userData.tbl_user_profiles?.tup_last_name || '',
+      userType: userData.tu_user_type || 'learner',
+      branding,
+    })
 
     await sendSmtpEmail({
       to: userData.tu_email,
-      subject: `Welcome to ${branding.siteName}!`,
-      html: buildWelcomeEmailHtml({
-        email: userData.tu_email,
-        firstName: userData.tbl_user_profiles?.tup_first_name || 'User',
-        lastName: userData.tbl_user_profiles?.tup_last_name || '',
-        userType: userData.tu_user_type || 'learner',
-        branding,
-      }),
+      subject: welcomeEmail.subject,
+      html: welcomeEmail.html,
       siteName: branding.siteName,
     })
 

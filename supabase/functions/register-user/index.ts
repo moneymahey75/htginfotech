@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildBranding,
-  buildVerificationEmailHtml,
+  buildVerificationEmailContent,
   createVerificationToken,
   loadSystemSettings,
   sendSmtpEmail,
@@ -165,16 +165,18 @@ Deno.serve(async (req: Request) => {
     const branding = buildBranding(systemSettings, siteUrl);
     const verificationLink =
       `${branding.siteUrl}/auth/callback?type=email_verification&token=${encodeURIComponent(verificationToken)}`;
+    const verificationEmail = await buildVerificationEmailContent({
+      supabase,
+      email,
+      firstName,
+      verificationLink,
+      branding,
+    });
 
     await sendSmtpEmail({
       to: email,
-      subject: `Verify your email address - ${branding.siteName}`,
-      html: buildVerificationEmailHtml({
-        email,
-        firstName,
-        verificationLink,
-        branding,
-      }),
+      subject: verificationEmail.subject,
+      html: verificationEmail.html,
       siteName: branding.siteName,
     });
 

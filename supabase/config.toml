@@ -40,3 +40,8 @@ entrypoint = "./functions/register-user/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/verify-email/index.ts"
+
+[functions.send-template-test-email]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-template-test-email/index.ts"

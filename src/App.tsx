@@ -16,6 +16,7 @@ import TutorDashboard from './pages/dashboard/TutorDashboard';
 import CourseLearning from './pages/dashboard/CourseLearning';
 import BackpanelLogin from './pages/backpanel/AdminLogin';
 import BackpanelDashboard from './pages/backpanel/AdminDashboard';
+import EmailTemplatePreview from './pages/backpanel/EmailTemplatePreview';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import UpdatePassword from './pages/auth/UpdatePassword';
@@ -69,6 +70,11 @@ function App() {
                   <Route path="/backpanel/dashboard" element={
                     <AdminProtectedRoute>
                       <BackpanelDashboard />
+                    </AdminProtectedRoute>
+                  } />
+                  <Route path="/admin/email-template/preview" element={
+                    <AdminProtectedRoute>
+                      <EmailTemplatePreview />
                     </AdminProtectedRoute>
                   } />
                   
