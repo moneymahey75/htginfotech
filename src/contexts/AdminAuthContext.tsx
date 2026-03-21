@@ -269,7 +269,6 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       notification.showSuccess('Welcome Back!', 'You have successfully logged in.');
     } catch (error: any) {
       console.error('❌ Admin login failed:', error);
-      notification.showError('Login Failed', error.message || 'Invalid email or password');
       throw error;
     }
   };

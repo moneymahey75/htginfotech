@@ -4,6 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
+const INVALID_LOGIN_MESSAGE = 'Invalid login credentials. Please check your email/username and password and try again.';
+const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
+
 const UnifiedLogin: React.FC = () => {
   const { login, resendVerificationEmail, user } = useAuth();
   const navigate = useNavigate();
@@ -125,16 +128,14 @@ const UnifiedLogin: React.FC = () => {
       console.log('🎉 Login successful, setting justLoggedIn flag...');
       setJustLoggedIn(true);
     } catch (err: any) {
-      // Check if it's the email confirmation error
       if (err.message === 'EMAIL_NOT_CONFIRMED') {
         setShowEmailConfirmationError(true);
         setUnverifiedEmail(err.email || formData.emailOrUsername);
         setVerificationResent(false);
         setVerificationResentMessage('');
-        setError('Your email address has not been verified yet. Please check your inbox for the verification link.');
+        setError(err.displayMessage || UNVERIFIED_EMAIL_MESSAGE);
       } else {
-        // Other errors are handled by notification system
-        setError(err.message || 'Login failed. Please try again.');
+        setError(err.message || INVALID_LOGIN_MESSAGE);
       }
       setIsSubmitting(false);
     }

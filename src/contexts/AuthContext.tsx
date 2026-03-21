@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserActivity } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 
+const INVALID_LOGIN_MESSAGE = 'Invalid login credentials. Please check your email/username and password and try again.';
+const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
+
+const isEmailIdentifier = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 interface User {
   id: string;
   email: string;
@@ -238,7 +243,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (emailOrUsername: string, password: string, userType: string) => {
     setLoading(true);
     try {
-      console.log('🔍 Attempting login for:', emailOrUsername);
+      const loginIdentifier = emailOrUsername.trim();
+      console.log('🔍 Attempting login for:', loginIdentifier);
 
       // Clear any existing session data first
       console.log('🧹 Clearing existing session data...');
@@ -249,22 +255,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Small delay to ensure cleanup is complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Determine if input is email or username
-      const isEmail = emailOrUsername.includes('@');
-      let actualEmail = emailOrUsername;
+      let actualEmail = loginIdentifier;
+      let resolvedUserId: string | undefined;
 
-      // If username provided, get the email from user_profiles
-      if (!isEmail) {
-        const { data: profileData, error: profileError } = await supabase
-            .from('tbl_user_profiles')
-            .select('tup_user_id, tbl_users!inner(tu_email)')
-            .eq('tup_username', emailOrUsername)
-            .single();
+      if (!isEmailIdentifier(loginIdentifier)) {
+        const { data: resolvedLogin, error: resolveError } = await supabase
+          .rpc('resolve_login_identifier', { p_login_identifier: loginIdentifier });
 
-        if (profileError || !profileData) {
-          throw new Error('Username not found');
+        if (resolveError) {
+          console.error('❌ Failed to resolve login identifier:', resolveError);
+          throw new Error('Unable to process your login request right now. Please try again.');
         }
-        actualEmail = profileData.tbl_users.tu_email;
+
+        if (!resolvedLogin?.success || !resolvedLogin?.email) {
+          throw new Error(INVALID_LOGIN_MESSAGE);
+        }
+
+        actualEmail = resolvedLogin.email;
+        resolvedUserId = resolvedLogin.user_id;
       }
 
       // Authenticate with Supabase
@@ -274,26 +282,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (authError) {
-        // Check if the error is related to email confirmation
-        if (authError.message?.toLowerCase().includes('email not confirmed') ||
-            authError.message?.toLowerCase().includes('confirm your email') ||
-            authError.status === 400) {
-          // Throw a specific error that includes the email for resending
+        const authErrorMessage = authError.message?.toLowerCase() || '';
+
+        if (
+          authErrorMessage.includes('email not confirmed') ||
+          authErrorMessage.includes('confirm your email')
+        ) {
           const confirmError = new Error('EMAIL_NOT_CONFIRMED');
           (confirmError as any).email = actualEmail;
+          (confirmError as any).displayMessage = UNVERIFIED_EMAIL_MESSAGE;
           throw confirmError;
         }
-        throw new Error(authError.message);
+
+        throw new Error(INVALID_LOGIN_MESSAGE);
       }
 
       if (!authData.user || !authData.session) {
-        throw new Error('Authentication failed - no session created');
+        throw new Error(INVALID_LOGIN_MESSAGE);
       }
 
       // Check if user is eligible to log in (active status + verification requirements)
       console.log('🔍 Checking user login eligibility...');
       const { data: eligibilityResult, error: eligibilityError } = await supabase
-        .rpc('check_user_login_eligibility', { p_user_id: authData.user.id });
+        .rpc('check_user_login_eligibility', { p_user_id: resolvedUserId || authData.user.id });
 
       if (eligibilityError) {
         console.error('❌ Failed to check login eligibility:', eligibilityError);
@@ -307,12 +318,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessionManager.removeSession();
 
         const eligibilityErrorMessage = eligibilityResult?.error || 'Login not allowed';
+        const eligibilityErrorCode = eligibilityResult?.error_code;
+        const emailVerified = eligibilityResult?.details?.email_verified;
+
         if (
-          eligibilityErrorMessage === 'Please verify either your email or mobile number to continue.' ||
-          eligibilityErrorMessage === 'Please verify your email address to continue. Check your inbox for the verification link.'
+          eligibilityErrorCode === 'EMAIL_VERIFICATION_REQUIRED' ||
+          (eligibilityErrorCode === 'VERIFICATION_REQUIRED' && emailVerified === false)
         ) {
           const confirmError = new Error('EMAIL_NOT_CONFIRMED');
           (confirmError as any).email = actualEmail;
+          (confirmError as any).displayMessage = UNVERIFIED_EMAIL_MESSAGE;
           throw confirmError;
         }
 
@@ -342,13 +357,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('❌ Login error:', error);
 
-      // Check if it's the email confirmation error
       if (error.message === 'EMAIL_NOT_CONFIRMED') {
-        throw error; // Re-throw to be handled by the UI component
+        throw error;
       }
 
       const errorMessage = error?.message || 'Login failed';
-      notification.showError('Login Failed', errorMessage);
 
       // Clear any partial session data on error
       sessionManager.removeSession();
@@ -403,7 +416,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('❌ Registration failed:', error);
       const errorMessage = error?.message || 'Registration failed';
-      notification.showError('Registration Failed', errorMessage);
 
       // Clear any partial session data on error
       sessionManager.removeSession();
@@ -443,10 +455,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'Please check your inbox and click the verification link.',
       );
     } catch (error: any) {
-      notification.showError(
-        'Resend Failed',
-        error?.message || 'Failed to resend verification email',
-      );
       throw error;
     }
   };
@@ -496,7 +504,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       notification.showSuccess('Reset Email Sent', 'Please check your email for password reset instructions.');
     } catch (error: any) {
-      notification.showError('Reset Failed', error?.message || 'Failed to send reset email');
       throw error;
     }
   };
@@ -513,7 +520,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       notification.showSuccess('Password Reset', 'Your password has been updated successfully.');
     } catch (error: any) {
-      notification.showError('Reset Failed', error?.message || 'Failed to reset password');
       throw error;
     }
   };
@@ -536,7 +542,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       notification.showSuccess('Verification Successful', 'Mobile number verified successfully.');
     } catch (error: any) {
       console.error('❌ OTP verification failed:', error);
-      notification.showError('Verification Failed', error?.message || 'Invalid OTP code');
       throw error;
     }
   };
@@ -555,7 +560,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return result;
     } catch (error: any) {
       console.error('❌ Failed to send OTP:', error);
-      notification.showError('Send Failed', error?.message || 'Failed to send OTP');
       throw error;
     }
   };
