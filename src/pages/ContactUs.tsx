@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAdmin } from '../contexts/AdminContext'; // Adjust path as needed
+import React, { useState } from 'react';
+import { Send, AlertCircle, CheckCircle } from 'lucide-react';
+import { useAdmin } from '../contexts/AdminContext';
 import { supabase } from '../lib/supabase';
 
 const ContactUs: React.FC = () => {
@@ -14,19 +14,6 @@ const ContactUs: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
-
-  // Format the full address from individual components
-  const formatAddress = () => {
-    const parts = [
-      settings.address,
-      settings.city,
-      settings.state,
-      settings.zip_code,
-      settings.country
-    ].filter(part => part && part.trim() !== '');
-
-    return parts.join(', ');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +31,14 @@ const ContactUs: React.FC = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: formData
+        body: {
+          ...formData,
+          pageUrl: window.location.href,
+          sendConfirmation: true,
+          metadata: {
+            userAgent: navigator.userAgent,
+          },
+        }
       });
 
       if (error || !data?.success) {
@@ -53,15 +47,31 @@ const ContactUs: React.FC = () => {
 
       setSubmitResult({
         success: true,
-        message: 'Thank you for your message! We will get back to you within 24 hours.'
+        message: data?.warning || 'Thank you for your message! We will get back to you within 24 hours.'
       });
       setFormData({ name: '', email: '', subject: '', message: '', type: 'general' });
     } catch (error) {
       console.error('Contact form submission failed:', error);
+      const errorMessage = error instanceof Error ? error.message : null;
+      const detailedMessage =
+        error &&
+        typeof error === 'object' &&
+        'context' in error &&
+        typeof (error as { context?: unknown }).context === 'string'
+          ? (() => {
+              try {
+                const parsed = JSON.parse((error as { context: string }).context);
+                return typeof parsed?.error === 'string' ? parsed.error : null;
+              } catch {
+                return null;
+              }
+            })()
+          : null;
+
       setSubmitResult({
         success: false,
-        message: error instanceof Error
-          ? `${error.message} Please contact the admin if the issue continues.`
+        message: (detailedMessage || errorMessage)
+          ? `${detailedMessage || errorMessage} Please contact the admin if the issue continues.`
           : 'There is some error. Please contact the admin.'
       });
     } finally {

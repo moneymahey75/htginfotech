@@ -1,6 +1,12 @@
-/// <reference types="deno.ns" />
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  buildBranding,
+  buildBrandedEmailShell,
+  escapeHtml,
+  loadSystemSettings,
+  sendSmtpEmail,
+} from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,190 +20,235 @@ interface ContactRequest {
   subject: string;
   message: string;
   type?: string;
+  pageUrl?: string;
+  metadata?: Record<string, string | null | undefined>;
+  sendConfirmation?: boolean;
 }
 
-const parseSettingValue = (value: unknown) => {
-  if (typeof value !== "string") {
-    return value;
-  }
+const buildResponse = (status: number, payload: Record<string, unknown>) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
 
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-};
+const normalizeText = (value: unknown) => String(value ?? "").trim();
 
-const escapeHtml = (value: string) =>
+const titleCase = (value: string) =>
   value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
-serve(async (req) => {
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const formatDateTime = () =>
+  new Intl.DateTimeFormat("en-US", {
+    dateStyle: "full",
+    timeStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date());
+
+const buildDetailRow = (label: string, value: string) => `
+  <tr>
+    <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">${escapeHtml(label)}</td>
+    <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">${value}</td>
+  </tr>
+`;
+
+const buildAdminEmailHtml = ({
+  siteName,
+  name,
+  email,
+  subject,
+  message,
+  inquiryType,
+  submittedAt,
+}: {
+  siteName: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  inquiryType: string;
+  submittedAt: string;
+}) =>
+  buildBrandedEmailShell({
+    eyebrow: `${siteName} Contact Desk`,
+    title: "New Contact Us Submission",
+    body: `
+      <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello Admin,</p>
+      <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.7;">
+        A new contact request has been submitted through your website. The sender details and message are included below.
+      </p>
+      <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+          ${buildDetailRow("Full Name", escapeHtml(name))}
+          ${buildDetailRow("Email Address", `<a href="mailto:${escapeHtml(email)}" style="color:#4f46e5;text-decoration:none;">${escapeHtml(email)}</a>`)}
+          ${buildDetailRow("Inquiry Type", escapeHtml(inquiryType))}
+          ${buildDetailRow("Subject", escapeHtml(subject))}
+          ${buildDetailRow("Submitted At", escapeHtml(submittedAt))}
+        </table>
+      </div>
+      <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
+        <p style="margin:0 0 12px;color:#111827;font-size:16px;font-weight:600;">Message</p>
+        <p style="margin:0;color:#374151;font-size:15px;line-height:1.8;white-space:normal;">${escapeHtml(message).replaceAll("\n", "<br />")}</p>
+      </div>
+      <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+        You can reply directly to this email to respond to ${escapeHtml(name)}.
+      </p>
+    `,
+  });
+
+const buildConfirmationEmailHtml = ({
+  siteName,
+  name,
+  subject,
+  message,
+  inquiryType,
+  submittedAt,
+}: {
+  siteName: string;
+  name: string;
+  subject: string;
+  message: string;
+  inquiryType: string;
+  submittedAt: string;
+}) =>
+  buildBrandedEmailShell({
+    eyebrow: `${siteName} Support`,
+    title: "We Received Your Message",
+    body: `
+      <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello ${escapeHtml(name)},</p>
+      <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+        Thank you for contacting ${escapeHtml(siteName)}. This is a confirmation that your message has been received and shared with our team.
+      </p>
+      <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+          ${buildDetailRow("Inquiry Type", escapeHtml(inquiryType))}
+          ${buildDetailRow("Subject", escapeHtml(subject))}
+          ${buildDetailRow("Submitted At", escapeHtml(submittedAt))}
+        </table>
+      </div>
+      <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
+        <p style="margin:0 0 12px;color:#111827;font-size:16px;font-weight:600;">Your Message</p>
+        <p style="margin:0;color:#374151;font-size:15px;line-height:1.8;">${escapeHtml(message).replaceAll("\n", "<br />")}</p>
+      </div>
+      <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+        Our team will review your inquiry and get back to you as soon as possible.
+      </p>
+    `,
+  });
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   try {
-    const { name, email, subject, message, type = "general" }: ContactRequest = await req.json();
+    const payload: ContactRequest = await req.json();
+    const name = normalizeText(payload.name);
+    const email = normalizeText(payload.email);
+    const subject = normalizeText(payload.subject);
+    const message = normalizeText(payload.message);
+    const inquiryType = titleCase(normalizeText(payload.type) || "general");
+    const pageUrl = normalizeText(payload.pageUrl);
+    const sendConfirmation = payload.sendConfirmation !== false;
 
-    if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Name, email, subject, and message are required.",
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+    if (!name || !email || !subject || !message) {
+      return buildResponse(400, {
+        success: false,
+        error: "Name, email, subject, and message are required.",
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return buildResponse(400, {
+        success: false,
+        error: "Please provide a valid email address.",
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
         },
-      );
-    }
+      },
+    );
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
-    }
-
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      throw new Error("Supabase service role credentials are not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-
-    const { data: settingsRows, error: settingsError } = await supabase
-      .from("tbl_system_settings")
-      .select("tss_setting_key, tss_setting_value")
-      .in("tss_setting_key", ["primary_email", "smtp_username", "site_name"]);
-
-    if (settingsError) {
-      throw new Error(`Failed to load system settings: ${settingsError.message}`);
-    }
-
-    const settings = (settingsRows ?? []).reduce((acc: Record<string, unknown>, row: any) => {
-      acc[row.tss_setting_key] = parseSettingValue(row.tss_setting_value);
-      return acc;
-    }, {});
-
-    const recipientEmail = String(settings.primary_email ?? "").trim();
-    const senderEmail = String(settings.smtp_username ?? "").trim() || "onboarding@resend.dev";
-    const siteName = String(settings.site_name ?? "HTG Infotech").trim() || "HTG Infotech";
+    const settings = await loadSystemSettings(supabase);
+    const branding = buildBranding(settings, pageUrl);
+    const recipientEmail = normalizeText(settings.primary_email);
 
     if (!recipientEmail) {
       throw new Error("Primary admin email is not configured in system settings");
     }
 
-    const safeName = escapeHtml(name.trim());
-    const safeEmail = escapeHtml(email.trim());
-    const safeSubject = escapeHtml(subject.trim());
-    const safeMessage = escapeHtml(message.trim()).replaceAll("\n", "<br />");
-    const safeType = escapeHtml(type.trim() || "general");
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Contact Us Submission</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 24px;">
-          <table role="presentation" style="max-width: 720px; width: 100%; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-            <tr>
-              <td style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; padding: 24px;">
-                <h1 style="margin: 0; font-size: 24px;">New Contact Us Submission</h1>
-                <p style="margin: 8px 0 0; opacity: 0.9;">${escapeHtml(siteName)}</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 24px;">
-                <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; width: 180px; font-weight: 600; color: #111827;">Full Name</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #374151;">${safeName}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #111827;">Email</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #374151;">${safeEmail}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #111827;">Inquiry Type</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #374151;">${safeType}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #111827;">Subject</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #374151;">${safeSubject}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 16px 0 10px; vertical-align: top; font-weight: 600; color: #111827;">Message</td>
-                    <td style="padding: 16px 0 10px; color: #374151; line-height: 1.7;">${safeMessage}</td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
-    `;
-
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${siteName} <${senderEmail}>`,
-        to: [recipientEmail],
-        reply_to: email.trim(),
-        subject: `[Contact Us] ${subject.trim()}`,
-        html,
-      }),
+    const submittedAt = formatDateTime();
+    const adminHtml = buildAdminEmailHtml({
+      siteName: branding.siteName,
+      name,
+      email,
+      subject,
+      message,
+      inquiryType,
+      submittedAt,
     });
 
-    const resendResult = await resendResponse.json();
+    await sendSmtpEmail({
+      to: recipientEmail,
+      subject: `New Contact Us Submission: ${subject}`,
+      html: adminHtml,
+      siteName: branding.siteName,
+      fromEmail: normalizeText(settings.smtp_username),
+      replyTo: email,
+    });
 
-    if (!resendResponse.ok) {
-      throw new Error(resendResult.message || "Failed to send contact email");
+    let confirmationWarning: string | null = null;
+
+    if (sendConfirmation) {
+      try {
+        const confirmationHtml = buildConfirmationEmailHtml({
+          siteName: branding.siteName,
+          name,
+          subject,
+          message,
+          inquiryType,
+          submittedAt,
+        });
+
+        await sendSmtpEmail({
+          to: email,
+          subject: `We received your message - ${branding.siteName}`,
+          html: confirmationHtml,
+          siteName: branding.siteName,
+          fromEmail: normalizeText(settings.smtp_username),
+        });
+      } catch (confirmationError) {
+        console.warn("Contact confirmation email failed:", confirmationError);
+        confirmationWarning = "Your message was delivered, but the confirmation email could not be sent.";
+      }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Your message has been sent successfully.",
-        data: resendResult,
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      },
-    );
+    return buildResponse(200, {
+      success: true,
+      message: "Your message has been sent successfully.",
+      confirmationSent: sendConfirmation && !confirmationWarning,
+      warning: confirmationWarning,
+    });
   } catch (error) {
-    console.error("❌ Contact email error:", error);
+    console.error("Contact email error:", error);
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      },
-    );
+    return buildResponse(500, {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });

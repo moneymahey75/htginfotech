@@ -37,7 +37,15 @@ export interface VerificationEmailPayload {
   branding: BrandingSettings;
 }
 
-const defaultTemplateShell = ({
+export const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+export const buildBrandedEmailShell = ({
   eyebrow,
   title,
   body,
@@ -94,7 +102,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   verification_email: {
     tet_name: "verification_email",
     tet_subject: "Verify your email address - {{site_name}}",
-    tet_body: defaultTemplateShell({
+    tet_body: buildBrandedEmailShell({
       eyebrow: "{{site_name}} Account Verification",
       title: "Verify Your Email",
       body: `
@@ -127,7 +135,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   welcome_email: {
     tet_name: "welcome_email",
     tet_subject: "Welcome to {{site_name}}!",
-    tet_body: defaultTemplateShell({
+    tet_body: buildBrandedEmailShell({
       eyebrow: "",
       title: "Welcome to {{site_name}}!",
       body: `
@@ -230,11 +238,15 @@ export const sendSmtpEmail = async ({
   subject,
   html,
   siteName,
+  fromEmail,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
   siteName: string;
+  fromEmail?: string;
+  replyTo?: string;
 }) => {
   const { default: nodemailer } = await import("npm:nodemailer@6.10.1");
   const transportConfig = getTransportConfig();
@@ -243,10 +255,11 @@ export const sendSmtpEmail = async ({
   const normalizedHtml = normalizeEmailMarkup(html);
 
   await transporter.sendMail({
-    from: `${siteName} <${transportConfig.auth.user}>`,
+    from: `${siteName} <${String(fromEmail || transportConfig.auth.user).trim() || transportConfig.auth.user}>`,
     to,
     subject: normalizedSubject,
     html: normalizedHtml,
+    ...(replyTo ? { replyTo } : {}),
   });
 };
 
