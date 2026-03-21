@@ -16,6 +16,11 @@ export interface EmailTemplateRecord {
   tet_variables?: string[];
 }
 
+export interface UserProfileRecord {
+  tup_first_name?: string | null;
+  tup_last_name?: string | null;
+}
+
 export interface WelcomeEmailPayload {
   email: string;
   firstName: string;
@@ -27,6 +32,7 @@ export interface WelcomeEmailPayload {
 export interface VerificationEmailPayload {
   email: string;
   firstName: string;
+  lastName?: string;
   verificationLink: string;
   branding: BrandingSettings;
 }
@@ -249,6 +255,21 @@ const replaceTemplatePlaceholders = (
   variables: Record<string, string>,
 ) => template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => variables[key] ?? "");
 
+const normalizeFirstName = (value?: string | null) => {
+  const trimmedValue = String(value ?? "").trim();
+  return trimmedValue || "User";
+};
+
+export const extractUserProfile = (
+  profileData?: UserProfileRecord | UserProfileRecord[] | null,
+): UserProfileRecord | null => {
+  if (Array.isArray(profileData)) {
+    return profileData[0] ?? null;
+  }
+
+  return profileData ?? null;
+};
+
 const normalizeEmailMarkup = (value: string) =>
   value
     .replace(/<wbr\b[^>]*>/gi, "")
@@ -300,7 +321,6 @@ const normalizeEmailMarkup = (value: string) =>
       /<p\b[^>]*>\s*[^<]*Welcome Message\s*<\/p>/gi,
       "",
     )
-    .replace(/Hello\s+User,/gi, "Hello {{first_name}},")
     .replace(/>\s+</g, "><")
     .replace(/\n\s*\n+/g, "\n")
     .trim();
@@ -345,45 +365,56 @@ export const renderEmailTemplate = async ({
     current_year: String(new Date().getFullYear()),
     ...variables,
   };
+  const normalizedSubject = stripWordBreakTags(template.tet_subject);
+  const normalizedHtml = stripWordBreakTags(template.tet_body);
 
   return {
-    subject: stripWordBreakTags(replaceTemplatePlaceholders(template.tet_subject, mergedVariables)),
-    html: stripWordBreakTags(replaceTemplatePlaceholders(template.tet_body, mergedVariables)),
+    subject: replaceTemplatePlaceholders(normalizedSubject, mergedVariables),
+    html: replaceTemplatePlaceholders(normalizedHtml, mergedVariables),
   };
 };
 
 export const buildVerificationEmailContent = async ({
   supabase,
   firstName,
+  lastName,
   verificationLink,
   branding,
-}: VerificationEmailPayload & { supabase: any }) =>
-  renderEmailTemplate({
+}: VerificationEmailPayload & { supabase: any }) => {
+  const resolvedFirstName = normalizeFirstName(firstName);
+  const resolvedLastName = String(lastName ?? "").trim();
+
+  return renderEmailTemplate({
     supabase,
     templateName: "verification_email",
     branding,
     variables: {
-      user_name: firstName || "there",
-      first_name: firstName || "User",
+      user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
+      first_name: resolvedFirstName,
       verification_link: verificationLink,
     },
   });
+};
 
 export const buildWelcomeEmailContent = async ({
   supabase,
   firstName,
   lastName,
   branding,
-}: WelcomeEmailPayload & { supabase: any }) =>
-  renderEmailTemplate({
+}: WelcomeEmailPayload & { supabase: any }) => {
+  const resolvedFirstName = normalizeFirstName(firstName);
+  const resolvedLastName = String(lastName ?? "").trim();
+
+  return renderEmailTemplate({
     supabase,
     templateName: "welcome_email",
     branding,
     variables: {
-      user_name: `${firstName} ${lastName || ""}`.trim() || "User",
-      first_name: firstName || "User",
+      user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
+      first_name: resolvedFirstName,
     },
   });
+};
 
 export const createVerificationToken = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(24));

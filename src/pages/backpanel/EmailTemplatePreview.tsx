@@ -22,6 +22,7 @@ const EmailTemplatePreview: React.FC = () => {
 
   const previewVariables = useMemo(() => ({
     user_name: 'Test User',
+    first_name: 'Test',
     verification_link: `${settings.website_url || window.location.origin}/auth/callback?type=email_verification&token=preview-token`,
     logo_url: `${settings.website_url || window.location.origin}/htgsvglogo.svg`,
     site_name: settings.site_name || 'HTG Infotech',

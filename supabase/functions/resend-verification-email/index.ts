@@ -4,6 +4,7 @@ import {
   buildBranding,
   buildVerificationEmailContent,
   createVerificationToken,
+  extractUserProfile,
   loadSystemSettings,
   sendSmtpEmail,
 } from "../_shared/email.ts";
@@ -56,7 +57,8 @@ Deno.serve(async (req: Request) => {
         tu_email,
         tu_email_verified,
         tbl_user_profiles (
-          tup_first_name
+          tup_first_name,
+          tup_last_name
         )
       `)
       .eq("tu_email", normalizedEmail)
@@ -108,12 +110,14 @@ Deno.serve(async (req: Request) => {
 
     const settings = await loadSystemSettings(supabase);
     const branding = buildBranding(settings, siteUrl);
+    const profile = extractUserProfile(userRecord.tbl_user_profiles);
     const verificationLink =
       `${branding.siteUrl}/auth/callback?type=email_verification&token=${encodeURIComponent(verificationToken)}`;
     const verificationEmail = await buildVerificationEmailContent({
       supabase,
       email: normalizedEmail,
-      firstName: userRecord.tbl_user_profiles?.tup_first_name || "User",
+      firstName: profile?.tup_first_name || "User",
+      lastName: profile?.tup_last_name || "",
       verificationLink,
       branding,
     });

@@ -184,7 +184,6 @@ export const normalizeEmailMarkup = (value: string) =>
       /<p\b[^>]*>\s*[^<]*Welcome Message\s*<\/p>/gi,
       '',
     )
-    .replace(/Hello\s+User,/gi, 'Hello {{first_name}},')
     .replace(/>\s+</g, '><')
     .replace(/\n\s*\n+/g, '\n')
     .trim();

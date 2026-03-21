@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildBranding,
   buildWelcomeEmailContent,
+  extractUserProfile,
   loadSystemSettings,
   sendSmtpEmail,
 } from "../_shared/email.ts";
@@ -112,8 +113,9 @@ Deno.serve(async (req: Request) => {
 
     const settings = await loadSystemSettings(supabase);
     const branding = buildBranding(settings);
-    const firstName = userData.tbl_user_profiles?.tup_first_name || "User";
-    const lastName = userData.tbl_user_profiles?.tup_last_name || "";
+    const profile = extractUserProfile(userData.tbl_user_profiles);
+    const firstName = profile?.tup_first_name || "User";
+    const lastName = profile?.tup_last_name || "";
     const welcomeEmail = await buildWelcomeEmailContent({
       supabase,
       email: userData.tu_email,

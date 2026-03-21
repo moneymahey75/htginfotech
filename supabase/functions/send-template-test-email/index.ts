@@ -74,6 +74,7 @@ Deno.serve(async (req: Request) => {
       branding,
       variables: {
         user_name: "Test User",
+        first_name: "Test",
         verification_link: `${branding.siteUrl}/auth/callback?type=email_verification&token=test-verification-token`,
       },
     });

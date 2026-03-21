@@ -15,7 +15,7 @@ const corsHeaders = {
 
 interface RequestPayload {
   email: string;
-  firstName: string;
+  firstName?: string | null;
   lastName?: string;
   userType: "learner" | "tutor" | "job_seeker" | "job_provider";
   siteUrl?: string;
@@ -32,8 +32,8 @@ Deno.serve(async (req: Request) => {
   try {
     const { email, firstName, lastName = "", userType, siteUrl }: RequestPayload = await req.json();
 
-    if (!email || !firstName || !userType) {
-      throw new Error("Missing required fields: email, firstName, or userType");
+    if (!email || !userType) {
+      throw new Error("Missing required fields: email or userType");
     }
 
     const supabase = createClient(
@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
     const welcomeEmail = await buildWelcomeEmailContent({
       supabase,
       email,
-      firstName,
+      firstName: String(firstName ?? "").trim() || "User",
       lastName,
       userType,
       branding,

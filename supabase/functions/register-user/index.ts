@@ -169,6 +169,7 @@ Deno.serve(async (req: Request) => {
       supabase,
       email,
       firstName,
+      lastName,
       verificationLink,
       branding,
     });
