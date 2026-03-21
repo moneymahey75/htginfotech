@@ -22,6 +22,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import UpdatePassword from './pages/auth/UpdatePassword';
 import AuthCallback from './pages/auth/AuthCallback';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import UserProfilePage from './pages/profile/UserProfile';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
 import Payment from './pages/Payment';
@@ -153,6 +154,11 @@ function App() {
                           <Route path="/update-password" element={
                             <AuthenticatedRoute>
                               <UpdatePassword />
+                            </AuthenticatedRoute>
+                          } />
+                          <Route path="/profile" element={
+                            <AuthenticatedRoute>
+                              <UserProfilePage />
                             </AuthenticatedRoute>
                           } />
                           <Route path="/auth/callback" element={<AuthCallback />} />

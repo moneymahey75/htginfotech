@@ -290,7 +290,7 @@ const Navbar: React.FC = () => {
                       <div className="relative">
                         <button
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl border border-blue-200 transition-all duration-200"
+                            className="flex items-center space-x-2 px-3 py-[0.3rem] bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl border border-blue-200 transition-all duration-200"
                         >
                           <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
                             <User className="h-4 w-4 text-white" />
@@ -322,6 +322,15 @@ const Navbar: React.FC = () => {
                                 </div>
 
                                 <Link
+                                    to="/profile"
+                                    className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                    onClick={() => setIsUserMenuOpen(false)}
+                                >
+                                  <User className="h-4 w-4" />
+                                  <span className="font-medium">Profile</span>
+                                </Link>
+
+                                <Link
                                     to={getDashboardLink()}
                                     className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                     onClick={() => setIsUserMenuOpen(false)}
@@ -336,7 +345,7 @@ const Navbar: React.FC = () => {
                                     onClick={() => setIsUserMenuOpen(false)}
                                 >
                                   <KeyRound className="h-4 w-4" />
-                                  <span className="font-medium">Update Password</span>
+                                  <span className="font-medium">Change Password</span>
                                 </Link>
 
                                 <button
@@ -460,6 +469,15 @@ const Navbar: React.FC = () => {
                           </div>
 
                           <Link
+                              to="/profile"
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-200 font-medium"
+                              onClick={() => setIsMenuOpen(false)}
+                          >
+                            <User className="h-5 w-5" />
+                            <span>Profile</span>
+                          </Link>
+
+                          <Link
                               to={getDashboardLink()}
                               className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium"
                               onClick={() => setIsMenuOpen(false)}
@@ -474,7 +492,7 @@ const Navbar: React.FC = () => {
                               onClick={() => setIsMenuOpen(false)}
                           >
                             <KeyRound className="h-5 w-5" />
-                            <span>Update Password</span>
+                            <span>Change Password</span>
                           </Link>
 
                           <button

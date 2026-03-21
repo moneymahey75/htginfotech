@@ -25,6 +25,7 @@ interface AuthContextType {
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyOTP: (otp: string) => Promise<void>;
   sendOTPToUser: (userId: string, contactInfo: string, otpType: 'email' | 'mobile') => Promise<any>;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -559,6 +560,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshUser = async () => {
+    if (!user?.id) {
+      return;
+    }
+
+    await fetchUserData(user.id);
+  };
+
   const value = {
     user,
     login,
@@ -569,6 +578,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetPassword,
     verifyOTP,
     sendOTPToUser,
+    refreshUser,
     loading
   };
 

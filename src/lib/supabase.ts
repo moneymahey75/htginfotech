@@ -396,6 +396,158 @@ export const getUserProfile = async (userId: string) => {
   return data
 }
 
+export interface UserAccountRecord {
+  tu_id: string
+  tu_email: string
+  tu_user_type: 'learner' | 'tutor' | 'job_seeker' | 'job_provider' | 'admin' | string
+  tu_is_verified: boolean
+  tu_email_verified: boolean
+  tu_mobile_verified: boolean
+  tu_is_active: boolean
+  tu_created_at: string | null
+  tu_updated_at: string | null
+}
+
+export interface UserProfileRecord {
+  tup_id: string | null
+  tup_user_id: string
+  tup_first_name: string | null
+  tup_middle_name: string | null
+  tup_last_name: string | null
+  tup_username: string | null
+  tup_mobile: string | null
+  tup_gender: 'male' | 'female' | 'other' | null
+  tup_date_of_birth: string | null
+  tup_education_level: string | null
+  tup_interests: string[] | null
+  tup_learning_goals: string | null
+  tup_timezone: string | null
+  tup_created_at: string | null
+  tup_updated_at: string | null
+}
+
+export interface UserProfileDetails {
+  account: UserAccountRecord
+  profile: UserProfileRecord | null
+}
+
+export interface UpdateUserProfilePayload {
+  tup_first_name: string
+  tup_middle_name?: string
+  tup_last_name: string
+  tup_username: string
+  tup_mobile?: string
+  tup_gender?: 'male' | 'female' | 'other' | ''
+  tup_date_of_birth?: string
+  tup_education_level?: string
+  tup_interests?: string[]
+  tup_learning_goals?: string
+  tup_timezone?: string
+}
+
+const ensureAuthenticatedUser = async (userId: string) => {
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error) {
+    throw error
+  }
+
+  if (!data.user || data.user.id !== userId) {
+    throw new Error('Unauthorized profile access')
+  }
+
+  return data.user
+}
+
+export const getUserProfileDetails = async (userId: string): Promise<UserProfileDetails> => {
+  await ensureAuthenticatedUser(userId)
+
+  const { data: account, error: accountError } = await supabase
+    .from('tbl_users')
+    .select('tu_id, tu_email, tu_user_type, tu_is_verified, tu_email_verified, tu_mobile_verified, tu_is_active, tu_created_at, tu_updated_at')
+    .eq('tu_id', userId)
+    .single()
+
+  if (accountError) throw accountError
+
+  const { data: profile, error: profileError } = await supabase
+    .from('tbl_user_profiles')
+    .select('tup_id, tup_user_id, tup_first_name, tup_middle_name, tup_last_name, tup_username, tup_mobile, tup_gender, tup_date_of_birth, tup_education_level, tup_interests, tup_learning_goals, tup_timezone, tup_created_at, tup_updated_at')
+    .eq('tup_user_id', userId)
+    .maybeSingle()
+
+  if (profileError) throw profileError
+
+  return {
+    account,
+    profile: profile
+      ? {
+          ...profile,
+          tup_interests: Array.isArray(profile.tup_interests) ? profile.tup_interests : []
+        }
+      : null
+  }
+}
+
+export const updateUserProfile = async (
+  userId: string,
+  payload: UpdateUserProfilePayload
+): Promise<UserProfileDetails> => {
+  await ensureAuthenticatedUser(userId)
+
+  const normalizedPayload = {
+    tup_user_id: userId,
+    tup_first_name: payload.tup_first_name.trim(),
+    tup_middle_name: payload.tup_middle_name?.trim() || null,
+    tup_last_name: payload.tup_last_name.trim(),
+    tup_username: payload.tup_username.trim(),
+    tup_mobile: payload.tup_mobile?.trim() || null,
+    tup_gender: payload.tup_gender || null,
+    tup_date_of_birth: payload.tup_date_of_birth || null,
+    tup_education_level: payload.tup_education_level?.trim() || null,
+    tup_interests: payload.tup_interests || [],
+    tup_learning_goals: payload.tup_learning_goals?.trim() || null,
+    tup_timezone: payload.tup_timezone?.trim() || 'UTC',
+    tup_updated_at: new Date().toISOString()
+  }
+
+  const { error: userError } = await supabase
+    .from('tbl_users')
+    .update({
+      tu_updated_at: new Date().toISOString()
+    })
+    .eq('tu_id', userId)
+
+  if (userError) throw userError
+
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from('tbl_user_profiles')
+    .select('tup_id')
+    .eq('tup_user_id', userId)
+    .maybeSingle()
+
+  if (existingProfileError) throw existingProfileError
+
+  if (existingProfile?.tup_id) {
+    const { error: profileError } = await supabase
+      .from('tbl_user_profiles')
+      .update(normalizedPayload)
+      .eq('tup_user_id', userId)
+
+    if (profileError) throw profileError
+  } else {
+    const { error: profileError } = await supabase
+      .from('tbl_user_profiles')
+      .insert(normalizedPayload)
+
+    if (profileError) throw profileError
+  }
+
+  await logUserActivity(userId, 'profile_update')
+
+  return getUserProfileDetails(userId)
+}
+
 export const getMLMTreeNode = async (userId: string) => {
   try {
     const { data, error } = await supabase
