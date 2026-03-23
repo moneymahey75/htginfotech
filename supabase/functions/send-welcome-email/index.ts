@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
     );
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings, siteUrl);
+    const branding = buildBranding(settings, { request: req, siteUrl });
     const welcomeEmail = await buildWelcomeEmailContent({
       supabase,
       email,

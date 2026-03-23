@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings, siteUrl);
+    const branding = buildBranding(settings, { request: req, siteUrl });
     const profile = extractUserProfile(userRecord.tbl_user_profiles);
     const verificationLink =
       `${branding.siteUrl}/auth/callback?type=email_verification&token=${encodeURIComponent(verificationToken)}`;

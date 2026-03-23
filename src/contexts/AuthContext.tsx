@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserActivity } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 import { sessionUtils } from '../utils/sessionUtils';
+import { buildAbsoluteUrl, getBaseUrl } from '../utils/baseUrl';
 
 const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
 const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
@@ -408,7 +409,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phoneNumber: userData.phoneNumber && userData.phoneNumber.trim() !== '' ? userData.phoneNumber : null,
           gender: userData.gender || null,
           userType,
-          siteUrl: window.location.origin
+          siteUrl: getBaseUrl()
         }
       });
 
@@ -453,7 +454,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.functions.invoke('resend-verification-email', {
         body: {
           email: normalizedEmail,
-          siteUrl: window.location.origin,
+          siteUrl: getBaseUrl(),
         },
       });
 
@@ -523,7 +524,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const forgotPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: buildAbsoluteUrl('/reset-password')
       });
 
       if (error) {

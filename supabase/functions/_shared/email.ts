@@ -1,3 +1,5 @@
+import { resolveBaseUrl } from "./base-url.ts";
+
 export interface SystemSettingsMap {
   [key: string]: unknown;
 }
@@ -192,13 +194,18 @@ export const loadSystemSettings = async (supabase: any): Promise<SystemSettingsM
 
 export const buildBranding = (
   settings: SystemSettingsMap,
-  fallbackSiteUrl?: string,
+  options?: {
+    request?: Request;
+    siteUrl?: string;
+  },
 ): BrandingSettings => {
-  const rawSiteUrl =
-    String(settings.website_url || settings.site_url || fallbackSiteUrl || Deno.env.get("SITE_URL") || "https://htginfotech.com").trim();
-  const siteUrl = rawSiteUrl.replace(/\/+$/, "");
+  const siteUrl = resolveBaseUrl({
+    request: options?.request,
+    explicitSiteUrl: options?.siteUrl,
+    settings,
+  });
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const logoUrl = `${siteUrl}/htgsvglogo.svg`;
+  const logoUrl = siteUrl ? `${siteUrl}/htgsvglogo.svg` : "/htgsvglogo.svg";
 
   return {
     siteName,

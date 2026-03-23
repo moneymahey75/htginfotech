@@ -182,7 +182,7 @@ async function sendWelcomeEmail(userId: string, supabase: any) {
     }
 
     const settingsMap = await loadSystemSettings(supabase)
-    const branding = buildBranding(settingsMap)
+    const branding = buildBranding(settingsMap, { request: req })
     const profile = extractUserProfile(userData.tbl_user_profiles)
     const welcomeEmail = await buildWelcomeEmailContent({
       supabase,

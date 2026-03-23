@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.54.0";
+import { buildBranding, loadSystemSettings } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,7 +77,8 @@ Deno.serve(async (req: Request) => {
     const email = (learner as any).tu_email;
     const mobile = (learner as any).tu_mobile;
 
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://htginfotech.com';
+    const systemSettings = await loadSystemSettings(supabase);
+    const siteUrl = buildBranding(systemSettings, { request: req }).siteUrl;
     const courseDuration = course.tc_duration_hours
       ? `${course.tc_duration_hours} hours`
       : 'N/A';

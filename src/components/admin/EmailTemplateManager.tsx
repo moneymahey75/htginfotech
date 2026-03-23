@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/adminClient';
 import { emailTemplateDefaults, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
 import { Eye, Mail, Pencil, Save, X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { buildAbsoluteUrl } from '../../utils/baseUrl';
 
 interface EmailTemplateRow {
   tet_id?: string;
@@ -145,7 +146,7 @@ const EmailTemplateManager: React.FC = () => {
       return;
     }
 
-    const previewUrl = `${window.location.origin}/admin/email-template/preview?id=${encodeURIComponent(template.tet_id)}`;
+    const previewUrl = `${buildAbsoluteUrl('/admin/email-template/preview')}?id=${encodeURIComponent(template.tet_id)}`;
     const previewWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
 
     if (!previewWindow) {

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../components/ui/NotificationProvider';
 import { Shield, Loader } from 'lucide-react';
+import { getBaseUrl } from '../../utils/baseUrl';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -97,7 +98,7 @@ const AuthCallback: React.FC = () => {
                     firstName: firstName,
                     lastName: lastName,
                     userType: userType,
-                    siteUrl: window.location.origin
+                    siteUrl: getBaseUrl()
                   }),
                 }
               );

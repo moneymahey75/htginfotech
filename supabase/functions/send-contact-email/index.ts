@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
     );
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings, pageUrl);
+    const branding = buildBranding(settings, { request: req, siteUrl: pageUrl });
     const recipientEmail = normalizeText(settings.primary_email);
 
     if (!recipientEmail) {

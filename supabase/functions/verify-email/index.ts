@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings);
+    const branding = buildBranding(settings, { request: req });
     const profile = extractUserProfile(userData.tbl_user_profiles);
     const firstName = profile?.tup_first_name || "User";
     const lastName = profile?.tup_last_name || "";

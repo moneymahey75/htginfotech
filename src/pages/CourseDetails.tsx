@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, getCourseById, enrollInCourse } from '../lib/supabase';
+import { getBaseUrl } from '../utils/baseUrl';
 import { 
   Clock, 
   Users, 
@@ -163,7 +164,7 @@ const CourseDetails: React.FC = () => {
       return '';
     }
 
-    const publicSiteUrl = import.meta.env.VITE_SITE_URL;
+    const publicSiteUrl = getBaseUrl();
 
     if (publicSiteUrl) {
       const baseUrl = publicSiteUrl.replace(/\/$/, '');
