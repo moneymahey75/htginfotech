@@ -25,7 +25,7 @@ const EmailTemplatePreview: React.FC = () => {
     user_name: 'Test User',
     first_name: 'Test',
     verification_link: `${settings.website_url || getBaseUrl()}/auth/callback?type=email_verification&token=preview-token`,
-    logo_url: `${settings.website_url || getBaseUrl()}/htgsvglogo.svg`,
+    logo_url: `${settings.website_url || getBaseUrl()}/htginfotech-logo.png`,
     site_name: settings.site_name || 'HTG Infotech',
     site_url: settings.website_url || getBaseUrl(),
     current_year: String(new Date().getFullYear()),

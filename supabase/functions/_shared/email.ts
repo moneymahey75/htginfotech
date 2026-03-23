@@ -205,7 +205,7 @@ export const buildBranding = (
     settings,
   });
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const logoUrl = siteUrl ? `${siteUrl}/htgsvglogo.svg` : "/htgsvglogo.svg";
+  const logoUrl = siteUrl ? `${siteUrl}/htginfotech-logo.png` : "/htginfotech-logo.png";
 
   return {
     siteName,
