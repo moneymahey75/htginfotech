@@ -47,14 +47,22 @@ const AuthenticatedRoute: React.FC<AuthenticatedRouteProps> = ({ children }) => 
 
   if (!user) {
     console.log('🔒 No user found, redirecting to login');
+    const logoutRedirectPath = sessionUtils.getLogoutRedirectPath();
     sessionUtils.clearAllSessions();
+    if (logoutRedirectPath) {
+      return <Navigate to={logoutRedirectPath} replace />;
+    }
     return <Navigate to="/login" replace state={{ from: location, error: 'Please login to access this page.' }} />;
   }
 
   const sessionInfo = sessionUtils.getSessionInfo();
   if (!sessionInfo.isValid) {
     console.log('🔒 Invalid session detected, redirecting to login');
+    const logoutRedirectPath = sessionUtils.getLogoutRedirectPath();
     sessionUtils.clearAllSessions();
+    if (logoutRedirectPath) {
+      return <Navigate to={logoutRedirectPath} replace />;
+    }
     return <Navigate to="/login" replace state={{ from: location, error: 'Please login to access this page.' }} />;
   }
 

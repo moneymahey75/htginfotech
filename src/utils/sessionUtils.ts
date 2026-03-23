@@ -9,6 +9,18 @@ export interface SessionInfo {
 }
 
 export const sessionUtils = {
+  getLogoutRedirectPath: (): string | null => {
+    if (typeof window === 'undefined') return null;
+
+    const redirectPath = sessionStorage.getItem('logout-redirect-path');
+
+    if (redirectPath) {
+      sessionStorage.removeItem('logout-redirect-path');
+    }
+
+    return redirectPath;
+  },
+
   // Get detailed session information
   getSessionInfo: (): SessionInfo => {
     const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('current-user-id') : null;

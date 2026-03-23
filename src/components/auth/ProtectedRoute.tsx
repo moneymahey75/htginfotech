@@ -54,8 +54,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
   // Check if user is authenticated
   if (!user) {
     console.log('🔒 No user found, redirecting to login');
+    const logoutRedirectPath = sessionUtils.getLogoutRedirectPath();
     // Clear any stale session data
     sessionUtils.clearAllSessions();
+    if (logoutRedirectPath) {
+      return <Navigate to={logoutRedirectPath} replace />;
+    }
     return <Navigate to="/login" replace state={{ from: location, error: 'Please login to perform this action.' }} />;
   }
 
@@ -69,7 +73,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, userType }) =
   const sessionInfo = sessionUtils.getSessionInfo();
   if (!sessionInfo.isValid) {
     console.log('🔒 Invalid session detected, redirecting to login');
+    const logoutRedirectPath = sessionUtils.getLogoutRedirectPath();
     sessionUtils.clearAllSessions();
+    if (logoutRedirectPath) {
+      return <Navigate to={logoutRedirectPath} replace />;
+    }
     return <Navigate to="/login" replace state={{ from: location, error: 'Please login to perform this action.' }} />;
   }
 

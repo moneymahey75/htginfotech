@@ -109,7 +109,6 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
     setIsUserMenuOpen(false);
     await logout();
-    navigate('/');
   };
 
   const handleNavClick = (path: string) => {

@@ -1,11 +1,44 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserActivity } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
+import { sessionUtils } from '../utils/sessionUtils';
 
-const INVALID_LOGIN_MESSAGE = 'Invalid login credentials. Please check your email/username and password and try again.';
+const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
 const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
 
-const isEmailIdentifier = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isEmailIdentifier = (value: string) => value.includes('@');
+
+const resolveLoginIdentifier = async (loginIdentifier: string) => {
+  const normalizedIdentifier = loginIdentifier.trim();
+
+  if (!normalizedIdentifier) {
+    throw new Error(INVALID_LOGIN_MESSAGE);
+  }
+
+  if (isEmailIdentifier(normalizedIdentifier)) {
+    return {
+      email: normalizedIdentifier,
+      userId: undefined
+    };
+  }
+
+  const { data: resolvedLogin, error: resolveError } = await supabase
+    .rpc('resolve_login_identifier', { p_login_identifier: normalizedIdentifier });
+
+  if (resolveError) {
+    console.error('❌ Failed to resolve login identifier:', resolveError);
+    throw new Error(INVALID_LOGIN_MESSAGE);
+  }
+
+  if (!resolvedLogin?.success || !resolvedLogin?.email) {
+    throw new Error(INVALID_LOGIN_MESSAGE);
+  }
+
+  return {
+    email: resolvedLogin.email,
+    userId: resolvedLogin.user_id as string | undefined
+  };
+};
 
 interface User {
   id: string;
@@ -22,7 +55,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, userType: string) => Promise<void>;
+  login: (emailOrUsername: string, password: string, userType: string) => Promise<void>;
   register: (userData: any, userType: string) => Promise<string>;
   resendVerificationEmail: (email: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -255,25 +288,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Small delay to ensure cleanup is complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      let actualEmail = loginIdentifier;
-      let resolvedUserId: string | undefined;
-
-      if (!isEmailIdentifier(loginIdentifier)) {
-        const { data: resolvedLogin, error: resolveError } = await supabase
-          .rpc('resolve_login_identifier', { p_login_identifier: loginIdentifier });
-
-        if (resolveError) {
-          console.error('❌ Failed to resolve login identifier:', resolveError);
-          throw new Error('Unable to process your login request right now. Please try again.');
-        }
-
-        if (!resolvedLogin?.success || !resolvedLogin?.email) {
-          throw new Error(INVALID_LOGIN_MESSAGE);
-        }
-
-        actualEmail = resolvedLogin.email;
-        resolvedUserId = resolvedLogin.user_id;
-      }
+      const { email: actualEmail, userId: resolvedUserId } = await resolveLoginIdentifier(loginIdentifier);
 
       // Authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -462,8 +477,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     setLoading(true);
     const currentUserId = user?.id;
+    let shouldRedirectToHome = false;
 
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('logout-redirect-path', '/');
+      }
+
       // Log logout activity before signing out
       if (user) {
         try {
@@ -483,12 +503,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear user state
       setUser(null);
 
+      shouldRedirectToHome = true;
       notification.showInfo('Logged Out', 'You have been successfully logged out.');
     } catch (error) {
       console.error('❌ Error during logout:', error);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('logout-redirect-path');
+      }
       notification.showError('Logout Failed', 'There was an error logging out. Please try again.');
     } finally {
       setLoading(false);
+
+      if (shouldRedirectToHome && typeof window !== 'undefined') {
+        window.location.replace('/');
+      }
     }
   };
 

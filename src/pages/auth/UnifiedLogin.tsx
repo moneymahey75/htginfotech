@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
-const INVALID_LOGIN_MESSAGE = 'Invalid login credentials. Please check your email/username and password and try again.';
+const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
 const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
 
 const UnifiedLogin: React.FC = () => {
