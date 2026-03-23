@@ -321,21 +321,21 @@ const Navbar: React.FC = () => {
                                 </div>
 
                                 <Link
-                                    to="/profile"
-                                    className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                                    onClick={() => setIsUserMenuOpen(false)}
-                                >
-                                  <User className="h-4 w-4" />
-                                  <span className="font-medium">Profile</span>
-                                </Link>
-
-                                <Link
                                     to={getDashboardLink()}
                                     className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                     onClick={() => setIsUserMenuOpen(false)}
                                 >
                                   <Settings className="h-4 w-4" />
                                   <span className="font-medium">Dashboard</span>
+                                </Link>
+
+                                <Link
+                                    to="/profile"
+                                    className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                    onClick={() => setIsUserMenuOpen(false)}
+                                >
+                                  <User className="h-4 w-4" />
+                                  <span className="font-medium">Profile</span>
                                 </Link>
 
                                 <Link
