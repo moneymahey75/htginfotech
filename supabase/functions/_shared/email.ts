@@ -270,7 +270,7 @@ export const sendSmtpEmail = async ({
   });
 };
 
-const replaceTemplatePlaceholders = (
+export const replaceTemplatePlaceholders = (
   template: string,
   variables: Record<string, string>,
 ) => template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => variables[key] ?? "");
@@ -345,8 +345,13 @@ const normalizeEmailMarkup = (value: string) =>
     .replace(/\n\s*\n+/g, "\n")
     .trim();
 
-const stripWordBreakTags = (value: string) =>
+export const stripWordBreakTags = (value: string) =>
   normalizeEmailMarkup(value);
+
+export const renderEmailMarkup = (
+  html: string,
+  variables: Record<string, string>,
+) => replaceTemplatePlaceholders(stripWordBreakTags(html), variables);
 
 export const getEmailTemplate = async (
   supabase: any,
