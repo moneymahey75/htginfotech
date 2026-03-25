@@ -51,10 +51,12 @@ export const buildBrandedEmailShell = ({
   eyebrow,
   title,
   body,
+  showFooterLinks = true,
 }: {
   eyebrow: string;
   title: string;
   body: string;
+  showFooterLinks?: boolean;
 }) => `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,12 +86,15 @@ export const buildBrandedEmailShell = ({
           <tr>
             <td style="padding:20px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
               <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:600;">${eyebrow}</p>
-              <p style="margin:0 0 12px;color:#6b7280;font-size:13px;">Thank you for choosing us.</p>
+              <p style="margin:0${showFooterLinks ? " 0 12px" : " 0 8px"};color:#6b7280;font-size:13px;">Thank you for choosing us.</p>
+              ${showFooterLinks
+                ? `
               <div style="margin:0 0 12px;">
                 <a href="{{site_url}}" style="color:#4f46e5;text-decoration:none;font-size:13px;margin:0 8px;">Visit Website</a>
                 <span style="color:#d1d5db;">|</span>
                 <a href="{{site_url}}/contact" style="color:#4f46e5;text-decoration:none;font-size:13px;margin:0 8px;">Contact Us</a>
-              </div>
+              </div>`
+                : ""}
               <p style="margin:0;color:#9ca3af;font-size:12px;">© {{current_year}} {{site_name}}. All rights reserved.</p>
             </td>
           </tr>

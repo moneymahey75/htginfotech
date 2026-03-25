@@ -83,6 +83,7 @@ const buildAdminEmailHtml = ({
   buildBrandedEmailShell({
     eyebrow: "",
     title: "New Contact Us Submission",
+    showFooterLinks: false,
     body: `
       <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello Admin,</p>
       <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.7;">
@@ -128,6 +129,7 @@ const buildConfirmationEmailHtml = ({
   buildBrandedEmailShell({
     eyebrow: "",
     title: "We Received Your Message",
+    showFooterLinks: false,
     body: `
       <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello ${escapeHtml(name)},</p>
       <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
