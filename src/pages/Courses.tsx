@@ -386,6 +386,8 @@ const Courses: React.FC = () => {
 
 // Course Card Component
 const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ course, viewMode }) => {
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const image = event.currentTarget;
     if (image.src.endsWith(COURSE_FALLBACK_IMAGE)) {
@@ -407,72 +409,107 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
     }
   };
 
+  const courseDescription = (course.tc_short_description || course.tc_description || '').trim();
+  const maxDescriptionLength = 50;
+  const shouldTruncateDescription = courseDescription.length > maxDescriptionLength;
+  const visibleDescription = isDescriptionExpanded || !shouldTruncateDescription
+    ? courseDescription
+    : `${courseDescription.slice(0, maxDescriptionLength).trimEnd()}...`;
+
+  const getAccessLabel = () => {
+    if (course.tc_pricing_type === 'free') {
+      return 'Free access';
+    }
+
+    if (course.tc_pricing_type === 'paid_days') {
+      return `${course.tc_access_days ?? 0} days`;
+    }
+
+    return 'Lifetime';
+  };
+
   const getPriceDisplay = () => {
     if (course.tc_pricing_type === 'free') {
       return <span className="text-green-600 font-bold text-xl">Free</span>;
-    } else if (course.tc_pricing_type === 'paid_days') {
-      return (
-        <div className="text-right flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-gray-900">${course.tc_price}</span>
-          <span className="text-sm text-gray-600">for {course.tc_access_days} days</span>
-        </div>
-      );
-    } else {
-      return (
-        <div className="text-right">
-          <span className="text-2xl font-bold text-gray-900">${course.tc_price}</span>
-          <span className="text-sm text-gray-600 block">lifetime access</span>
-        </div>
-      );
     }
+
+    return <span className="text-2xl font-bold text-gray-900">${course.tc_price}</span>;
   };
 
   if (viewMode === 'list') {
     return (
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100">
         <div className="flex min-h-[220px]">
-          <div className="w-56 min-h-[220px] flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden">
+          <div className="w-64 min-h-[220px] flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden relative">
             <img
                 src={course.tc_thumbnail_url}
                 alt={course.tc_title}
                 className="w-full h-full min-h-full object-cover"
                 onError={handleImageError}
             />
+            <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getDifficultyColor(course.tc_difficulty_level)}`}>
+                {course.tc_difficulty_level}
+              </span>
+              {course.tc_featured && (
+                <div className="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                  Featured
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex-1 p-5 flex flex-col justify-between">
-            <div className="flex-1 flex flex-col justify-start">
+          <div className="flex-1 px-5 py-2 flex flex-col">
+            <div className="flex-1">
               <div className="flex items-start justify-between gap-4 mb-1">
                 <div className="min-w-0 flex-1">
-                  <span className="text-sm text-gray-500 block mb-0.5">
-                  {course.tbl_course_categories?.tcc_name}
-                  </span>
-                  <h3 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2">{course.tc_title}</h3>
+                  <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-1">{course.tc_title}</h3>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(course.tc_difficulty_level)}`}>
-                  {course.tc_difficulty_level}
-                </span>
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                  <span className="text-sm text-gray-600">4.8</span>
+                </div>
               </div>
-              <p className="text-gray-600 mb-3 line-clamp-2">{course.tc_short_description}</p>
-              
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
+              <p className="text-gray-600 text-sm mb-0">{visibleDescription}</p>
+              {shouldTruncateDescription && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700 w-fit"
+                >
+                  {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                </button>
+              )}
+            </div>
+
+            <div className="border-t border-b border-gray-100 py-4 mt-3 mb-4">
+              <div className="grid grid-cols-3 gap-6 text-sm text-gray-500">
+                <div className="flex items-center gap-2 justify-start">
+                  <Clock className="h-5 w-5 flex-shrink-0" />
                   <span>{course.tc_duration_hours}h</span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Play className="h-4 w-4" />
+                <div className="flex items-center gap-2 justify-start">
+                  <Play className="h-5 w-5 flex-shrink-0" />
                   <span>{course.tc_total_lessons} lessons</span>
+                </div>
+                <div className="flex items-center gap-2 justify-start">
+                  <Users className="h-5 w-5 flex-shrink-0" />
+                  <span>1.2k students</span>
                 </div>
               </div>
             </div>
-            
-            <div className="flex items-end justify-between gap-4 pt-3">
-              {getPriceDisplay()}
+
+            <div className="flex items-center justify-between gap-6 mt-auto">
+              <div className="min-w-0">
+                {getPriceDisplay()}
+              </div>
+              <div className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
+                {getAccessLabel()}
+              </div>
               <Link
                 to={`/courses/${course.tc_id}`}
-                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
+                className="bg-indigo-600 text-white px-5 py-2 rounded-full hover:bg-indigo-700 transition-colors flex items-center space-x-2 text-base font-medium whitespace-nowrap"
               >
-                <span>View Course</span>
+                <span>View Details</span>
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -483,7 +520,7 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group">
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group h-full flex flex-col">
       <div className="relative overflow-hidden rounded-t-xl">
         <img
           src={course.tc_thumbnail_url}
@@ -505,44 +542,70 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
         </div>
       </div>
       
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-2">
+      <div className="px-6 pt-4 pb-6 flex flex-col flex-1">
+        <div className="mb-1">
           <span className="text-sm text-gray-500">
             {course.tbl_course_categories?.tcc_name}
           </span>
-          <div className="flex items-center space-x-1">
+        </div>
+        
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h3 className="text-xl font-bold text-gray-900 flex-1 line-clamp-2">{course.tc_title}</h3>
+          <div className="flex items-center space-x-1 flex-shrink-0 pt-1">
             <Star className="h-4 w-4 text-yellow-400 fill-current" />
             <span className="text-sm text-gray-600">4.8</span>
           </div>
         </div>
+
+        <div className="mb-0">
+          <p className="text-gray-600 text-sm">{visibleDescription}</p>
+          {shouldTruncateDescription && (
+            <button
+              type="button"
+              onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+              className="mt-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              {isDescriptionExpanded ? 'Read less' : 'Read more'}
+            </button>
+          )}
+        </div>
         
-        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.tc_title}</h3>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.tc_short_description}</p>
-        
-        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-          <div className="flex items-center space-x-1">
-            <Clock className="h-4 w-4" />
-            <span>{course.tc_duration_hours}h</span>
+        <div className="grid grid-cols-3 gap-3 text-sm text-gray-500 border-t border-b border-gray-100 py-4 mt-3 mb-4">
+          <div className="flex flex-col items-center text-center">
+            <div className="h-5 flex items-center justify-center mb-2">
+              <Clock className="h-4 w-4" />
+            </div>
+            <span className="leading-tight">{course.tc_duration_hours}h</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <Play className="h-4 w-4" />
-            <span>{course.tc_total_lessons} lessons</span>
+          <div className="flex flex-col items-center text-center">
+            <div className="h-5 flex items-center justify-center mb-2">
+              <Play className="h-4 w-4" />
+            </div>
+            <span className="leading-tight">{course.tc_total_lessons} lessons</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <Users className="h-4 w-4" />
-            <span>1.2k students</span>
+          <div className="flex flex-col items-center text-center">
+            <div className="h-5 flex items-center justify-center mb-2">
+              <Users className="h-4 w-4" />
+            </div>
+            <span className="leading-tight">1.2k students</span>
           </div>
         </div>
         
-        <div className="flex items-center justify-between">
-          {getPriceDisplay()}
-          <Link
-            to={`/courses/${course.tc_id}`}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-          >
-            View Details
-          </Link>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            {getPriceDisplay()}
+          </div>
+          <div className="text-sm text-gray-500 text-right whitespace-nowrap">
+            {getAccessLabel()}
+          </div>
         </div>
+
+        <Link
+          to={`/courses/${course.tc_id}`}
+          className="block w-full bg-indigo-600 text-white px-4 py-2.5 rounded-full hover:bg-indigo-700 transition-colors text-base font-medium text-center mt-auto"
+        >
+          View Details
+        </Link>
       </div>
     </div>
   );

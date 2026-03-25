@@ -51,6 +51,8 @@ interface Course {
   tbl_course_content: CourseContent[];
 }
 
+const COURSE_FALLBACK_IMAGE = '/htginfotech-logo.png';
+
 const CourseDetails: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const { user } = useAuth();
@@ -98,6 +100,19 @@ const CourseDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCourseImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+
+    if (image.src.endsWith(COURSE_FALLBACK_IMAGE)) {
+      return;
+    }
+
+    image.src = COURSE_FALLBACK_IMAGE;
+    image.classList.remove('object-cover');
+    image.classList.add('object-contain', 'opacity-20', 'p-6');
+    image.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-50');
   };
 
   const handleEnroll = async () => {
@@ -391,6 +406,7 @@ const CourseDetails: React.FC = () => {
                 src={course.tc_thumbnail_url}
                 alt={course.tc_title}
                 className="w-full h-64 object-cover"
+                onError={handleCourseImageError}
               />
             </div>
 
@@ -592,6 +608,7 @@ const CourseDetails: React.FC = () => {
                   src={course.tc_thumbnail_url}
                   alt={course.tc_title}
                   className="w-full h-48 object-cover rounded-lg"
+                  onError={handleCourseImageError}
                 />
                 <button className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg hover:bg-opacity-60 transition-colors">
                   <div className="bg-white rounded-full p-3">
