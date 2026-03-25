@@ -46,6 +46,7 @@ interface CourseCategory {
   tcc_description: string;
   tcc_icon: string;
   tcc_color: string;
+  tcc_sort_order?: number;
 }
 
 const COURSE_VIEW_MODE_STORAGE_KEY = 'courses-view-mode';
@@ -231,31 +232,18 @@ const Courses: React.FC = () => {
               {/* Categories */}
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Categories</h4>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setSelectedCategory('all')}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedCategory === 'all'
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    All Categories
-                  </button>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="all">All Categories</option>
                   {categories.map((category) => (
-                    <button
-                      key={category.tcc_id}
-                      onClick={() => setSelectedCategory(category.tcc_name)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategory === category.tcc_name
-                          ? 'bg-indigo-100 text-indigo-700'
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
+                    <option key={category.tcc_id} value={category.tcc_name}>
                       {category.tcc_name}
-                    </button>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Price Filter */}

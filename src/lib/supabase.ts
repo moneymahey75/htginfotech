@@ -889,7 +889,7 @@ export const getCourseCategories = async () => {
   const { data, error } = await supabase
     .from('tbl_course_categories')
     .select('*')
-    .order('tcc_name')
+    .order('tcc_sort_order', { ascending: true })
 
   if (error) throw error
   return data
@@ -898,7 +898,10 @@ export const getCourseCategories = async () => {
 export const getCourses = async () => {
   const { data, error } = await supabase
     .from('tbl_courses')
-    .select('*')
+    .select(`
+      *,
+      tbl_course_categories (*)
+    `)
     .order('tc_title')
 
   if (error) throw error
