@@ -481,7 +481,7 @@ const Home: React.FC = () => {
                   title: 'Start Learning',
                   description: 'Enroll in courses, get assigned a tutor, and begin your educational journey.',
                   color: 'from-violet-500 to-purple-600',
-                  image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                  image: '/images/homeconnect.png'
                 }
               ].map((step, index) => (
                   <div key={index} className="text-center group relative">

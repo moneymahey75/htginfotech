@@ -36,25 +36,25 @@ const JoinAsTutor: React.FC = () => {
       step: "1",
       title: "Submit Application",
       description: "Complete our tutor application with your qualifications and teaching experience.",
-      image: "../public/images/tutor1smallbanner.png"
+      image: "../public/images/profile.png"
     },
     {
       step: "2",
       title: "Verification Process",
       description: "Our team reviews your credentials and verifies your expertise in your subject areas.",
-      image: "../public/images/tutor2SmallBanner.png"
+      image: "../public/images/verified.png"
     },
     {
       step: "3",
       title: "Profile Setup",
       description: "Create your tutor profile, set your rates, and define your availability schedule.",
-      image: "../public/images/tutor3SmallBanner.png"
+      image: "../public/images/prosetup.png"
     },
     {
       step: "4",
       title: "Start Teaching",
       description: "Get matched with students and begin your rewarding teaching journey.",
-      image: "../public/images/tutor4SmallBanner.png"
+      image: "../public/images/lerning.png"
     }
   ];
 
@@ -171,13 +171,13 @@ const JoinAsTutor: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="group relative">
-                <div className="bg-gray-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-500 border border-gray-100 hover:border-gray-200 transform hover:-translate-y-2">
+              <div key={index} className="group relative flex justify-center">
+                <div className="bg-gray-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-500 border border-gray-100 hover:border-gray-200 transform hover:-translate-y-2 text-center flex flex-col items-center max-w-xl">
                   <div className={`bg-gradient-to-r ${benefit.color} w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                     <benefit.icon className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">{benefit.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
+                  <p className="text-gray-600 leading-relaxed max-w-md">{benefit.description}</p>
                 </div>
               </div>
             ))}

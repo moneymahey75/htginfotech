@@ -171,7 +171,7 @@ const JoinAsLearner: React.FC = () => {
               <span className="text-sm font-semibold text-indigo-600">Learner Benefits</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Learn With Us?
+              Some great features of HTG Infotech
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Experience personalized education with expert tutors and comprehensive course materials.
@@ -180,13 +180,13 @@ const JoinAsLearner: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="group relative">
-                <div className="bg-gray-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-500 border border-gray-100 hover:border-gray-200 transform hover:-translate-y-2">
+              <div key={index} className="group relative flex justify-center">
+                <div className="bg-gray-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-500 border border-gray-100 hover:border-gray-200 transform hover:-translate-y-2 text-center flex flex-col items-center max-w-xl">
                   <div className={`bg-gradient-to-r ${benefit.color} w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                     <benefit.icon className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">{benefit.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
+                  <p className="text-gray-600 leading-relaxed max-w-md">{benefit.description}</p>
                 </div>
               </div>
             ))}
@@ -289,45 +289,45 @@ const JoinAsLearner: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Flexible Learning Options */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-blue-100">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-blue-100 text-center flex flex-col items-center">
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <Clock className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Flexible Learning Options</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed max-w-md">
                 Whether you choose in-person classes, live online sessions, or self-paced learning, we offer flexible options tailored to your lifestyle and goals. Our adaptive approach ensures you can advance your skills while seamlessly balancing work, family, and other commitments.
               </p>
             </div>
 
             {/* Personalized Mentorships */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-green-100">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-green-100 text-center flex flex-col items-center">
               <div className="bg-gradient-to-r from-green-500 to-emerald-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <Users className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Personalized Mentorships</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed max-w-md">
                 At HTG Infotech, we believe in learning that's built around you. Our personalized mentorship ensures that your unique goals, strengths, and challenges are understood, while our expert instructors provide customized guidance and continuous support to help you achieve success.
               </p>
             </div>
 
             {/* Industry-Driven Curriculum */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-orange-100">
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-orange-100 text-center flex flex-col items-center">
               <div className="bg-gradient-to-r from-orange-500 to-amber-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <TrendingUp className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Industry-Driven Curriculum</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed max-w-md">
                 Gain the skills employers demand with our industry-focused courses. Designed to deliver practical, real-world knowledge, our programs empower you to step into your professional career with confidence and start making a difference from day one.
               </p>
             </div>
 
             {/* Career Growth Assistance */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-purple-100">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 border border-purple-100 text-center flex flex-col items-center">
               <div className="bg-gradient-to-r from-purple-500 to-pink-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <Target className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Career Growth Assistance</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed max-w-md">
                 At HTG Infotech, we don't just teach technical skills — we shape careers. With our comprehensive career placement assistance, we empower you with the knowledge, resources, and expert guidance needed to land the right opportunities and accelerate your growth in the competitive industry.
               </p>
             </div>
