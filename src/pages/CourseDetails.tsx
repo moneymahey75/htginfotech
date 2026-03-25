@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, getCourseById, enrollInCourse } from '../lib/supabase';
-import { getBaseUrl } from '../utils/baseUrl';
+import { buildAssetUrl, getBaseUrl } from '../utils/baseUrl';
 import { 
   Clock, 
   Users, 
@@ -51,7 +51,7 @@ interface Course {
   tbl_course_content: CourseContent[];
 }
 
-const COURSE_FALLBACK_IMAGE = '/htginfotech-logo.png';
+const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
 
 const CourseDetails: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();

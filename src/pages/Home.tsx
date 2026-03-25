@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
 import { supabase } from '../lib/supabase';
+import { buildAssetUrl } from '../utils/baseUrl';
 import { useLoadingRecovery, withTimeout } from '../utils/loadingRecovery';
 import {
   ArrowRight,
@@ -481,7 +482,7 @@ const Home: React.FC = () => {
                   title: 'Start Learning',
                   description: 'Enroll in courses, get assigned a tutor, and begin your educational journey.',
                   color: 'from-violet-500 to-purple-600',
-                  image: '/images/homeconnect.png'
+                  image: buildAssetUrl('/images/homeconnect.png')
                 }
               ].map((step, index) => (
                   <div key={index} className="text-center group relative">

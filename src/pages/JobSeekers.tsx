@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
 import {useAdmin} from '../contexts/AdminContext';
+import { buildAssetUrl } from '../utils/baseUrl';
 import {Play, Users, TrendingUp, Award, CheckCircle} from 'lucide-react';
 
 const JobSeekers: React.FC = () => {
@@ -136,7 +137,7 @@ const JobSeekers: React.FC = () => {
                         </div>
                         <div className="relative">
                             <img
-                                src="/images/banners/pro1.png"
+                                src={buildAssetUrl('/images/banners/pro1.png')}
                                 alt="Job Search Success"
                                 className="rounded-2xl shadow-2xl"
                             />

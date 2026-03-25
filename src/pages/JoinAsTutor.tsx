@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { buildAssetUrl } from '../utils/baseUrl';
 import { 
   ArrowRight, 
   GraduationCap, 
@@ -36,25 +37,25 @@ const JoinAsTutor: React.FC = () => {
       step: "1",
       title: "Submit Application",
       description: "Complete our tutor application with your qualifications and teaching experience.",
-      image: "../public/images/profile.png"
+      image: buildAssetUrl('/images/profile.png')
     },
     {
       step: "2",
       title: "Verification Process",
       description: "Our team reviews your credentials and verifies your expertise in your subject areas.",
-      image: "../public/images/verified.png"
+      image: buildAssetUrl('/images/verified.png')
     },
     {
       step: "3",
       title: "Profile Setup",
       description: "Create your tutor profile, set your rates, and define your availability schedule.",
-      image: "../public/images/prosetup.png"
+      image: buildAssetUrl('/images/prosetup.png')
     },
     {
       step: "4",
       title: "Start Teaching",
       description: "Get matched with students and begin your rewarding teaching journey.",
-      image: "../public/images/lerning.png"
+      image: buildAssetUrl('/images/lerning.png')
     }
   ];
 
@@ -91,7 +92,7 @@ const JoinAsTutor: React.FC = () => {
       <section className="relative bg-gradient-to-br from-green-900 via-blue-900 to-indigo-900 text-white py-20 overflow-hidden">
         <div className="absolute inset-0">
           <img 
-            src="../images/newTutorBanner.png"
+            src={buildAssetUrl('/images/newTutorBanner.png')}
             alt="Join as Tutor"
             className="w-full h-full object-cover opacity-20"
           />
@@ -302,7 +303,7 @@ const JoinAsTutor: React.FC = () => {
             </div>
             <div className="relative">
               <img 
-                src="../public/images/tutorStartTeaching.png"
+                src={buildAssetUrl('/images/tutorStartTeaching.png')}
                 alt="Requirements"
                 className="rounded-2xl shadow-2xl"
               />

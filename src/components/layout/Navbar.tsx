@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdmin } from '../../contexts/AdminContext';
 import { getSystemSettings } from '../../lib/supabase';
+import { buildAssetUrl } from '../../utils/baseUrl';
 import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Building, BookOpen, GraduationCap, Users, LogIn, UserPlus, Phone, Mail, MessageCircle, KeyRound } from 'lucide-react';
 
 const hasValue = (value?: string | null) => Boolean(value && value.trim());
@@ -207,7 +208,7 @@ const Navbar: React.FC = () => {
                         className="h-14 w-100 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
                         onError={(e) => {
                           // Fallback to loading GIF with proper sizing
-                          (e.target as HTMLImageElement).src = '/htginfotech-logo.png';
+                          (e.target as HTMLImageElement).src = buildAssetUrl('/htginfotech-logo.png');
                           (e.target as HTMLImageElement).className = 'h-14 w-100 object-contain';
                         }}
                     />

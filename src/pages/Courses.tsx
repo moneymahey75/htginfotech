@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getCourseCategories, getCourses } from '../lib/supabase';
+import { buildAssetUrl } from '../utils/baseUrl';
 import { 
   Search, 
   Filter, 
@@ -50,7 +51,7 @@ interface CourseCategory {
 }
 
 const COURSE_VIEW_MODE_STORAGE_KEY = 'courses-view-mode';
-const COURSE_FALLBACK_IMAGE = '/htginfotech-logo.png';
+const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
 
 const getInitialViewMode = (): 'grid' | 'list' => {
   if (typeof window === 'undefined') {
