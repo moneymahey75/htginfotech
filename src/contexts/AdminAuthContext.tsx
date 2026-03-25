@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
+import { withTimeout } from '../utils/loadingRecovery';
 
 interface AdminUser {
   id: string;
@@ -52,6 +53,7 @@ interface AdminAuthContextType {
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+const ADMIN_AUTH_TIMEOUT_MS = 10000;
 
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
@@ -109,11 +111,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       // Get admin data from database using service role to bypass RLS
-      const { data: user, error } = await supabase
+      const { data: user, error } = await withTimeout(
+        supabase
           .from('tbl_admin_users')
           .select('*')
           .eq('tau_id', adminId)
-          .single();
+          .single(),
+        ADMIN_AUTH_TIMEOUT_MS,
+        'Admin session validation timed out'
+      );
 
       if (error || !user) {
         console.error('❌ Failed to validate session:', error);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { useLoadingRecovery } from '../../utils/loadingRecovery';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -15,6 +16,10 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   requiredPermission 
 }) => {
   const { admin, loading, hasPermission } = useAdminAuth();
+  const { hasTimedOut, didTriggerReload } = useLoadingRecovery({
+    isLoading: loading,
+    recoveryKey: `admin:${typeof window !== 'undefined' ? window.location.pathname : 'unknown'}`
+  });
 
   // Check if admin session exists in localStorage
   const adminSessionToken = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') : null;
@@ -27,7 +32,16 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {didTriggerReload
+              ? 'Refreshing the page...'
+              : hasTimedOut
+                ? 'Still loading. Trying to recover automatically...'
+                : 'Loading...'}
+          </p>
+        </div>
       </div>
     );
   }

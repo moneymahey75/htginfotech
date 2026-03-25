@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/adminClient';
+import { withTimeout } from '../utils/loadingRecovery';
 
 interface GeneralSettings {
   site_name: string;
@@ -107,6 +108,7 @@ interface AdminContextType {
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
+const ADMIN_SETTINGS_TIMEOUT_MS = 10000;
 
 export const useAdmin = () => {
   const context = useContext(AdminContext);
@@ -235,9 +237,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await withTimeout(
+        supabase
           .from('tbl_system_settings')
-          .select('tss_setting_key, tss_setting_value');
+          .select('tss_setting_key, tss_setting_value'),
+        ADMIN_SETTINGS_TIMEOUT_MS,
+        'Loading system settings timed out'
+      );
 
       if (error) {
         console.warn('Failed to load settings from database, using defaults:', error);

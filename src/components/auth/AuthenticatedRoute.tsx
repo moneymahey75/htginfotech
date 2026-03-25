@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { sessionUtils } from '../../utils/sessionUtils';
+import { useLoadingRecovery } from '../../utils/loadingRecovery';
 
 interface AuthenticatedRouteProps {
   children: React.ReactNode;
@@ -11,6 +12,11 @@ const AuthenticatedRoute: React.FC<AuthenticatedRouteProps> = ({ children }) => 
   const { user, loading } = useAuth();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
+  const isBusy = loading || isChecking;
+  const { hasTimedOut, didTriggerReload } = useLoadingRecovery({
+    isLoading: isBusy,
+    recoveryKey: `authenticated:${location.pathname}`
+  });
 
   useEffect(() => {
     const checkSession = async () => {
@@ -34,12 +40,18 @@ const AuthenticatedRoute: React.FC<AuthenticatedRouteProps> = ({ children }) => 
     checkSession();
   }, [location.pathname, loading]);
 
-  if (loading || isChecking) {
+  if (isBusy) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {didTriggerReload
+              ? 'Refreshing the page...'
+              : hasTimedOut
+                ? 'Still loading. Trying to recover automatically...'
+                : 'Loading...'}
+          </p>
         </div>
       </div>
     );

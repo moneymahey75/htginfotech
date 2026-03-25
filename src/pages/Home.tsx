@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
 import { supabase } from '../lib/supabase';
+import { useLoadingRecovery, withTimeout } from '../utils/loadingRecovery';
 import {
   ArrowRight,
   Users,
@@ -41,6 +42,10 @@ const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [sliders, setSliders] = useState<Slider[]>([]);
   const [loading, setLoading] = useState(true);
+  const { hasTimedOut, didTriggerReload } = useLoadingRecovery({
+    isLoading: loading,
+    recoveryKey: 'home-page'
+  });
 
   useEffect(() => {
     loadSliders();
@@ -48,17 +53,22 @@ const Home: React.FC = () => {
 
   const loadSliders = async () => {
     try {
-      const { data, error } = await supabase
+      const response = await withTimeout(
+        supabase
           .from('tbl_sliders')
           .select('*')
           .eq('ts_is_active', true)
-          .order('ts_sort_order', { ascending: true });
+          .order('ts_sort_order', { ascending: true }),
+        10000,
+        'Loading homepage sliders timed out'
+      );
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
-      setSliders(data || []);
+      setSliders(response.data || []);
     } catch (error) {
       console.error('Failed to load sliders:', error);
+      setSliders([]);
     } finally {
       setLoading(false);
     }
@@ -88,7 +98,16 @@ const Home: React.FC = () => {
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">
+              {didTriggerReload
+                ? 'Refreshing the page...'
+                : hasTimedOut
+                  ? 'Still loading. Trying to recover automatically...'
+                  : 'Loading...'}
+            </p>
+          </div>
         </div>
     );
   }

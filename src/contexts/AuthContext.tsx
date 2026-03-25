@@ -3,9 +3,11 @@ import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserAc
 import { useNotification } from '../components/ui/NotificationProvider';
 import { sessionUtils } from '../utils/sessionUtils';
 import { buildAbsoluteUrl, getBaseUrl } from '../utils/baseUrl';
+import { withTimeout } from '../utils/loadingRecovery';
 
 const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
 const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
+const AUTH_REQUEST_TIMEOUT_MS = 10000;
 
 const isEmailIdentifier = (value: string) => value.includes('@');
 
@@ -94,21 +96,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('🔍 Initializing authentication...');
 
         // First, check if there's an existing Supabase session
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        const { data: { session: existingSession } } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_REQUEST_TIMEOUT_MS,
+          'Authentication initialization timed out'
+        );
 
         if (existingSession?.user) {
           console.log('✅ Found existing Supabase session:', existingSession.user.id);
           // Save to localStorage if not already saved
           sessionManager.saveSession(existingSession);
-          await fetchUserData(existingSession.user.id);
+          await withTimeout(
+            fetchUserData(existingSession.user.id),
+            AUTH_REQUEST_TIMEOUT_MS,
+            'Fetching user session timed out'
+          );
         } else {
           // Try to restore from localStorage
           console.log('🔍 Checking localStorage for saved session...');
-          const restoredSession = await sessionManager.restoreSession();
+          const restoredSession = await withTimeout(
+            sessionManager.restoreSession(),
+            AUTH_REQUEST_TIMEOUT_MS,
+            'Session restoration timed out'
+          );
 
           if (restoredSession?.user) {
             console.log('✅ Session restored from localStorage:', restoredSession.user.id);
-            await fetchUserData(restoredSession.user.id);
+            await withTimeout(
+              fetchUserData(restoredSession.user.id),
+              AUTH_REQUEST_TIMEOUT_MS,
+              'Fetching restored session timed out'
+            );
           } else {
             console.log('ℹ️ No existing session found');
             setUser(null);
@@ -173,8 +191,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔍 Fetching user data for:', userId);
 
       // Check if user is still eligible to be logged in
-      const { data: eligibilityResult } = await supabase
-        .rpc('check_user_login_eligibility', { p_user_id: userId });
+      const { data: eligibilityResult } = await withTimeout(
+        supabase.rpc('check_user_login_eligibility', { p_user_id: userId }),
+        AUTH_REQUEST_TIMEOUT_MS,
+        'Checking login eligibility timed out'
+      );
 
       if (!eligibilityResult?.success) {
         console.log('❌ User no longer eligible, logging out:', eligibilityResult?.error);
@@ -192,10 +213,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to get user data, but handle RLS gracefully
       let userData = null;
       try {
-        const { data: userDataArray, error: userError } = await supabase
+        const { data: userDataArray, error: userError } = await withTimeout(
+          supabase
             .from('tbl_users')
             .select('*')
-            .eq('tu_id', userId);
+            .eq('tu_id', userId),
+          AUTH_REQUEST_TIMEOUT_MS,
+          'Loading user record timed out'
+        );
 
         if (userError) {
           console.log('⚠️ RLS blocking users table access:', userError.message);
@@ -209,10 +234,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to get profile data
       let profileData = null;
       try {
-        const { data: profileDataArray } = await supabase
+        const { data: profileDataArray } = await withTimeout(
+          supabase
             .from('tbl_user_profiles')
             .select('*')
-            .eq('tup_user_id', userId);
+            .eq('tup_user_id', userId),
+          AUTH_REQUEST_TIMEOUT_MS,
+          'Loading user profile timed out'
+        );
         console.log('📋 Profile data retrieved:', profileDataArray?.length || 0, 'records');
         profileData = profileDataArray?.[0];
       } catch (profileRlsError) {
@@ -223,10 +252,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let tutorData = null;
       if (userData?.tu_user_type === 'tutor') {
         try {
-          const { data: tutorDataArray } = await supabase
+          const { data: tutorDataArray } = await withTimeout(
+            supabase
               .from('tbl_tutors')
               .select('*')
-              .eq('tt_user_id', userId);
+              .eq('tt_user_id', userId),
+            AUTH_REQUEST_TIMEOUT_MS,
+            'Loading tutor data timed out'
+          );
           console.log('👨‍🏫 Tutor data retrieved:', tutorDataArray?.length || 0, 'records');
           tutorData = tutorDataArray?.[0];
         } catch (tutorRlsError) {
@@ -237,12 +270,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to check for active subscription
       let subscriptionData = null;
       try {
-        const { data: subscriptionDataArray } = await supabase
+        const { data: subscriptionDataArray } = await withTimeout(
+          supabase
             .from('tbl_user_subscriptions')
             .select('*')
             .eq('tus_user_id', userId)
             .eq('tus_status', 'active')
-            .gte('tus_end_date', new Date().toISOString());
+            .gte('tus_end_date', new Date().toISOString()),
+          AUTH_REQUEST_TIMEOUT_MS,
+          'Loading subscription data timed out'
+        );
         console.log('💳 Subscription data retrieved:', subscriptionDataArray?.length || 0, 'records');
         subscriptionData = subscriptionDataArray?.[0];
       } catch (subscriptionRlsError) {
@@ -250,7 +287,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Get current session to get email
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withTimeout(
+        supabase.auth.getSession(),
+        AUTH_REQUEST_TIMEOUT_MS,
+        'Refreshing auth session timed out'
+      );
 
       const user: User = {
         id: userId,
@@ -364,7 +405,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Fetch user data explicitly and wait for it to complete
-      await fetchUserData(authData.user.id);
+      await withTimeout(
+        fetchUserData(authData.user.id),
+        AUTH_REQUEST_TIMEOUT_MS,
+        'Loading user after login timed out'
+      );
 
       notification.showSuccess('Login Successful!', 'Welcome back!');
 
