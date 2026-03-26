@@ -12,15 +12,15 @@ const buildEmailShell = ({
   title,
   body,
 }: {
-  eyebrow: string;
-  title: string;
+  eyebrow?: string;
+  title?: string;
   body: string;
 }) => `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
+  <title>${title || 'Verify Your Email'}</title>
 </head>
 <body style="margin:0;padding:24px;background:#f5f7fb;font-family:Arial,sans-serif;">
   <table role="presentation" style="width:100%;border-collapse:collapse;">
@@ -28,12 +28,16 @@ const buildEmailShell = ({
       <td align="center">
         <table role="presentation" style="width:100%;max-width:720px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
-            <td style="background:linear-gradient(135deg, #312e81 0%, #4f46e5 48%, #7c3aed 100%);color:#ffffff;padding:28px 24px 30px;text-align:center;">
-              <div style="margin:0 auto 18px;display:inline-block;padding:12px 20px;border-radius:18px;background:rgba(255,255,255,0.96);box-shadow:0 14px 30px rgba(15,23,42,0.18);border:1px solid rgba(255,255,255,0.7);">
-                <img src="{{logo_url}}" alt="Brand Logo" style="display:block;max-width:176px;width:auto;height:auto;max-height:68px;margin:0 auto;">
-              </div>
-              <p style="margin:0 0 10px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(224,231,255,0.96);">${eyebrow}</p>
-              <h1 style="margin:0;font-size:28px;line-height:1.3;font-weight:700;color:#ffffff;">${title}</h1>
+            <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
+              <img
+                src="{{asset_url}}/public/logoWhiteBack.jpg"
+                alt="Logo"
+                width="120"
+                style="display:block;margin:0 auto 10px auto;"
+              />
+              <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
+                Verify Your Email
+              </h2>
             </td>
           </tr>
           <tr>
@@ -42,15 +46,18 @@ const buildEmailShell = ({
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:600;">${eyebrow}</p>
-              <p style="margin:0 0 12px;color:#6b7280;font-size:13px;">Thank you for choosing us.</p>
-              <div style="margin:0 0 12px;">
-                <a href="{{site_url}}" style="color:#4f46e5;text-decoration:none;font-size:13px;margin:0 8px;">Visit Website</a>
-                <span style="color:#d1d5db;">|</span>
-                <a href="{{site_url}}/contact" style="color:#4f46e5;text-decoration:none;font-size:13px;margin:0 8px;">Contact Us</a>
-              </div>
-              <p style="margin:0;color:#9ca3af;font-size:12px;">© {{current_year}} {{site_name}}. All rights reserved.</p>
+            <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
+              <p style="margin:0 0 8px 0">HTG Infotech</p>
+              <p style="margin:0 0 8px 0">
+                <a
+                  href="{{website_url}}"
+                  style="color:#4f46e5;text-decoration:none"
+                  target="_blank"
+                >
+                  Visit Website
+                </a>
+              </p>
+              <p style="margin:0">© 2026 HTG Infotech</p>
             </td>
           </tr>
         </table>
@@ -66,10 +73,8 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
     label: 'Verification Email',
     subject: 'Verify your email address - {{site_name}}',
     templateType: 'email_verification',
-    variables: ['user_name', 'first_name', 'verification_link', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    variables: ['user_name', 'first_name', 'verification_link', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
-      eyebrow: '{{site_name}} Account Verification',
-      title: 'Verify Your Email',
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
@@ -100,10 +105,8 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
     label: 'Welcome Email',
     subject: 'Welcome to {{site_name}}!',
     templateType: 'user_registration',
-    variables: ['user_name', 'first_name', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    variables: ['user_name', 'first_name', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
-      eyebrow: '',
-      title: 'Welcome to {{site_name}}!',
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">

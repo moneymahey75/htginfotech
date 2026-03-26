@@ -120,6 +120,15 @@ serve(async (req) => {
 async function sendEmailOTP(email: string, otp: string, siteName: string, supabase: any) {
   try {
     console.log('📧 Sending email OTP via Resend to:', email)
+    const { data: settings } = await supabase
+      .from('tbl_system_settings')
+      .select('tss_setting_key, tss_setting_value')
+
+    const settingsMap = settings?.reduce((acc: any, setting: any) => {
+      acc[setting.tss_setting_key] = setting.tss_setting_value
+      return acc
+    }, {}) || {}
+    const assetUrl = String(settingsMap.website_url || '').replace(/"/g, '').trim()
 
     // Create professional email content
     const emailSubject = `Your OTP Code - ${siteName}`
@@ -213,10 +222,21 @@ async function sendEmailOTP(email: string, otp: string, siteName: string, supaba
       </head>
       <body>
         <div class="container">
-          <div class="header">
-            <h1>Email Verification</h1>
-            <p>Secure your ${siteName} account</p>
-          </div>
+          <table role="presentation" style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
+                <img
+                  src="${assetUrl}/public/logoWhiteBack.jpg"
+                  alt="Logo"
+                  width="120"
+                  style="display:block;margin:0 auto 10px auto;"
+                />
+                <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
+                  Verify Your Email
+                </h2>
+              </td>
+            </tr>
+          </table>
           <div class="content">
             <p style="font-size: 18px; color: #495057; margin-bottom: 10px;">Hello!</p>
             <p style="color: #6c757d; margin-bottom: 20px;">
@@ -251,12 +271,23 @@ async function sendEmailOTP(email: string, otp: string, siteName: string, supaba
             </p>
           </div>
           <div class="footer">
-            <p>This is an automated email. Please do not reply to this message.</p>
-            <p>&copy; ${new Date().getFullYear()} ${siteName}. All rights reserved.</p>
-            <p style="margin-top: 10px;">
-              <a href="#" style="color: #667eea; text-decoration: none;">Privacy Policy</a> | 
-              <a href="#" style="color: #667eea; text-decoration: none;">Terms of Service</a>
-            </p>
+            <table role="presentation" style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
+                  <p style="margin:0 0 8px 0">HTG Infotech</p>
+                  <p style="margin:0 0 8px 0">
+                    <a
+                      href="${assetUrl}"
+                      style="color:#4f46e5;text-decoration:none"
+                      target="_blank"
+                    >
+                      Visit Website
+                    </a>
+                  </p>
+                  <p style="margin:0">© 2026 HTG Infotech</p>
+                </td>
+              </tr>
+            </table>
           </div>
         </div>
       </body>

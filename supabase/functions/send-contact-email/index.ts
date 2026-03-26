@@ -228,6 +228,8 @@ Deno.serve(async (req: Request) => {
         }
 
         emailTemplateVariables = {
+          asset_url: branding.assetUrl,
+          website_url: branding.siteUrl,
           logo_url: branding.logoUrl,
           site_name: branding.siteName,
           site_url: branding.siteUrl,

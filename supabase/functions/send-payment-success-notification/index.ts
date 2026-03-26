@@ -78,7 +78,9 @@ Deno.serve(async (req: Request) => {
     const mobile = (learner as any).tu_mobile;
 
     const systemSettings = await loadSystemSettings(supabase);
-    const siteUrl = buildBranding(systemSettings, { request: req }).siteUrl;
+    const branding = buildBranding(systemSettings, { request: req });
+    const siteUrl = branding.siteUrl;
+    const assetUrl = branding.assetUrl;
     const courseDuration = course.tc_duration_hours
       ? `${course.tc_duration_hours} hours`
       : 'N/A';
@@ -102,11 +104,16 @@ Deno.serve(async (req: Request) => {
 
                   <!-- Header -->
                   <tr>
-                    <td align="center" style="padding: 40px 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px 8px 0 0;">
-                      <div style="width: 80px; height: 80px; background-color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                        <span style="font-size: 48px;">✓</span>
-                      </div>
-                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">Payment Successful!</h1>
+                    <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
+                      <img
+                        src="${assetUrl}/public/logoWhiteBack.jpg"
+                        alt="Logo"
+                        width="120"
+                        style="display:block;margin:0 auto 10px auto;"
+                      />
+                      <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
+                        Verify Your Email
+                      </h2>
                     </td>
                   </tr>
 
@@ -164,19 +171,18 @@ Deno.serve(async (req: Request) => {
 
                   <!-- Footer -->
                   <tr>
-                    <td style="padding: 30px; background-color: #f8fafc; border-radius: 0 0 8px 8px; text-align: center;">
-                      <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-                        Happy Learning!<br>
-                        <strong style="color: #1e293b;">The HTG Infotech Team</strong>
+                    <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
+                      <p style="margin:0 0 8px 0">HTG Infotech</p>
+                      <p style="margin:0 0 8px 0">
+                        <a
+                          href="${siteUrl}"
+                          style="color:#4f46e5;text-decoration:none"
+                          target="_blank"
+                        >
+                          Visit Website
+                        </a>
                       </p>
-                      <div style="margin: 20px 0;">
-                        <a href="${siteUrl}" style="color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px;">Visit Website</a>
-                        <span style="color: #cbd5e1;">|</span>
-                        <a href="${siteUrl}/contact" style="color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px;">Contact Us</a>
-                      </div>
-                      <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px;">
-                        © ${new Date().getFullYear()} HTG Infotech. All rights reserved.
-                      </p>
+                      <p style="margin:0">© 2026 HTG Infotech</p>
                     </td>
                   </tr>
                 </table>

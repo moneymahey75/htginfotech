@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.54.0";
+import { buildBranding, loadSystemSettings } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,16 +63,67 @@ Deno.serve(async (req: Request) => {
 
         const emailPromises = admins.map(async (admin: any) => {
           const adminName = admin.tbl_user_profiles?.[0]?.tup_first_name || "Admin";
+          const systemSettings = await loadSystemSettings(supabase);
+          const branding = buildBranding(systemSettings, { request: req });
           const emailBody = `
-            <h2>New Course Enrollment</h2>
-            <p>Hello ${adminName},</p>
-            <p>A new learner has enrolled in a course:</p>
-            <ul>
-              <li><strong>Learner:</strong> ${learnerName || learnerEmail}</li>
-              <li><strong>Course:</strong> ${courseName}</li>
-            </ul>
-            <p>Please log in to the admin dashboard to assign a tutor to this learner.</p>
-            <p>Best regards,<br>HTG Infotech Platform</p>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>New Course Enrollment</title>
+            </head>
+            <body style="margin:0;padding:24px;background:#f5f7fb;font-family:Arial,sans-serif;">
+              <table role="presentation" style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" style="width:100%;max-width:720px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+                      <tr>
+                        <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
+                          <img
+                            src="${branding.assetUrl}/public/logoWhiteBack.jpg"
+                            alt="Logo"
+                            width="120"
+                            style="display:block;margin:0 auto 10px auto;"
+                          />
+                          <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
+                            Verify Your Email
+                          </h2>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:24px;">
+                          <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello ${adminName},</p>
+                          <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">A new learner has enrolled in a course:</p>
+                          <ul style="margin:0 0 16px;padding-left:20px;color:#374151;font-size:15px;line-height:1.8;">
+                            <li><strong>Learner:</strong> ${learnerName || learnerEmail}</li>
+                            <li><strong>Course:</strong> ${courseName}</li>
+                          </ul>
+                          <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">Please log in to the admin dashboard to assign a tutor to this learner.</p>
+                          <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Best regards,<br>HTG Infotech Platform</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
+                          <p style="margin:0 0 8px 0">HTG Infotech</p>
+                          <p style="margin:0 0 8px 0">
+                            <a
+                              href="${branding.siteUrl}"
+                              style="color:#4f46e5;text-decoration:none"
+                              target="_blank"
+                            >
+                              Visit Website
+                            </a>
+                          </p>
+                          <p style="margin:0">© 2026 HTG Infotech</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
           `;
 
           try {

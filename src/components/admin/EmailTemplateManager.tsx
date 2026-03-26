@@ -348,7 +348,7 @@ const EmailTemplateManager: React.FC = () => {
       </div>
 
       <div className="mt-4 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
-        Supported placeholders: <code>{'{{user_name}}'}</code>, <code>{'{{verification_link}}'}</code>, <code>{'{{logo_url}}'}</code>, <code>{'{{site_name}}'}</code>, <code>{'{{site_url}}'}</code>
+        Supported placeholders: <code>{'{{user_name}}'}</code>, <code>{'{{verification_link}}'}</code>, <code>{'{{asset_url}}'}</code>, <code>{'{{website_url}}'}</code>, <code>{'{{logo_url}}'}</code>, <code>{'{{site_name}}'}</code>, <code>{'{{site_url}}'}</code>
       </div>
 
       {editingTemplate && (
