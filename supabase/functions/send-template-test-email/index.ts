@@ -75,7 +75,15 @@ Deno.serve(async (req: Request) => {
       variables: {
         user_name: "Test User",
         first_name: "Test",
+        sender_name: "Test User",
+        sender_email: email,
         verification_link: `${branding.siteUrl}/auth/callback?type=email_verification&token=test-verification-token`,
+        contact_subject: "Need help with enrollment",
+        message_body: "Hello team,\nI would like to know more about your available programs and enrollment steps.",
+        inquiry_type: "General",
+        submitted_at: new Date().toLocaleString(),
+        page_url: `${branding.siteUrl}/contact`,
+        support_email: String(settings.primary_email || settings.smtp_username || email),
       },
     });
 

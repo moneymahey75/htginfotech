@@ -1,5 +1,5 @@
 export interface EmailTemplateDefinition {
-  name: 'verification_email' | 'welcome_email';
+  name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email';
   label: string;
   subject: string;
   body: string;
@@ -128,6 +128,67 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
       `,
     }),
   },
+  {
+    name: 'contact_admin_email',
+    label: 'Contact Admin Email',
+    subject: 'New Contact Us Submission: {{contact_subject}}',
+    templateType: 'contact_admin_notification',
+    variables: ['sender_name', 'sender_email', 'contact_subject', 'message_body', 'inquiry_type', 'submitted_at', 'page_url', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    body: buildEmailShell({
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello Admin,</p>
+        <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.7;">
+          A new contact request has been submitted through {{site_name}}. The sender details and message are included below.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <table role="presentation" style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Full Name</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{sender_name}}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Email Address</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;"><a href="mailto:{{sender_email}}" style="color:#4f46e5;text-decoration:none;">{{sender_email}}</a></td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Inquiry Type</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{inquiry_type}}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Subject</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{contact_subject}}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Submitted At</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{submitted_at}}</td></tr>
+            <tr><td style="padding:12px 0;width:180px;font-weight:600;color:#111827;vertical-align:top;">Submitted From</td><td style="padding:12px 0;color:#374151;"><a href="{{page_url}}" style="color:#4f46e5;text-decoration:none;">{{page_url}}</a></td></tr>
+          </table>
+        </div>
+        <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
+          <p style="margin:0 0 12px;color:#111827;font-size:16px;font-weight:600;">Message</p>
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.8;white-space:normal;">{{message_body}}</p>
+        </div>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          You can reply directly to this email to respond to {{sender_name}}.
+        </p>
+      `,
+    }),
+  },
+  {
+    name: 'contact_confirmation_email',
+    label: 'Contact Confirmation Email',
+    subject: 'We received your message - {{site_name}}',
+    templateType: 'contact_confirmation',
+    variables: ['sender_name', 'contact_subject', 'message_body', 'inquiry_type', 'submitted_at', 'support_email', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    body: buildEmailShell({
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{sender_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          Thank you for contacting {{site_name}}. This is a confirmation that your message has been received and shared with our team.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <table role="presentation" style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Inquiry Type</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{inquiry_type}}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Subject</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{contact_subject}}</td></tr>
+            <tr><td style="padding:12px 0;width:180px;font-weight:600;color:#111827;vertical-align:top;">Submitted At</td><td style="padding:12px 0;color:#374151;">{{submitted_at}}</td></tr>
+          </table>
+        </div>
+        <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
+          <p style="margin:0 0 12px;color:#111827;font-size:16px;font-weight:600;">Your Message</p>
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.8;">{{message_body}}</p>
+        </div>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          Our team will review your inquiry and get back to you as soon as possible. If you need to add anything else, reply to this email or contact us at <a href="mailto:{{support_email}}" style="color:#4f46e5;text-decoration:none;">{{support_email}}</a>.
+        </p>
+      `,
+    }),
+  },
 ];
 
 export const replaceTemplatePlaceholders = (
@@ -194,5 +255,5 @@ export const normalizeEmailMarkup = (value: string) =>
 export const stripWordBreakTags = (value: string) =>
   normalizeEmailMarkup(value);
 
-export const getDefaultEmailTemplate = (name: 'verification_email' | 'welcome_email') =>
+export const getDefaultEmailTemplate = (name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email') =>
   emailTemplateDefaults.find((template) => template.name === name);

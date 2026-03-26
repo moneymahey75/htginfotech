@@ -2,10 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildBranding,
-  buildBrandedEmailShell,
-  escapeHtml,
   loadSystemSettings,
-  renderEmailMarkup,
+  renderEmailTemplate,
   sendSmtpEmail,
 } from "../_shared/email.ts";
 import { getRequestBaseUrl } from "../_shared/base-url.ts";
@@ -53,104 +51,6 @@ const formatDateTime = () =>
     timeStyle: "long",
     timeZone: "UTC",
   }).format(new Date());
-
-const buildDetailRow = (label: string, value: string) => `
-  <tr>
-    <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">${escapeHtml(label)}</td>
-    <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">${value}</td>
-  </tr>
-`;
-
-const buildAdminEmailHtml = ({
-  siteName,
-  name,
-  email,
-  subject,
-  message,
-  inquiryType,
-  submittedAt,
-  pageUrl,
-}: {
-  siteName: string;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  inquiryType: string;
-  submittedAt: string;
-  pageUrl?: string;
-}) =>
-  buildBrandedEmailShell({
-    eyebrow: "",
-    title: "New Contact Us Submission",
-    showFooterLinks: false,
-    body: `
-      <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello Admin,</p>
-      <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.7;">
-        A new contact request has been submitted through your website. The sender details and message are included below.
-      </p>
-      <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
-        <table role="presentation" style="width:100%;border-collapse:collapse;">
-          ${buildDetailRow("Full Name", escapeHtml(name))}
-          ${buildDetailRow("Email Address", `<a href="mailto:${escapeHtml(email)}" style="color:#4f46e5;text-decoration:none;">${escapeHtml(email)}</a>`)}
-          ${buildDetailRow("Inquiry Type", escapeHtml(inquiryType))}
-          ${buildDetailRow("Subject", escapeHtml(subject))}
-          ${buildDetailRow("Submitted At", escapeHtml(submittedAt))}
-          ${pageUrl ? buildDetailRow("Submitted From", `<a href="${escapeHtml(pageUrl)}" style="color:#4f46e5;text-decoration:none;">${escapeHtml(pageUrl)}</a>`) : ""}
-        </table>
-      </div>
-      <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
-        <p style="margin:0 0 12px;color:#111827;font-size:16px;font-weight:600;">Message</p>
-        <p style="margin:0;color:#374151;font-size:15px;line-height:1.8;white-space:normal;">${escapeHtml(message).replaceAll("\n", "<br />")}</p>
-      </div>
-      <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-        You can reply directly to this email to respond to ${escapeHtml(name)}.
-      </p>
-    `,
-  });
-
-const buildConfirmationEmailHtml = ({
-  siteName,
-  name,
-  subject,
-  message,
-  inquiryType,
-  submittedAt,
-  supportEmail,
-}: {
-  siteName: string;
-  name: string;
-  subject: string;
-  message: string;
-  inquiryType: string;
-  submittedAt: string;
-  supportEmail?: string;
-}) =>
-  buildBrandedEmailShell({
-    eyebrow: "",
-    title: "We Received Your Message",
-    showFooterLinks: false,
-    body: `
-      <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello ${escapeHtml(name)},</p>
-      <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-        Thank you for contacting ${escapeHtml(siteName)}. This is a confirmation that your message has been received and shared with our team.
-      </p>
-      <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
-        <table role="presentation" style="width:100%;border-collapse:collapse;">
-          ${buildDetailRow("Inquiry Type", escapeHtml(inquiryType))}
-          ${buildDetailRow("Subject", escapeHtml(subject))}
-          ${buildDetailRow("Submitted At", escapeHtml(submittedAt))}
-        </table>
-      </div>
-      <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
-        <p style="margin:0 0 12px;color:#111827;font-size:16px;font-weight:600;">Your Message</p>
-        <p style="margin:0;color:#374151;font-size:15px;line-height:1.8;">${escapeHtml(message).replaceAll("\n", "<br />")}</p>
-      </div>
-      <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-        Our team will review your inquiry and get back to you as soon as possible.${supportEmail ? ` If you need to add anything else, reply to this email or contact us at <a href="mailto:${escapeHtml(supportEmail)}" style="color:#4f46e5;text-decoration:none;">${escapeHtml(supportEmail)}</a>.` : ""}
-      </p>
-    `,
-  });
 
 const runInBackground = (task: Promise<unknown>) => {
   const edgeRuntime = (globalThis as { EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void } }).EdgeRuntime;
@@ -234,23 +134,27 @@ Deno.serve(async (req: Request) => {
           site_name: branding.siteName,
           site_url: branding.siteUrl,
           current_year: String(new Date().getFullYear()),
+          sender_name: name,
+          sender_email: email,
+          contact_subject: subject,
+          message_body: message.replaceAll("\n", "<br />"),
+          inquiry_type: inquiryType,
+          submitted_at: submittedAt,
+          page_url: pageUrl || "",
+          support_email: recipientEmail,
         };
 
-        const adminHtml = renderEmailMarkup(buildAdminEmailHtml({
-          siteName,
-          name,
-          email,
-          subject,
-          message,
-          inquiryType,
-          submittedAt,
-          pageUrl,
-        }), emailTemplateVariables);
+        const adminTemplate = await renderEmailTemplate({
+          supabase,
+          templateName: "contact_admin_email",
+          branding,
+          variables: emailTemplateVariables,
+        });
 
         await sendSmtpEmail({
           to: recipientEmail,
-          subject: `New Contact Us Submission: ${subject}`,
-          html: adminHtml,
+          subject: adminTemplate.subject,
+          html: adminTemplate.html,
           siteName,
           fromEmail,
           replyTo: email,
@@ -269,20 +173,17 @@ Deno.serve(async (req: Request) => {
       }
 
       try {
-        const confirmationHtml = renderEmailMarkup(buildConfirmationEmailHtml({
-          siteName,
-          name,
-          subject,
-          message,
-          inquiryType,
-          submittedAt,
-          supportEmail: recipientEmail,
-        }), emailTemplateVariables);
+        const confirmationTemplate = await renderEmailTemplate({
+          supabase,
+          templateName: "contact_confirmation_email",
+          branding,
+          variables: emailTemplateVariables,
+        });
 
         await sendSmtpEmail({
           to: email,
-          subject: `We received your message - ${siteName}`,
-          html: confirmationHtml,
+          subject: confirmationTemplate.subject,
+          html: confirmationTemplate.html,
           siteName,
           fromEmail,
           replyTo: recipientEmail,

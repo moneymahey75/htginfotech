@@ -17,7 +17,6 @@ import {
     MessageCircle,
     Clock
 } from 'lucide-react';
-import EmailTemplateManager from './EmailTemplateManager';
 
 const buildContactSocialUpdates = (formData: {
     primaryPhone: string;
@@ -665,8 +664,6 @@ const ContactSocialSettings: React.FC = () => {
                     </button>
                 </div>
             </form>
-
-            <EmailTemplateManager />
         </div>
     );
 };

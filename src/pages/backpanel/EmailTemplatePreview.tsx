@@ -8,7 +8,7 @@ import { getBaseUrl } from '../../utils/baseUrl';
 
 interface EmailTemplateRow {
   tet_id: string;
-  tet_name: 'verification_email' | 'welcome_email';
+  tet_name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email';
   tet_subject: string;
   tet_body: string;
 }
@@ -24,14 +24,22 @@ const EmailTemplatePreview: React.FC = () => {
   const previewVariables = useMemo(() => ({
     user_name: 'Test User',
     first_name: 'Test',
+    sender_name: 'Test User',
+    sender_email: 'test@example.com',
     verification_link: `${settings.website_url || getBaseUrl()}/auth/callback?type=email_verification&token=preview-token`,
+    contact_subject: 'Need help with enrollment',
+    message_body: 'Hello team,\nI would like to know more about your available programs and enrollment steps.',
+    inquiry_type: 'General',
+    submitted_at: new Date().toLocaleString(),
+    page_url: `${settings.website_url || getBaseUrl()}/contact`,
+    support_email: settings.primary_email || 'support@example.com',
     asset_url: settings.website_url || getBaseUrl(),
     website_url: settings.website_url || getBaseUrl(),
     logo_url: `${settings.website_url || getBaseUrl()}/htginfotech-logo.png`,
     site_name: settings.site_name || 'HTG Infotech',
     site_url: settings.website_url || getBaseUrl(),
     current_year: String(new Date().getFullYear()),
-  }), [settings.site_name, settings.website_url]);
+  }), [settings.primary_email, settings.site_name, settings.website_url]);
 
   useEffect(() => {
     const loadTemplate = async () => {

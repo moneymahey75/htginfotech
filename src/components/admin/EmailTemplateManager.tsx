@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/adminClient';
 import { emailTemplateDefaults, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
-import { Eye, Mail, Pencil, Save, X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, Mail, X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { buildAbsoluteUrl } from '../../utils/baseUrl';
 
 interface EmailTemplateRow {
   tet_id?: string;
-  tet_name: 'verification_email' | 'welcome_email';
+  tet_name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email';
   tet_subject: string;
   tet_body: string;
   tet_template_type: string;
@@ -16,7 +16,12 @@ interface EmailTemplateRow {
 }
 
 const formatTemplateName = (templateName: string) =>
-  templateName === 'verification_email' ? 'Verification Email' : 'Welcome Email';
+  ({
+    verification_email: 'Verification Email',
+    welcome_email: 'Welcome Email',
+    contact_admin_email: 'Contact Admin Email',
+    contact_confirmation_email: 'Contact Confirmation Email',
+  }[templateName] || templateName);
 
 const formatDate = (value?: string) => {
   if (!value) {
@@ -35,9 +40,6 @@ const EmailTemplateManager: React.FC = () => {
   const [templates, setTemplates] = useState<EmailTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [editingTemplate, setEditingTemplate] = useState<EmailTemplateRow | null>(null);
-  const [editForm, setEditForm] = useState({ subject: '', body: '' });
-  const [saving, setSaving] = useState(false);
   const [testTemplate, setTestTemplate] = useState<EmailTemplateRow | null>(null);
   const [testEmail, setTestEmail] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
@@ -50,14 +52,14 @@ const EmailTemplateManager: React.FC = () => {
       const { data: existingTemplates, error } = await supabase
         .from('tbl_email_templates')
         .select('*')
-        .in('tet_name', ['verification_email', 'welcome_email'])
+        .in('tet_name', ['verification_email', 'welcome_email', 'contact_admin_email', 'contact_confirmation_email'])
         .order('tet_name');
 
       if (error) {
         throw new Error(error.message);
       }
 
-      const existingNames = new Set((existingTemplates || []).map((template: any) => template.tet_name));
+      const existingNames = new Set((existingTemplates || []).map((template: EmailTemplateRow) => template.tet_name));
       const missingTemplates = emailTemplateDefaults
         .filter((template) => !existingNames.has(template.name))
         .map((template) => ({
@@ -157,53 +159,6 @@ const EmailTemplateManager: React.FC = () => {
     }
   };
 
-  const openEditModal = (template: EmailTemplateRow) => {
-    setEditingTemplate(template);
-    setEditForm({
-      subject: template.tet_subject,
-      body: template.tet_body,
-    });
-  };
-
-  const saveTemplate = async () => {
-    if (!editingTemplate) {
-      return;
-    }
-
-    setSaving(true);
-    setResult(null);
-
-    try {
-      const { error } = await supabase
-        .from('tbl_email_templates')
-        .update({
-          tet_subject: stripWordBreakTags(editForm.subject),
-          tet_body: stripWordBreakTags(editForm.body),
-          tet_updated_at: new Date().toISOString(),
-        })
-        .eq('tet_name', editingTemplate.tet_name);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setResult({
-        success: true,
-        message: `${formatTemplateName(editingTemplate.tet_name)} updated successfully.`,
-      });
-      setEditingTemplate(null);
-      await loadTemplates();
-    } catch (error) {
-      console.error('Failed to save email template:', error);
-      setResult({
-        success: false,
-        message: 'Failed to save email template.',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const sendTestEmail = async () => {
     if (!testTemplate) {
       return;
@@ -268,7 +223,7 @@ const EmailTemplateManager: React.FC = () => {
         </div>
         <div>
           <h4 className="text-lg font-semibold text-gray-900">Email Templates</h4>
-          <p className="text-gray-600">Manage signup-related email templates used for verification and welcome emails.</p>
+          <p className="text-gray-600">Manage email templates used for signup verification, welcome emails, and contact-us notifications.</p>
         </div>
       </div>
 
@@ -330,14 +285,6 @@ const EmailTemplateManager: React.FC = () => {
                         <Mail className="mr-2 h-4 w-4" />
                         Send Test Email
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(template)}
-                        className="inline-flex items-center rounded-lg border border-purple-300 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50"
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Template
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -350,63 +297,6 @@ const EmailTemplateManager: React.FC = () => {
       <div className="mt-4 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
         Supported placeholders: <code>{'{{user_name}}'}</code>, <code>{'{{verification_link}}'}</code>, <code>{'{{asset_url}}'}</code>, <code>{'{{website_url}}'}</code>, <code>{'{{logo_url}}'}</code>, <code>{'{{site_name}}'}</code>, <code>{'{{site_url}}'}</code>
       </div>
-
-      {editingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <div>
-                <h5 className="text-lg font-semibold text-gray-900">Edit {formatTemplateName(editingTemplate.tet_name)}</h5>
-                <p className="text-sm text-gray-600">Update the subject and HTML content used at runtime.</p>
-              </div>
-              <button type="button" onClick={() => setEditingTemplate(null)} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 px-6 py-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Subject</label>
-                <input
-                  type="text"
-                  value={editForm.subject}
-                  onChange={(event) => setEditForm((prev) => ({ ...prev, subject: event.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">HTML Content</label>
-                <textarea
-                  value={editForm.body}
-                  onChange={(event) => setEditForm((prev) => ({ ...prev, body: event.target.value }))}
-                  rows={18}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 font-mono text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setEditingTemplate(null)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveTemplate}
-                disabled={saving}
-                className="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Template'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {testTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

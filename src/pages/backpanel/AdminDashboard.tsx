@@ -5,6 +5,7 @@ import {supabase} from '../../lib/supabase';
 import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
 import ContactSocialSettings from '../../components/admin/ContactSocialSettings';
+import EmailTemplateManager from '../../components/admin/EmailTemplateManager';
 import SliderManagement from '../../components/admin/SliderManagement';
 import LearnerManagement from '../../components/admin/LearnerManagement';
 import TutorManagement from '../../components/admin/TutorManagement';
@@ -275,6 +276,7 @@ const AdminDashboard: React.FC = () => {
         {id: 'stripe', label: 'Stripe Connect', icon: CreditCard},
         {id: 'videostorage', label: 'Video Storage', icon: Video},
         {id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck},
+        {id: 'emailtemplates', label: 'Email Templates', icon: FileText},
         // { id: 'smtp', label: 'Email Settings', icon: FileText },
         // { id: 'sms', label: 'SMS Settings', icon: FileText }
     ];
@@ -520,6 +522,7 @@ const AdminDashboard: React.FC = () => {
                                     {settingsTab === 'stripe' && <StripeConnectSettings/>}
                                     {settingsTab === 'videostorage' && <VideoStorageSettings/>}
                                     {settingsTab === 'contactsocial' && <ContactSocialSettings/>}
+                                    {settingsTab === 'emailtemplates' && <EmailTemplateManager/>}
                                     {settingsTab === 'smtp' && <SMTPSettings/>}
                                     {settingsTab === 'sms' && <SMSSettings/>}
                                 </div>
