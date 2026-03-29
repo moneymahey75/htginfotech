@@ -36,6 +36,18 @@ const buildResponse = (status: number, payload: Record<string, unknown>) =>
 
 const normalizeText = (value: unknown) => String(value ?? "").trim();
 
+const getSiteUrl = (pageUrl: string, requestBaseUrl: string) => {
+  if (!pageUrl) {
+    return requestBaseUrl;
+  }
+
+  try {
+    return new URL(pageUrl).origin;
+  } catch {
+    return requestBaseUrl;
+  }
+};
+
 const titleCase = (value: string) =>
   value
     .split(/[\s_-]+/)
@@ -96,6 +108,7 @@ Deno.serve(async (req: Request) => {
 
     const submittedAt = formatDateTime();
     const requestBaseUrl = getRequestBaseUrl(req);
+    const siteUrl = getSiteUrl(pageUrl, requestBaseUrl);
 
     runInBackground((async () => {
       const supabase = createClient(
@@ -112,20 +125,19 @@ Deno.serve(async (req: Request) => {
       let recipientEmail = "";
       let fromEmail = "";
       let siteName = "HTG Infotech";
+      let branding = buildBranding({}, {
+        siteUrl,
+      });
       let emailTemplateVariables: Record<string, string> = {};
 
       try {
         const settings = await loadSystemSettings(supabase);
-        const branding = buildBranding(settings, {
-          siteUrl: pageUrl || requestBaseUrl,
+        branding = buildBranding(settings, {
+          siteUrl,
         });
         recipientEmail = normalizeText(settings.primary_email);
         fromEmail = normalizeText(settings.smtp_username);
         siteName = branding.siteName;
-
-        if (!recipientEmail) {
-          throw new Error("Primary admin email is not configured in system settings");
-        }
 
         emailTemplateVariables = {
           asset_url: branding.assetUrl,
@@ -140,9 +152,22 @@ Deno.serve(async (req: Request) => {
           message_body: message.replaceAll("\n", "<br />"),
           inquiry_type: inquiryType,
           submitted_at: submittedAt,
-          page_url: pageUrl || "",
+          page_url: branding.siteUrl,
           support_email: recipientEmail,
         };
+      } catch (setupError) {
+        console.error("Contact email setup failed:", {
+          error: setupError,
+          recipient: email,
+          subject,
+        });
+        return;
+      }
+
+      try {
+        if (!recipientEmail) {
+          throw new Error("Primary admin email is not configured in system settings");
+        }
 
         const adminTemplate = await renderEmailTemplate({
           supabase,

@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 
 const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
-const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
+const UNVERIFIED_ACCOUNT_MESSAGE = 'Your account is not verified. Please verify your email to continue.';
 
 const UnifiedLogin: React.FC = () => {
   const { login, resendVerificationEmail, user } = useAuth();
@@ -133,7 +133,7 @@ const UnifiedLogin: React.FC = () => {
         setUnverifiedEmail(err.email || formData.emailOrUsername);
         setVerificationResent(false);
         setVerificationResentMessage('');
-        setError(err.displayMessage || UNVERIFIED_EMAIL_MESSAGE);
+        setError(err.displayMessage || UNVERIFIED_ACCOUNT_MESSAGE);
       } else {
         setError(err.message || INVALID_LOGIN_MESSAGE);
       }

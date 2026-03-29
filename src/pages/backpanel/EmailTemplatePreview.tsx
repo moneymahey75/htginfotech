@@ -20,26 +20,28 @@ const EmailTemplatePreview: React.FC = () => {
   const [error, setError] = useState('');
   const [template, setTemplate] = useState<EmailTemplateRow | null>(null);
   const templateId = searchParams.get('id');
+  const baseUrl = settings.website_url || getBaseUrl();
+  const logoUrl = `${baseUrl}/htginfotech-logo.png`;
 
   const previewVariables = useMemo(() => ({
     user_name: 'Test User',
     first_name: 'Test',
     sender_name: 'Test User',
     sender_email: 'test@example.com',
-    verification_link: `${settings.website_url || getBaseUrl()}/auth/callback?type=email_verification&token=preview-token`,
+    verification_link: `${baseUrl}/auth/callback?type=email_verification&token=preview-token`,
     contact_subject: 'Need help with enrollment',
     message_body: 'Hello team,\nI would like to know more about your available programs and enrollment steps.',
     inquiry_type: 'General',
     submitted_at: new Date().toLocaleString(),
-    page_url: `${settings.website_url || getBaseUrl()}/contact`,
+    page_url: baseUrl,
     support_email: settings.primary_email || 'support@example.com',
-    asset_url: settings.website_url || getBaseUrl(),
-    website_url: settings.website_url || getBaseUrl(),
-    logo_url: `${settings.website_url || getBaseUrl()}/htginfotech-logo.png`,
+    asset_url: baseUrl,
+    website_url: baseUrl,
+    logo_url: logoUrl,
     site_name: settings.site_name || 'HTG Infotech',
-    site_url: settings.website_url || getBaseUrl(),
+    site_url: baseUrl,
     current_year: String(new Date().getFullYear()),
-  }), [settings.primary_email, settings.site_name, settings.website_url]);
+  }), [baseUrl, logoUrl, settings.primary_email, settings.site_name]);
 
   useEffect(() => {
     const loadTemplate = async () => {

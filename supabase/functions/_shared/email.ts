@@ -11,6 +11,28 @@ export interface BrandingSettings {
   logoUrl: string;
 }
 
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
+const normalizeUrlCandidate = (value: unknown) => String(value || "").trim();
+
+const toAbsoluteUrl = (baseUrl: string, pathOrUrl: unknown) => {
+  const normalizedValue = normalizeUrlCandidate(pathOrUrl);
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  if (!baseUrl) {
+    return normalizedValue.startsWith("/") ? normalizedValue : `/${normalizedValue}`;
+  }
+
+  return `${trimTrailingSlash(baseUrl)}/${normalizedValue.replace(/^\/+/, "")}`;
+};
+
 export interface EmailTemplateRecord {
   tet_name: string;
   tet_subject: string;
@@ -73,13 +95,13 @@ export const buildBrandedEmailShell = ({
           <tr>
             <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
               <img
-                src="{{asset_url}}/public/logoWhiteBack.jpg"
+                src="{{logo_url}}"
                 alt="Logo"
                 width="120"
                 style="display:block;margin:0 auto 10px auto;"
               />
               <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
-                Verify Your Email
+                ${title || "{{site_name}}"}
               </h2>
             </td>
           </tr>
@@ -90,7 +112,7 @@ export const buildBrandedEmailShell = ({
           </tr>
           <tr>
             <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
-              <p style="margin:0 0 8px 0">HTG Infotech</p>
+              <p style="margin:0 0 8px 0">{{site_name}}</p>
               <p style="margin:0 0 8px 0">
                 <a
                   href="{{website_url}}"
@@ -100,7 +122,7 @@ export const buildBrandedEmailShell = ({
                   Visit Website
                 </a>
               </p>
-              <p style="margin:0">© 2026 HTG Infotech</p>
+              <p style="margin:0">© {{current_year}} {{site_name}}</p>
             </td>
           </tr>
         </table>
@@ -189,10 +211,9 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
           <table role="presentation" style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Full Name</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{sender_name}}</td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Email Address</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;"><a href="mailto:{{sender_email}}" style="color:#4f46e5;text-decoration:none;">{{sender_email}}</a></td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Submitted At</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{submitted_at}}</td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Inquiry Type</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{inquiry_type}}</td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Subject</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{contact_subject}}</td></tr>
-            <tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Submitted At</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{submitted_at}}</td></tr>
-            <tr><td style="padding:12px 0;width:180px;font-weight:600;color:#111827;vertical-align:top;">Submitted From</td><td style="padding:12px 0;color:#374151;"><a href="{{page_url}}" style="color:#4f46e5;text-decoration:none;">{{page_url}}</a></td></tr>
           </table>
         </div>
         <div style="margin:24px 0;padding:22px;border-radius:12px;background:#ffffff;border:1px solid #e5e7eb;">
@@ -280,7 +301,7 @@ export const buildBranding = (
     settings,
   });
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const logoUrl = siteUrl ? `${siteUrl}/htginfotech-logo.png` : "/htginfotech-logo.png";
+  const logoUrl = toAbsoluteUrl(siteUrl, "/htginfotech-logo.png");
 
   return {
     siteName,

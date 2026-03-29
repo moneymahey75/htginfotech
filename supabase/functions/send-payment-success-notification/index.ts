@@ -80,7 +80,6 @@ Deno.serve(async (req: Request) => {
     const systemSettings = await loadSystemSettings(supabase);
     const branding = buildBranding(systemSettings, { request: req });
     const siteUrl = branding.siteUrl;
-    const assetUrl = branding.assetUrl;
     const courseDuration = course.tc_duration_hours
       ? `${course.tc_duration_hours} hours`
       : 'N/A';
@@ -106,7 +105,7 @@ Deno.serve(async (req: Request) => {
                   <tr>
                     <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
                       <img
-                        src="${assetUrl}/public/logoWhiteBack.jpg"
+                        src="${branding.logoUrl}"
                         alt="Logo"
                         width="120"
                         style="display:block;margin:0 auto 10px auto;"

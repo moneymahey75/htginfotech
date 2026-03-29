@@ -30,13 +30,13 @@ const buildEmailShell = ({
           <tr>
             <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
               <img
-                src="{{asset_url}}/public/logoWhiteBack.jpg"
+                src="{{logo_url}}"
                 alt="Logo"
                 width="120"
                 style="display:block;margin:0 auto 10px auto;"
               />
               <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
-                Verify Your Email
+                ${title || '{{site_name}}'}
               </h2>
             </td>
           </tr>
@@ -47,7 +47,7 @@ const buildEmailShell = ({
           </tr>
           <tr>
             <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
-              <p style="margin:0 0 8px 0">HTG Infotech</p>
+              <p style="margin:0 0 8px 0">{{site_name}}</p>
               <p style="margin:0 0 8px 0">
                 <a
                   href="{{website_url}}"
@@ -57,7 +57,7 @@ const buildEmailShell = ({
                   Visit Website
                 </a>
               </p>
-              <p style="margin:0">© 2026 HTG Infotech</p>
+              <p style="margin:0">© {{current_year}} {{site_name}}</p>
             </td>
           </tr>
         </table>

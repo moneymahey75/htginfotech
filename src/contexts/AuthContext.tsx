@@ -6,7 +6,7 @@ import { buildAbsoluteUrl, getBaseUrl } from '../utils/baseUrl';
 import { withTimeout } from '../utils/loadingRecovery';
 
 const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
-const UNVERIFIED_EMAIL_MESSAGE = 'Your email address is not verified. Please verify your email to continue.';
+const UNVERIFIED_ACCOUNT_MESSAGE = 'Your account is not verified. Please verify your email to continue.';
 const AUTH_REQUEST_TIMEOUT_MS = 10000;
 
 const isEmailIdentifier = (value: string) => value.includes('@');
@@ -347,7 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ) {
           const confirmError = new Error('EMAIL_NOT_CONFIRMED');
           (confirmError as any).email = actualEmail;
-          (confirmError as any).displayMessage = UNVERIFIED_EMAIL_MESSAGE;
+          (confirmError as any).displayMessage = UNVERIFIED_ACCOUNT_MESSAGE;
           throw confirmError;
         }
 
@@ -380,11 +380,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (
           eligibilityErrorCode === 'EMAIL_VERIFICATION_REQUIRED' ||
-          (eligibilityErrorCode === 'VERIFICATION_REQUIRED' && emailVerified === false)
+          eligibilityErrorCode === 'MOBILE_VERIFICATION_REQUIRED' ||
+          eligibilityErrorCode === 'VERIFICATION_REQUIRED' ||
+          emailVerified === false
         ) {
           const confirmError = new Error('EMAIL_NOT_CONFIRMED');
           (confirmError as any).email = actualEmail;
-          (confirmError as any).displayMessage = UNVERIFIED_EMAIL_MESSAGE;
+          (confirmError as any).displayMessage = UNVERIFIED_ACCOUNT_MESSAGE;
           throw confirmError;
         }
 
