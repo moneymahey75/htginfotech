@@ -454,9 +454,11 @@ export const getEmailTemplate = async (
   supabase: any,
   templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email",
 ) => {
+  const selectColumns = "tet_name, tet_subject, tet_body, tet_html_body, tet_template_type, tet_variables";
+
   const { data, error } = await supabase
     .from("tbl_email_templates")
-    .select("tet_name, tet_subject, tet_body, tet_template_type, tet_variables")
+    .select(selectColumns)
     .eq("tet_name", templateName)
     .eq("tet_is_active", true)
     .maybeSingle();
@@ -465,7 +467,23 @@ export const getEmailTemplate = async (
     throw error;
   }
 
-  return data ?? DEFAULT_TEMPLATES[templateName];
+  if (data) {
+    return data;
+  }
+
+  const uppercaseTemplateName = templateName.toUpperCase();
+  const { data: uppercaseData, error: uppercaseError } = await supabase
+    .from("tbl_email_templates")
+    .select(selectColumns)
+    .eq("tet_name", uppercaseTemplateName)
+    .eq("tet_is_active", true)
+    .maybeSingle();
+
+  if (uppercaseError) {
+    throw uppercaseError;
+  }
+
+  return uppercaseData ?? DEFAULT_TEMPLATES[templateName];
 };
 
 export const renderEmailTemplate = async ({
@@ -490,7 +508,7 @@ export const renderEmailTemplate = async ({
     ...variables,
   };
   const normalizedSubject = stripWordBreakTags(template.tet_subject);
-  const normalizedHtml = stripWordBreakTags(template.tet_body);
+  const normalizedHtml = stripWordBreakTags(template.tet_html_body || template.tet_body);
 
   return {
     subject: replaceTemplatePlaceholders(normalizedSubject, mergedVariables),

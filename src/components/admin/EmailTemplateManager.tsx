@@ -12,6 +12,7 @@ import {
   Plus,
   RefreshCw,
   Rows3,
+  Trash2,
   X,
 } from 'lucide-react';
 import { emailTemplateDefaults, normalizeEmailMarkup, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
@@ -444,6 +445,49 @@ const EmailTemplateManager: React.FC = () => {
     setFormState(createEmptyFormState());
   };
 
+  const handleDeleteTemplate = async (template: EmailTemplateRow) => {
+    const templateLabel = formatTemplateName(template.tet_name);
+    const confirmed = window.confirm(`Delete the "${templateLabel}" email template?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const { error: deleteError } = await adminSupabase
+        .from('tbl_email_templates')
+        .delete()
+        .eq('tet_id', template.tet_id);
+
+      if (deleteError) {
+        throw new Error(deleteError.message);
+      }
+
+      setTemplates((current) => current.filter((item) => item.tet_id !== template.tet_id));
+      pushToast('success', 'Email template deleted successfully.');
+
+      if (previewTemplate?.tet_id === template.tet_id) {
+        setPreviewTemplate(null);
+      }
+
+      if (testTemplate?.tet_id === template.tet_id) {
+        setTestTemplate(null);
+        setTestEmail('');
+      }
+
+      if (editingTemplate?.tet_id === template.tet_id) {
+        closeEditorModal();
+      }
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete email template.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleFormFieldChange = <K extends keyof EmailTemplateFormState>(
     key: K,
     value: EmailTemplateFormState[K]
@@ -759,6 +803,17 @@ const EmailTemplateManager: React.FC = () => {
                       >
                         <Mail className="h-4 w-4" />
                         <span className="sr-only">Send Test Email</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTemplate(template)}
+                        title="Delete template"
+                        aria-label={`Delete ${formatTemplateName(template.tet_name)}`}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={saving}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
                       </button>
                     </div>
                   </td>
