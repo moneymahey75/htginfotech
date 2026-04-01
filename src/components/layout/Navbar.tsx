@@ -83,6 +83,7 @@ const Navbar: React.FC = () => {
   const { settings } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
+  const displayUser = location.pathname === '/reset-password' ? null : user;
   const [publicSettings, setPublicSettings] = useState<any>(settings);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -127,8 +128,8 @@ const Navbar: React.FC = () => {
   };
 
   const getDashboardLink = () => {
-    if (!user) return '/';
-    switch (user.userType) {
+    if (!displayUser) return '/';
+    switch (displayUser.userType) {
       case 'admin':
         return '/admin/dashboard';
       case 'tutor':
@@ -269,7 +270,7 @@ const Navbar: React.FC = () => {
 
                 {/* Auth Buttons */}
                 <div className="flex items-center space-x-3 ml-6 pl-6 border-l border-gray-200">
-                  {!user ? (
+                  {!displayUser ? (
                       <>
                         <Link
                             to="/login"
@@ -297,9 +298,9 @@ const Navbar: React.FC = () => {
                           </div>
                           <div className="text-left hidden xl:block">
                             <div className="text-sm font-semibold text-gray-900">
-                              {user.firstName || 'User'}
+                              {displayUser.firstName || 'User'}
                             </div>
-                            <div className="text-xs text-gray-600 capitalize">{user.userType?.replace('_', ' ')}</div>
+                            <div className="text-xs text-gray-600 capitalize">{displayUser.userType?.replace('_', ' ')}</div>
                           </div>
                           <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -313,11 +314,11 @@ const Navbar: React.FC = () => {
                               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 animate-fade-in">
                                 <div className="px-4 py-3 border-b border-gray-100">
                                   <div className="font-semibold text-gray-900">
-                                    {user.firstName} {user.lastName}
+                                    {displayUser.firstName} {displayUser.lastName}
                                   </div>
-                                  <div className="text-sm text-gray-600">{user.email}</div>
+                                  <div className="text-sm text-gray-600">{displayUser.email}</div>
                                   <div className="text-xs text-gray-500 capitalize mt-1">
-                                    {user.userType?.replace('_', ' ')}
+                                    {displayUser.userType?.replace('_', ' ')}
                                   </div>
                                 </div>
 
@@ -435,7 +436,7 @@ const Navbar: React.FC = () => {
 
                   {/* Mobile Auth Buttons */}
                   <div className="border-t border-gray-200 pt-3 mt-3">
-                    {!user ? (
+                    {!displayUser ? (
                         <div className="space-y-2">
                           <Link
                               to="/login"
@@ -462,9 +463,9 @@ const Navbar: React.FC = () => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">
-                                {user.firstName || 'User'}
+                                {displayUser.firstName || 'User'}
                               </div>
-                              <div className="text-sm text-gray-500 capitalize">{user.userType?.replace('_', ' ')}</div>
+                              <div className="text-sm text-gray-500 capitalize">{displayUser.userType?.replace('_', ' ')}</div>
                             </div>
                           </div>
 

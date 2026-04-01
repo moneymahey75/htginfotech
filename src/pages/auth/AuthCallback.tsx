@@ -98,7 +98,6 @@ const AuthCallback: React.FC = () => {
                     firstName: firstName,
                     lastName: lastName,
                     userType: userType,
-                    siteUrl: getBaseUrl()
                   }),
                 }
               );

@@ -21,6 +21,16 @@ interface RequestPayload {
   siteUrl?: string;
 }
 
+const shouldUseExplicitSiteUrl = (value?: string) => {
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return false;
+  }
+
+  return !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedValue);
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -42,7 +52,10 @@ Deno.serve(async (req: Request) => {
     );
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings, { request: req, siteUrl });
+    const branding = buildBranding(settings, {
+      request: req,
+      ...(shouldUseExplicitSiteUrl(siteUrl) ? { siteUrl } : {}),
+    });
     const welcomeEmail = await buildWelcomeEmailContent({
       supabase,
       email,

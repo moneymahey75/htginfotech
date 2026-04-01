@@ -106,15 +106,17 @@ const ResetPassword: React.FC = () => {
       });
       
       if (error) throw error;
+
+      await supabase.auth.signOut();
       
       setSuccess(true);
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        navigate('/customer/login');
+        navigate('/login');
       }, 3000);
     } catch (err) {
-      setError('Failed to reset password. The link may be expired or invalid.');
+      setError(err instanceof Error ? err.message : 'Failed to reset password. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +275,7 @@ const ResetPassword: React.FC = () => {
 
           <div className="mt-6 text-center">
             <Link
-              to="/customer/login"
+              to="/login"
               className="text-indigo-600 hover:text-indigo-500 text-sm"
             >
               Back to Login
