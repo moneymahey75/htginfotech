@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/adminClient';
 import { useAdmin } from '../../contexts/AdminContext';
-import { replaceTemplatePlaceholders, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
+import { normalizeEmailMarkup, replaceTemplatePlaceholders, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { getBaseUrl } from '../../utils/baseUrl';
 
@@ -80,7 +80,7 @@ const EmailTemplatePreview: React.FC = () => {
   }, [templateId]);
 
   const renderedHtml = template
-    ? stripWordBreakTags(replaceTemplatePlaceholders(template.tet_body, previewVariables))
+    ? normalizeEmailMarkup(stripWordBreakTags(replaceTemplatePlaceholders(template.tet_body, previewVariables)))
     : '';
 
   useEffect(() => {

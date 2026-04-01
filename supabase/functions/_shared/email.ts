@@ -615,7 +615,7 @@ export const renderEmailTemplate = async ({
     reset_password_link: resolvedResetLink,
   };
   const normalizedSubject = stripWordBreakTags(template.tet_subject);
-  const normalizedHtml = stripWordBreakTags(template.tet_html_body || template.tet_body);
+  const normalizedHtml = normalizeEmailMarkup(stripWordBreakTags(template.tet_html_body || template.tet_body));
 
   return {
     subject: replaceTemplatePlaceholders(normalizedSubject, mergedVariables),
