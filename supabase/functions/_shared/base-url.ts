@@ -7,6 +7,9 @@ const normalizeCandidate = (value?: string | null) => {
   return normalizedValue ? trimTrailingSlash(normalizedValue) : "";
 };
 
+const isLocalhostCandidate = (value?: string | null) =>
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(value || "").trim());
+
 export const getRequestBaseUrl = (request?: Request) => {
   if (!request) {
     return "";
@@ -45,5 +48,6 @@ export const resolveBaseUrl = ({
     normalizeCandidate(Deno.env.get("SITE_URL")),
   ];
 
-  return candidates.find(Boolean) || "";
+  const firstNonLocalCandidate = candidates.find((candidate) => candidate && !isLocalhostCandidate(candidate));
+  return firstNonLocalCandidate || candidates.find(Boolean) || "";
 };
