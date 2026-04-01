@@ -22,7 +22,7 @@ const AuthCallback: React.FC = () => {
 
     const handleAuthCallback = async () => {
       try {
-        const token = searchParams.get('token');
+        const token = searchParams.get('token') || searchParams.get('token_hash');
         const type = searchParams.get('type');
 
         if (type === 'recovery' && token) {

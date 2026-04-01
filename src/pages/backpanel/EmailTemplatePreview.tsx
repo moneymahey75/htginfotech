@@ -8,7 +8,7 @@ import { getBaseUrl } from '../../utils/baseUrl';
 
 interface EmailTemplateRow {
   tet_id: string;
-  tet_name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email';
+  tet_name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email' | 'password_reset';
   tet_subject: string;
   tet_body: string;
 }
@@ -29,6 +29,7 @@ const EmailTemplatePreview: React.FC = () => {
     sender_name: 'Test User',
     sender_email: 'test@example.com',
     verification_link: `${baseUrl}/auth/callback?type=email_verification&token=preview-token`,
+    reset_password_link: `${baseUrl}/auth/callback?type=recovery&token=preview-reset-token`,
     contact_subject: 'Need help with enrollment',
     message_body: 'Hello team,\nI would like to know more about your available programs and enrollment steps.',
     inquiry_type: 'General',

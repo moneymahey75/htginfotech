@@ -78,6 +78,7 @@ Deno.serve(async (req: Request) => {
         sender_name: "Test User",
         sender_email: email,
         verification_link: `${branding.siteUrl}/auth/callback?type=email_verification&token=test-verification-token`,
+        reset_password_link: `${branding.siteUrl}/auth/callback?type=recovery&token=test-reset-token`,
         contact_subject: "Need help with enrollment",
         message_body: "Hello team,\nI would like to know more about your available programs and enrollment steps.",
         inquiry_type: "General",

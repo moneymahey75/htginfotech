@@ -570,12 +570,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const forgotPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: buildAbsoluteUrl('/reset-password')
+      const normalizedEmail = email.trim();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-password-reset-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          siteUrl: getBaseUrl(),
+        }),
       });
 
-      if (error) {
-        throw new Error(error.message);
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || 'Failed to send password reset email');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to send password reset email');
       }
 
       notification.showSuccess('Reset Email Sent', 'Please check your email for password reset instructions.');

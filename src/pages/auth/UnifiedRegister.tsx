@@ -5,6 +5,12 @@ import { useAdmin } from '../../contexts/AdminContext';
 import { supabase } from '../../lib/supabase';
 import { Eye, EyeOff, User, Mail, Phone, Users, ChevronDown, CheckCircle, XCircle, Info, Lock } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
+import PasswordPolicyChecklist from '../../components/auth/PasswordPolicyChecklist';
+import {
+  createEmptyPasswordValidation,
+  PasswordValidationResult,
+  validatePasswordPolicy,
+} from '../../utils/passwordPolicy';
 
 const countryCodes = [
   { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -28,23 +34,6 @@ interface UsernameValidation {
   isValid: boolean;
   errors: string[];
   suggestions: string[];
-}
-
-interface PasswordValidation {
-  isValid: boolean;
-  errors: string[];
-  requirements: {
-    minLength: boolean;
-    maxLength: boolean;
-    hasUppercase: boolean;
-    hasLowercase: boolean;
-    hasNumber: boolean;
-    hasSpecialChar: boolean;
-    noCommon: boolean;
-    noSequences: boolean;
-    noRepeats: boolean;
-    minUniqueChars: boolean;
-  };
 }
 
 const checkUsernameExists = async (username: string): Promise<boolean> => {
@@ -101,22 +90,7 @@ const UnifiedRegister: React.FC = () => {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
 
   // Password validation state
-  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
-    isValid: false,
-    errors: [],
-    requirements: {
-      minLength: false,
-      maxLength: false,
-      hasUppercase: false,
-      hasLowercase: false,
-      hasNumber: false,
-      hasSpecialChar: false,
-      noCommon: false,
-      noSequences: false,
-      noRepeats: false,
-      minUniqueChars: false
-    }
-  });
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidationResult>(createEmptyPasswordValidation());
 
   const usernameTimeout = useRef<NodeJS.Timeout>();
   const passwordTimeout = useRef<NodeJS.Timeout>();
@@ -166,22 +140,7 @@ const UnifiedRegister: React.FC = () => {
         validatePassword(formData.password);
       }, 200);
     } else {
-      setPasswordValidation({
-        isValid: false,
-        errors: [],
-        requirements: {
-          minLength: false,
-          maxLength: false,
-          hasUppercase: false,
-          hasLowercase: false,
-          hasNumber: false,
-          hasSpecialChar: false,
-          noCommon: false,
-          noSequences: false,
-          noRepeats: false,
-          minUniqueChars: false
-        }
-      });
+      setPasswordValidation(createEmptyPasswordValidation());
     }
 
     return () => {
@@ -281,136 +240,8 @@ const UnifiedRegister: React.FC = () => {
 
   // Password validation function
   const validatePassword = useCallback((password: string) => {
-    if (!password) {
-      setPasswordValidation({
-        isValid: false,
-        errors: [],
-        requirements: {
-          minLength: false,
-          maxLength: false,
-          hasUppercase: false,
-          hasLowercase: false,
-          hasNumber: false,
-          hasSpecialChar: false,
-          noCommon: false,
-          noSequences: false,
-          noRepeats: false,
-          minUniqueChars: false
-        }
-      });
-      return;
-    }
-
-    const errors: string[] = [];
-    const requirements = {
-      minLength: password.length >= settings.password_min_length,
-      maxLength: password.length <= settings.password_max_length,
-      hasUppercase: settings.password_require_uppercase ? /[A-Z]/.test(password) : true,
-      hasLowercase: settings.password_require_lowercase ? /[a-z]/.test(password) : true,
-      hasNumber: settings.password_require_numbers ? /\d/.test(password) : true,
-      hasSpecialChar: settings.password_require_special_chars ?
-          new RegExp(`[${settings.password_allowed_special_chars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`).test(password) : true,
-      noCommon: settings.password_prevent_common ? !isCommonPassword(password) : true,
-      noSequences: settings.password_prevent_sequences ? !hasSequences(password) : true,
-      noRepeats: settings.password_prevent_repeats ? !hasRepeatedChars(password, settings.password_max_consecutive) : true,
-      minUniqueChars: getUniqueCharsCount(password) >= settings.password_min_unique_chars
-    };
-
-    // Check individual requirements and add errors
-    if (!requirements.minLength) {
-      errors.push(`Password must be at least ${settings.password_min_length} characters`);
-    }
-
-    if (!requirements.maxLength) {
-      errors.push(`Password must not exceed ${settings.password_max_length} characters`);
-    }
-
-    if (settings.password_require_uppercase && !requirements.hasUppercase) {
-      errors.push('Password must contain at least one uppercase letter (A-Z)');
-    }
-
-    if (settings.password_require_lowercase && !requirements.hasLowercase) {
-      errors.push('Password must contain at least one lowercase letter (a-z)');
-    }
-
-    if (settings.password_require_numbers && !requirements.hasNumber) {
-      errors.push('Password must contain at least one number (0-9)');
-    }
-
-    if (settings.password_require_special_chars && !requirements.hasSpecialChar) {
-      errors.push(`Password must contain at least one special character: ${settings.password_allowed_special_chars}`);
-    }
-
-    if (settings.password_prevent_common && !requirements.noCommon) {
-      errors.push('Password is too common. Please choose a stronger password');
-    }
-
-    if (settings.password_prevent_sequences && !requirements.noSequences) {
-      errors.push('Password contains sequential characters (abc, 123, etc.)');
-    }
-
-    if (settings.password_prevent_repeats && !requirements.noRepeats) {
-      errors.push(`Password contains more than ${settings.password_max_consecutive} consecutive identical characters`);
-    }
-
-    if (!requirements.minUniqueChars) {
-      errors.push(`Password must contain at least ${settings.password_min_unique_chars} unique characters`);
-    }
-
-    setPasswordValidation({
-      isValid: errors.length === 0,
-      errors,
-      requirements
-    });
+    setPasswordValidation(validatePasswordPolicy(password, settings));
   }, [settings]);
-
-  // Helper functions for password validation
-  const isCommonPassword = (password: string): boolean => {
-    const commonPasswords = [
-      'password', '123456', 'password123', 'qwerty', 'letmein', 'welcome',
-      'admin', '12345678', '123456789', '12345', '1234567', '1234567890',
-      'abc123', 'password1', '1234', 'test', 'guest', 'passw0rd',
-      'learner', 'tutor', 'jobseeker', 'jobprovider'
-    ];
-    return commonPasswords.includes(password.toLowerCase());
-  };
-
-  const hasSequences = (password: string): boolean => {
-    const sequences = [
-      'abc', 'bcd', 'cde', 'def', 'efg', 'fgh', 'ghi', 'hij', 'ijk', 'jkl',
-      'klm', 'lmn', 'mno', 'nop', 'opq', 'pqr', 'qrs', 'rst', 'stu', 'tuv',
-      'uvw', 'vwx', 'wxy', 'xyz',
-      '012', '123', '234', '345', '456', '567', '678', '789', '890',
-      'qwe', 'wer', 'ert', 'rty', 'tyu', 'yui', 'uio', 'iop', 'asd',
-      'sdf', 'dfg', 'fgh', 'ghj', 'hjk', 'jkl', 'zxc', 'xcv', 'cvb', 'vbn', 'bnm'
-    ];
-
-    const lowerPassword = password.toLowerCase();
-    return sequences.some(seq => lowerPassword.includes(seq));
-  };
-
-  const hasRepeatedChars = (password: string, maxConsecutive: number): boolean => {
-    let currentChar = '';
-    let currentCount = 0;
-
-    for (let i = 0; i < password.length; i++) {
-      if (password[i] === currentChar) {
-        currentCount++;
-        if (currentCount > maxConsecutive) {
-          return true;
-        }
-      } else {
-        currentChar = password[i];
-        currentCount = 1;
-      }
-    }
-    return false;
-  };
-
-  const getUniqueCharsCount = (password: string): number => {
-    const uniqueChars = new Set(password);
-    return uniqueChars.size;
-  };
 
   const handlePasswordTooltip = useCallback((show: boolean) => {
     if (tooltipTimeout.current) {
@@ -904,137 +735,11 @@ const UnifiedRegister: React.FC = () => {
                   </div>
 
                   {/* Password validation feedback */}
-                  {formData.password && (
-                      <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                          <div className={`flex items-center ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                            {passwordValidation.requirements.minLength ? (
-                                <CheckCircle className="h-3 w-3 mr-2" />
-                            ) : (
-                                <XCircle className="h-3 w-3 mr-2" />
-                            )}
-                            {settings.password_min_length}+ characters
-                          </div>
-
-                          <div className={`flex items-center ${passwordValidation.requirements.maxLength ? 'text-green-600' : 'text-red-600'}`}>
-                            {passwordValidation.requirements.maxLength ? (
-                                <CheckCircle className="h-3 w-3 mr-2" />
-                            ) : (
-                                <XCircle className="h-3 w-3 mr-2" />
-                            )}
-                            Max {settings.password_max_length} characters
-                          </div>
-
-                          {settings.password_require_uppercase && (
-                              <div className={`flex items-center ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.hasUppercase ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                Uppercase letter
-                              </div>
-                          )}
-
-                          {settings.password_require_lowercase && (
-                              <div className={`flex items-center ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.hasLowercase ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                Lowercase letter
-                              </div>
-                          )}
-
-                          {settings.password_require_numbers && (
-                              <div className={`flex items-center ${passwordValidation.requirements.hasNumber ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.hasNumber ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                Number
-                              </div>
-                          )}
-
-                          {settings.password_require_special_chars && (
-                              <div className={`flex items-center ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.hasSpecialChar ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                Special character
-                              </div>
-                          )}
-
-                          {settings.password_prevent_common && (
-                              <div className={`flex items-center ${passwordValidation.requirements.noCommon ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.noCommon ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                Not common
-                              </div>
-                          )}
-
-                          {settings.password_prevent_sequences && (
-                              <div className={`flex items-center ${passwordValidation.requirements.noSequences ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.noSequences ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                No sequences
-                              </div>
-                          )}
-
-                          {settings.password_prevent_repeats && (
-                              <div className={`flex items-center ${passwordValidation.requirements.noRepeats ? 'text-green-600' : 'text-red-600'}`}>
-                                {passwordValidation.requirements.noRepeats ? (
-                                    <CheckCircle className="h-3 w-3 mr-2" />
-                                ) : (
-                                    <XCircle className="h-3 w-3 mr-2" />
-                                )}
-                                Max {settings.password_max_consecutive} repeats
-                              </div>
-                          )}
-
-                          <div className={`flex items-center ${passwordValidation.requirements.minUniqueChars ? 'text-green-600' : 'text-red-600'}`}>
-                            {passwordValidation.requirements.minUniqueChars ? (
-                                <CheckCircle className="h-3 w-3 mr-2" />
-                            ) : (
-                                <XCircle className="h-3 w-3 mr-2" />
-                            )}
-                            {settings.password_min_unique_chars}+ unique chars
-                          </div>
-                        </div>
-
-                        {/* Password strength indicator */}
-                        <div className="mt-2">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span>Password strength:</span>
-                            <span className={
-                              passwordValidation.isValid ? 'text-green-600 font-medium' :
-                                  formData.password.length > 0 ? 'text-yellow-600' : 'text-gray-500'
-                            }>
-                            {passwordValidation.isValid ? 'Strong' :
-                                formData.password.length > 0 ? 'Weak' : 'None'}
-                          </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className={`h-2 rounded-full transition-all duration-300 ${
-                                    passwordValidation.isValid ? 'bg-green-500 w-full' :
-                                        formData.password.length > 0 ? 'bg-yellow-500 w-1/2' : 'bg-gray-300 w-0'
-                                }`}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                  )}
+                  <PasswordPolicyChecklist
+                    password={formData.password}
+                    settings={settings}
+                    validation={passwordValidation}
+                  />
                 </div>
 
                 <div>

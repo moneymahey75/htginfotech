@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import {
   AlertCircle,
   CheckCircle2,
-  Code2,
   Eye,
   FileText,
   Loader2,
@@ -11,7 +10,6 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  Rows3,
   Trash2,
   X,
 } from 'lucide-react';
@@ -242,88 +240,22 @@ const RichHtmlEditor = ({
   value: string;
   onChange: (value: string) => void;
 }) => {
-  const [isSourceMode, setIsSourceMode] = useState(true);
-
-  const applyCommand = (command: string, commandValue?: string) => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    document.execCommand(command, false, commandValue);
-    const editor = document.getElementById('email-html-editor');
-    if (editor) {
-      onChange(editor.innerHTML);
-    }
-  };
-
   return (
     <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsSourceMode(false)}
-            className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition ${
-              !isSourceMode ? 'bg-indigo-600 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <Rows3 className="mr-2 h-4 w-4" />
-            Visual
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsSourceMode(true)}
-            className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition ${
-              isSourceMode ? 'bg-indigo-600 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <Code2 className="mr-2 h-4 w-4" />
-            HTML
-          </button>
-        </div>
-
-        {!isSourceMode ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { label: 'B', action: () => applyCommand('bold') },
-              { label: 'I', action: () => applyCommand('italic') },
-              { label: 'U', action: () => applyCommand('underline') },
-              { label: 'H2', action: () => applyCommand('formatBlock', 'h2') },
-              { label: 'P', action: () => applyCommand('formatBlock', 'p') },
-              { label: 'UL', action: () => applyCommand('insertUnorderedList') },
-              { label: 'OL', action: () => applyCommand('insertOrderedList') },
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={item.action}
-                className="inline-flex min-w-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
+        <p className="text-sm font-medium text-gray-700">HTML Source</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Email templates are edited as raw HTML so tags, links, images, and inline styles are saved exactly as entered.
+        </p>
       </div>
-
-      {isSourceMode ? (
-        <textarea
-          rows={16}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="w-full border-0 px-4 py-3 font-mono text-sm text-gray-900 outline-none focus:ring-0"
-          placeholder="<html>...</html>"
-        />
-      ) : (
-        <div
-          id="email-html-editor"
-          contentEditable
-          suppressContentEditableWarning
-          onInput={(event) => onChange(event.currentTarget.innerHTML)}
-          dangerouslySetInnerHTML={{ __html: value }}
-          className="min-h-[420px] w-full overflow-y-auto px-4 py-3 text-sm text-gray-900 outline-none"
-        />
-      )}
+      <textarea
+        rows={16}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full border-0 px-4 py-3 font-mono text-sm text-gray-900 outline-none focus:ring-0"
+        placeholder="<html>...</html>"
+        spellCheck={false}
+      />
     </div>
   );
 };
@@ -520,7 +452,7 @@ const EmailTemplateManager: React.FC = () => {
 
     const templateName = formState.tet_name.trim();
     const subject = formState.tet_subject.trim();
-    const htmlBody = sanitizePreviewHtml(formState.tet_html_body);
+    const htmlBody = formState.tet_html_body.trim();
     const textBody = editingTemplate?.tet_text_body?.trim() || '';
     const templateType = formState.tet_template_type.trim() || null;
     const variables = parseCommaSeparatedList(formState.tet_variables_input);

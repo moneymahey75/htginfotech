@@ -12,6 +12,8 @@ export interface BrandingSettings {
 }
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+const normalizePublicAssetPath = (value: string) =>
+  value.replace(/(https?:\/\/[^/]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)/gi, "$1/$2");
 
 const normalizeUrlCandidate = (value: unknown) => String(value || "").trim();
 
@@ -23,20 +25,21 @@ const toAbsoluteUrl = (baseUrl: string, pathOrUrl: unknown) => {
   }
 
   if (/^https?:\/\//i.test(normalizedValue)) {
-    return normalizedValue;
+    return normalizePublicAssetPath(normalizedValue);
   }
 
   if (!baseUrl) {
-    return normalizedValue.startsWith("/") ? normalizedValue : `/${normalizedValue}`;
+    return normalizePublicAssetPath(normalizedValue.startsWith("/") ? normalizedValue : `/${normalizedValue}`);
   }
 
-  return `${trimTrailingSlash(baseUrl)}/${normalizedValue.replace(/^\/+/, "")}`;
+  return normalizePublicAssetPath(`${trimTrailingSlash(baseUrl)}/${normalizedValue.replace(/^\/+/, "")}`);
 };
 
 export interface EmailTemplateRecord {
   tet_name: string;
   tet_subject: string;
   tet_body: string;
+  tet_html_body?: string;
   tet_template_type?: string;
   tet_variables?: string[];
 }
@@ -59,6 +62,14 @@ export interface VerificationEmailPayload {
   firstName: string;
   lastName?: string;
   verificationLink: string;
+  branding: BrandingSettings;
+}
+
+export interface PasswordResetEmailPayload {
+  email: string;
+  firstName: string;
+  lastName?: string;
+  resetPasswordLink: string;
   branding: BrandingSettings;
 }
 
@@ -195,6 +206,39 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
     tet_template_type: "user_registration",
     tet_variables: ["user_name", "first_name", "asset_url", "logo_url", "site_name", "site_url", "current_year"],
   },
+  password_reset: {
+    tet_name: "password_reset",
+    tet_subject: "Reset your password - {{site_name}}",
+    tet_body: buildBrandedEmailShell({
+      eyebrow: "",
+      title: "Reset Your Password",
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          We received a request to reset the password for your {{site_name}} account.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
+            Click the button below to create a new password. This reset link is unique to your account and will expire automatically.
+          </p>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{reset_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Reset Password</a>
+        </div>
+        <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
+          If the button above is not clickable, please copy the following URL and paste it into your browser.
+        </p>
+        <p style="margin:0 0 20px;word-break:break-word;">
+          <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          If you did not request a password reset, you can safely ignore this email.<br>{{site_name}} Team
+        </p>
+      `,
+    }),
+    tet_template_type: "password_reset",
+    tet_variables: ["user_name", "first_name", "reset_link", "reset_password_link", "asset_url", "logo_url", "site_name", "site_url", "current_year"],
+  },
   contact_admin_email: {
     tet_name: "contact_admin_email",
     tet_subject: "New Contact Us Submission: {{contact_subject}}",
@@ -301,7 +345,10 @@ export const buildBranding = (
     settings,
   });
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const logoUrl = toAbsoluteUrl(siteUrl, "/htginfotech-logo.png");
+  const configuredLogoUrl = String(settings.logo_url || "").trim();
+  const logoUrl = configuredLogoUrl
+    ? toAbsoluteUrl(siteUrl, configuredLogoUrl)
+    : toAbsoluteUrl(siteUrl, "/htginfotech-logo.png");
 
   return {
     siteName,
@@ -395,6 +442,26 @@ const normalizeEmailMarkup = (value: string) =>
     .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, "")
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
     .replace(
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/htginfotech-logo\.png\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/htginfotech-logo\.png\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])(https?:\/\/[^'"]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string, baseUrl: string, fileName: string) => `src=${quote}${baseUrl}/${fileName}${quote}`,
+    )
+    .replace(
+      /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      '<a href="{{reset_link}}"$1>$2</a>',
+    )
+    .replace(
+      /<a\b([^>]*?)href=(['"])\s*\2([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      '<a href="{{reset_link}}"$1$3>$4</a>',
+    )
+    .replace(
       /(<a\b[^>]*style="[^"]*?)border-radius:\s*[^;"]+;?([^"]*"[^>]*>\s*Verify Email\s*<\/a>)/gi,
       '$1border-radius:999px;$2',
     )
@@ -408,6 +475,10 @@ const normalizeEmailMarkup = (value: string) =>
     )
     .replace(
       /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*Browse Courses\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*(Reset Password|Reset Password Link)\s*<\/a>)/gi,
       '$1border-radius:999px;$2',
     )
     .replace(
@@ -431,6 +502,29 @@ const normalizeEmailMarkup = (value: string) =>
       },
     )
     .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string, label: string) => {
+        const needsSemicolon = styleValue.trim() !== "" && !styleValue.trim().endsWith(";");
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, "border-radius:999px;")
+          : `${styleValue}${needsSemicolon ? ";" : ""}border-radius:999px;`;
+        const linkMarkup = /href\s*=/i.test(`${beforeStyle}${afterStyle}`)
+          ? `<a${beforeStyle}style="${withRadius}"${afterStyle}>${label}</a>`
+          : `<a href="{{reset_link}}"${beforeStyle}style="${withRadius}"${afterStyle}>${label}</a>`;
+        return linkMarkup;
+      },
+    )
+    .replace(
+      /<a\b([^>]*?)href=(['"])\s*\2([^>]*?)style="([^"]*?)"([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      (_match, beforeHref: string, _quote: string, afterHref: string, styleValue: string, afterStyle: string, label: string) => {
+        const needsSemicolon = styleValue.trim() !== "" && !styleValue.trim().endsWith(";");
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, "border-radius:999px;")
+          : `${styleValue}${needsSemicolon ? ";" : ""}border-radius:999px;`;
+        return `<a${beforeHref}href="{{reset_link}}"${afterHref}style="${withRadius}"${afterStyle}>${label}</a>`;
+      },
+    )
+    .replace(
       /<p\b[^>]*>\s*If you did not create this account, you can safely ignore this email\.\s*<\/p>/gi,
       '<p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">If the button above is not clickable, please copy the following URL and paste it into your browser.</p><p style="margin:0 0 20px;word-break:break-word;"><a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a></p>',
     )
@@ -450,40 +544,50 @@ export const renderEmailMarkup = (
   variables: Record<string, string>,
 ) => replaceTemplatePlaceholders(stripWordBreakTags(html), variables);
 
+const TEMPLATE_NAME_ALIASES: Record<
+  "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset",
+  string[]
+> = {
+  verification_email: ["verification_email", "VERIFICATION_EMAIL", "Verification Email"],
+  welcome_email: ["welcome_email", "WELCOME_EMAIL", "Welcome Email"],
+  contact_admin_email: ["contact_admin_email", "CONTACT_ADMIN_EMAIL", "Contact Admin Email"],
+  contact_confirmation_email: ["contact_confirmation_email", "CONTACT_CONFIRMATION_EMAIL", "Contact Confirmation Email"],
+  password_reset: ["password_reset", "PASSWORD_RESET", "Password Reset"],
+};
+
 export const getEmailTemplate = async (
   supabase: any,
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email",
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset",
 ) => {
   const selectColumns = "tet_name, tet_subject, tet_body, tet_html_body, tet_template_type, tet_variables";
+  const candidateNames = TEMPLATE_NAME_ALIASES[templateName];
 
   const { data, error } = await supabase
     .from("tbl_email_templates")
     .select(selectColumns)
-    .eq("tet_name", templateName)
+    .in("tet_name", candidateNames)
     .eq("tet_is_active", true)
-    .maybeSingle();
+    .order("tet_updated_at", { ascending: false });
 
   if (error) {
     throw error;
   }
 
-  if (data) {
-    return data;
+  if (Array.isArray(data) && data.length) {
+    const matchedTemplate = candidateNames
+      .map((name) => data.find((template: any) => template.tet_name === name))
+      .find(Boolean);
+
+    if (matchedTemplate) {
+      return matchedTemplate;
+    }
   }
 
-  const uppercaseTemplateName = templateName.toUpperCase();
-  const { data: uppercaseData, error: uppercaseError } = await supabase
-    .from("tbl_email_templates")
-    .select(selectColumns)
-    .eq("tet_name", uppercaseTemplateName)
-    .eq("tet_is_active", true)
-    .maybeSingle();
-
-  if (uppercaseError) {
-    throw uppercaseError;
+  if (templateName === "password_reset") {
+    throw new Error("Password Reset template not found in tbl_email_templates.");
   }
 
-  return uppercaseData ?? DEFAULT_TEMPLATES[templateName];
+  return DEFAULT_TEMPLATES[templateName];
 };
 
 export const renderEmailTemplate = async ({
@@ -493,19 +597,22 @@ export const renderEmailTemplate = async ({
   branding,
 }: {
   supabase: any;
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email";
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset";
   variables: Record<string, string>;
   branding: BrandingSettings;
 }) => {
   const template = await getEmailTemplate(supabase, templateName);
+  const resolvedResetLink = variables.reset_link || variables.reset_password_link || "";
   const mergedVariables = {
+    ...variables,
     asset_url: branding.assetUrl,
     logo_url: branding.logoUrl,
     site_name: branding.siteName,
     site_url: branding.siteUrl,
     website_url: branding.siteUrl,
     current_year: String(new Date().getFullYear()),
-    ...variables,
+    reset_link: resolvedResetLink,
+    reset_password_link: resolvedResetLink,
   };
   const normalizedSubject = stripWordBreakTags(template.tet_subject);
   const normalizedHtml = stripWordBreakTags(template.tet_html_body || template.tet_body);
@@ -554,6 +661,33 @@ export const buildWelcomeEmailContent = async ({
     variables: {
       user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
       first_name: resolvedFirstName,
+    },
+  });
+};
+
+export const buildPasswordResetEmailContent = async ({
+  supabase,
+  firstName,
+  lastName,
+  resetPasswordLink,
+  branding,
+}: PasswordResetEmailPayload & { supabase: any }) => {
+  const resolvedFirstName = normalizeFirstName(firstName);
+  const resolvedLastName = String(lastName ?? "").trim();
+
+  return renderEmailTemplate({
+    supabase,
+    templateName: "password_reset",
+    branding,
+    variables: {
+      reset_link: resetPasswordLink,
+      asset_url: branding.assetUrl,
+      site_name: branding.siteName,
+      site_url: branding.siteUrl,
+      current_year: String(new Date().getFullYear()),
+      user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
+      first_name: resolvedFirstName,
+      reset_password_link: resetPasswordLink,
     },
   });
 };

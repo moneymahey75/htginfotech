@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Eye, EyeOff, Lock, Shield } from 'lucide-react';
+import { Eye, EyeOff, Loader, Lock, Shield } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
+import { useNotification } from '../../components/ui/NotificationProvider';
+import { useAdmin } from '../../contexts/AdminContext';
+import PasswordPolicyChecklist from '../../components/auth/PasswordPolicyChecklist';
+import {
+  createEmptyPasswordValidation,
+  PasswordValidationResult,
+  validatePasswordPolicy,
+} from '../../utils/passwordPolicy';
 
 const ResetPassword: React.FC = () => {
+  const { settings } = useAdmin();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
-  
+  const [searchParams] = useSearchParams();
+  const notification = useNotification();
+  const hasVerifiedToken = useRef(false);
+
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
@@ -19,6 +30,52 @@ const ResetPassword: React.FC = () => {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidationResult>(createEmptyPasswordValidation());
+
+  useEffect(() => {
+    if (hasVerifiedToken.current) {
+      return;
+    }
+
+    hasVerifiedToken.current = true;
+
+    const verifyResetToken = async () => {
+      const token = searchParams.get('token') || searchParams.get('token_hash');
+      const type = searchParams.get('type') || 'recovery';
+
+      if (!token || type !== 'recovery') {
+        setError('The reset link is invalid or has expired.');
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        const { data, error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery'
+        });
+
+        if (verifyError) {
+          throw verifyError;
+        }
+
+        if (!data.session) {
+          throw new Error('Failed to verify reset token');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'The reset link is invalid or has expired.');
+        notification.showError('Authentication Failed', 'The reset link is invalid or has expired.');
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyResetToken();
+  }, [notification, searchParams]);
+
+  useEffect(() => {
+    setPasswordValidation(validatePasswordPolicy(formData.password, settings));
+  }, [formData.password, settings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +94,8 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0] || 'Please follow the password policy.');
       setIsSubmitting(false);
       return;
     }
@@ -80,6 +137,22 @@ const ResetPassword: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Password Reset Successful!</h2>
             <p className="text-gray-600 mb-6">Your password has been updated successfully. You will be redirected to the login page in a few seconds.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
+            <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader className="h-8 w-8 text-indigo-600 animate-spin" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Verifying Reset Link</h2>
+            <p className="text-gray-600">Please wait while we verify your reset request.</p>
           </div>
         </div>
       </div>
@@ -138,9 +211,15 @@ const ResetPassword: React.FC = () => {
                 </button>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Password must be at least 8 characters long
+                Your password must follow the admin password policy.
               </p>
             </div>
+
+            <PasswordPolicyChecklist
+              password={formData.password}
+              settings={settings}
+              validation={passwordValidation}
+            />
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">

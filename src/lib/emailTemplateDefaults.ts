@@ -1,5 +1,5 @@
 export interface EmailTemplateDefinition {
-  name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email';
+  name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email' | 'password_reset';
   label: string;
   subject: string;
   body: string;
@@ -161,6 +161,38 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
     }),
   },
   {
+    name: 'password_reset',
+    label: 'Password Reset',
+    subject: 'Reset your password - {{site_name}}',
+    templateType: 'password_reset',
+    variables: ['user_name', 'first_name', 'reset_link', 'reset_password_link', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    body: buildEmailShell({
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          We received a request to reset the password for your {{site_name}} account.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
+            Click the button below to choose a new password. This reset link is secure and will expire automatically.
+          </p>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{reset_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Reset Password</a>
+        </div>
+        <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
+          If the button above is not clickable, please copy the following URL and paste it into your browser.
+        </p>
+        <p style="margin:0 0 20px;word-break:break-word;">
+          <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          If you did not request a password reset, you can safely ignore this email.<br>{{site_name}} Team
+        </p>
+      `,
+    }),
+  },
+  {
     name: 'contact_confirmation_email',
     label: 'Contact Confirmation Email',
     subject: 'We received your message - {{site_name}}',
@@ -197,13 +229,37 @@ export const replaceTemplatePlaceholders = (
 ) =>
   template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => variables[key] ?? '');
 
+const normalizePublicAssetPath = (value: string) =>
+  value.replace(/(https?:\/\/[^/]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)/gi, '$1/$2');
+
 export const normalizeEmailMarkup = (value: string) =>
-  value
+  normalizePublicAssetPath(
+    value
     .replace(/<wbr\b[^>]*>/gi, '')
     .replace(/<\/wbr>/gi, '')
     .replace(/&lt;\s*\/?\s*wbr\s*&gt;/gi, '')
     .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, '')
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+    .replace(
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/htginfotech-logo\.png\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/htginfotech-logo\.png\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])(https?:\/\/[^'"]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string, baseUrl: string, fileName: string) => `src=${quote}${baseUrl}/${fileName}${quote}`,
+    )
+    .replace(
+      /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      '<a href="{{reset_link}}"$1>$2</a>',
+    )
+    .replace(
+      /<a\b([^>]*?)href=(['"])\s*\2([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      '<a href="{{reset_link}}"$1$3>$4</a>',
+    )
     .replace(
       /(<a\b[^>]*style="[^"]*?)border-radius:\s*[^;"]+;?([^"]*"[^>]*>\s*Verify Email\s*<\/a>)/gi,
       '$1border-radius:999px;$2',
@@ -218,6 +274,10 @@ export const normalizeEmailMarkup = (value: string) =>
     )
     .replace(
       /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*Browse Courses\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*(Reset Password|Reset Password Link)\s*<\/a>)/gi,
       '$1border-radius:999px;$2',
     )
     .replace(
@@ -241,6 +301,29 @@ export const normalizeEmailMarkup = (value: string) =>
       },
     )
     .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string, label: string) => {
+        const needsSemicolon = styleValue.trim() !== '' && !styleValue.trim().endsWith(';');
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, 'border-radius:999px;')
+          : `${styleValue}${needsSemicolon ? ';' : ''}border-radius:999px;`;
+        const linkMarkup = /href\s*=/i.test(`${beforeStyle}${afterStyle}`)
+          ? `<a${beforeStyle}style="${withRadius}"${afterStyle}>${label}</a>`
+          : `<a href="{{reset_link}}"${beforeStyle}style="${withRadius}"${afterStyle}>${label}</a>`;
+        return linkMarkup;
+      },
+    )
+    .replace(
+      /<a\b([^>]*?)href=(['"])\s*\2([^>]*?)style="([^"]*?)"([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      (_match, beforeHref: string, _quote: string, afterHref: string, styleValue: string, afterStyle: string, label: string) => {
+        const needsSemicolon = styleValue.trim() !== '' && !styleValue.trim().endsWith(';');
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, 'border-radius:999px;')
+          : `${styleValue}${needsSemicolon ? ';' : ''}border-radius:999px;`;
+        return `<a${beforeHref}href="{{reset_link}}"${afterHref}style="${withRadius}"${afterStyle}>${label}</a>`;
+      },
+    )
+    .replace(
       /<p\b[^>]*>\s*If you did not create this account, you can safely ignore this email\.\s*<\/p>/gi,
       '<p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">If the button above is not clickable, please copy the following URL and paste it into your browser.</p><p style="margin:0 0 20px;word-break:break-word;"><a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a></p>',
     )
@@ -250,10 +333,11 @@ export const normalizeEmailMarkup = (value: string) =>
     )
     .replace(/>\s+</g, '><')
     .replace(/\n\s*\n+/g, '\n')
-    .trim();
+    .trim()
+  );
 
 export const stripWordBreakTags = (value: string) =>
   normalizeEmailMarkup(value);
 
-export const getDefaultEmailTemplate = (name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email') =>
+export const getDefaultEmailTemplate = (name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email' | 'password_reset') =>
   emailTemplateDefaults.find((template) => template.name === name);
