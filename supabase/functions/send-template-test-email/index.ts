@@ -61,13 +61,16 @@ Deno.serve(async (req: Request) => {
       return buildResponse(401, { success: false, error: "Invalid or expired admin session" });
     }
 
-    const { templateName, email } = await req.json();
+    const { templateName, email, siteUrl } = await req.json();
     if (!templateName || !email) {
       return buildResponse(400, { success: false, error: "Template name and email are required" });
     }
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings, { request: req });
+    const branding = buildBranding(settings, {
+      request: req,
+      siteUrl: typeof siteUrl === "string" ? siteUrl.trim() : undefined,
+    });
     const renderedTemplate = await renderEmailTemplate({
       supabase,
       templateName,
