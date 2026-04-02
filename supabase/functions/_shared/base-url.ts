@@ -10,6 +10,26 @@ const normalizeCandidate = (value?: string | null) => {
 const isLocalhostCandidate = (value?: string | null) =>
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(value || "").trim());
 
+const isSupabaseRuntimeCandidate = (value?: string | null) => {
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(normalizedValue).hostname.toLowerCase();
+    return hostname === "edge-runtime.supabase.com" ||
+      hostname.endsWith(".functions.supabase.co") ||
+      hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+};
+
+const isPublicSiteCandidate = (value?: string | null) =>
+  !!value && !isLocalhostCandidate(value) && !isSupabaseRuntimeCandidate(value);
+
 export const getRequestBaseUrl = (request?: Request) => {
   if (!request) {
     return "";
@@ -48,6 +68,6 @@ export const resolveBaseUrl = ({
     normalizeCandidate(Deno.env.get("SITE_URL")),
   ];
 
-  const firstNonLocalCandidate = candidates.find((candidate) => candidate && !isLocalhostCandidate(candidate));
-  return firstNonLocalCandidate || candidates.find(Boolean) || "";
+  const firstPublicCandidate = candidates.find((candidate) => isPublicSiteCandidate(candidate));
+  return firstPublicCandidate || candidates.find((candidate) => candidate && !isSupabaseRuntimeCandidate(candidate)) || "";
 };
