@@ -16,7 +16,6 @@ const normalizePublicAssetPath = (value: string) =>
   value.replace(/(https?:\/\/[^/]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)/gi, "$1/$2");
 
 const normalizeUrlCandidate = (value: unknown) => String(value || "").trim();
-const isLocalhostUrl = (value: string) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?=\/|$)/i.test(value.trim());
 
 const toAbsoluteUrl = (baseUrl: string, pathOrUrl: unknown) => {
   const normalizedValue = normalizeUrlCandidate(pathOrUrl);
@@ -545,28 +544,6 @@ export const renderEmailMarkup = (
   variables: Record<string, string>,
 ) => replaceTemplatePlaceholders(stripWordBreakTags(html), variables);
 
-const sanitizeWelcomeBranding = (branding: BrandingSettings): BrandingSettings => {
-  const siteUrl = normalizeUrlCandidate(branding.siteUrl);
-  const logoUrl = normalizeUrlCandidate(branding.logoUrl);
-
-  if (!siteUrl || !logoUrl || !isLocalhostUrl(logoUrl) || isLocalhostUrl(siteUrl)) {
-    return branding;
-  }
-
-  try {
-    const parsedLogoUrl = new URL(logoUrl);
-    return {
-      ...branding,
-      logoUrl: toAbsoluteUrl(siteUrl, `${parsedLogoUrl.pathname}${parsedLogoUrl.search}`),
-    };
-  } catch {
-    return {
-      ...branding,
-      logoUrl: toAbsoluteUrl(siteUrl, "/htginfotech-logo.png"),
-    };
-  }
-};
-
 const TEMPLATE_NAME_ALIASES: Record<
   "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset",
   string[]
@@ -676,12 +653,11 @@ export const buildWelcomeEmailContent = async ({
 }: WelcomeEmailPayload & { supabase: any }) => {
   const resolvedFirstName = normalizeFirstName(firstName);
   const resolvedLastName = String(lastName ?? "").trim();
-  const sanitizedBranding = sanitizeWelcomeBranding(branding);
 
   return renderEmailTemplate({
     supabase,
     templateName: "welcome_email",
-    branding: sanitizedBranding,
+    branding,
     variables: {
       user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
       first_name: resolvedFirstName,

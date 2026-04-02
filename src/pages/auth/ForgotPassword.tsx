@@ -49,7 +49,7 @@ const ForgotPassword: React.FC = () => {
               Didn't receive the email? Check your spam folder or try again.
             </p>
             <Link
-              to="/customer/login"
+              to="/login"
               className="inline-flex items-center space-x-2 text-indigo-600 hover:text-indigo-500"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -123,7 +123,7 @@ const ForgotPassword: React.FC = () => {
 
           <div className="mt-6 text-center">
             <Link
-              to="/customer/login"
+              to="/login"
               className="inline-flex items-center space-x-2 text-indigo-600 hover:text-indigo-500"
             >
               <ArrowLeft className="h-4 w-4" />
