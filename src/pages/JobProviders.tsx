@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
-import { Building, Users, TrendingUp, Award, CheckCircle, Target } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Building, Users, TrendingUp, Award, CheckCircle, Target, ArrowRight } from 'lucide-react';
 
 const JobProviders: React.FC = () => {
   const { settings } = useAdmin();
+  const { user } = useAuth();
   const [videoUrl, setVideoUrl] = useState('');
 
   useEffect(() => {
@@ -144,30 +146,36 @@ const JobProviders: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-green-600 to-teal-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Start Hiring Today
-          </h2>
-          <p className="text-xl text-green-100 mb-8 max-w-3xl mx-auto">
-            Join our platform and get access to a pool of qualified candidates ready to contribute to your success.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/register"
-              className="bg-white text-green-600 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-            >
-              Post Your First Job
-            </Link>
-            <Link
-              to="/login"
-              className="border-2 border-white text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-green-600 transition-colors"
-            >
-              Sign In
-            </Link>
+      {!user ? (
+        <section className="py-20 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Start Hiring Today
+            </h2>
+            <p className="text-xl text-green-100 mb-8 max-w-3xl mx-auto">
+              Join our platform and get access to a pool of qualified candidates ready to contribute to your success.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/register"
+                className="group bg-white text-emerald-700 px-8 py-4 rounded-2xl font-bold hover:bg-emerald-50 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+              >
+                <CheckCircle className="h-5 w-5" />
+                <span>Post Your First Job</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/login"
+                className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-emerald-700 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
+              >
+                <Users className="h-5 w-5" />
+                <span>Sign In</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
     </div>
   );
 };

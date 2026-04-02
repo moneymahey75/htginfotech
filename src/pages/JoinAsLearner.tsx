@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   ArrowRight, 
   BookOpen, 
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 const JoinAsLearner: React.FC = () => {
+  const { user } = useAuth();
   const benefits = [
     {
       icon: BookOpen,
@@ -119,13 +121,15 @@ const JoinAsLearner: React.FC = () => {
                 Upskill your career with thousands of professional courses in technology and more — with personalized learning tailored to your career goals.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/register"
-                  className="group bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-4 rounded-2xl font-bold hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-                >
-                  <span>Register Now</span>
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                {!user ? (
+                  <Link
+                    to="/register"
+                    className="group bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-4 rounded-2xl font-bold hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                  >
+                    <span>Register Now</span>
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                ) : null}
                 <Link
                   to="/courses"
                   className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-indigo-900 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
@@ -336,56 +340,57 @@ const JoinAsLearner: React.FC = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            Ready to Transform Your Future?
-          </h2>
-          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Join our community of learners and start building the skills you need for success. 
-            Your educational journey starts with a single click.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
-            <Link
-              to="/register"
-              className="group bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-            >
-              <BookOpen className="h-6 w-6" />
-              <span>Start Learning Today</span>
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              to="/courses"
-              className="group border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-2xl font-semibold hover:bg-blue-50 transition-all duration-300 flex items-center justify-center space-x-3"
-            >
-              <CheckCircle className="h-5 w-5" />
-              <span>Browse Courses</span>
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+      {!user ? (
+        <section className="py-20 bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">
+              Ready to Transform Your Future?
+            </h2>
+            <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto">
+              Join our community of learners and start building the skills you need for success. 
+              Your educational journey starts with a single click.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
+              <Link
+                to="/register"
+                className="group bg-white text-indigo-700 px-8 py-4 rounded-2xl font-bold hover:bg-blue-50 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+              >
+                <BookOpen className="h-6 w-6" />
+                <span>Start Learning Today</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/courses"
+                className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-indigo-700 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
+              >
+                <CheckCircle className="h-5 w-5" />
+                <span>Browse Courses</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
 
-          {/* Trust Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-75">
-            <div className="flex items-center justify-center space-x-2">
-              <Shield className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">Secure Platform</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <CheckCircle className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">Verified Tutors</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Users className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">10K+ Learners</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Award className="h-6 w-6 text-gray-600" />
-              <span className="text-sm text-gray-600">Certified Courses</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-75">
+              <div className="flex items-center justify-center space-x-2">
+                <Shield className="h-6 w-6" />
+                <span className="text-sm">Secure Platform</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <CheckCircle className="h-6 w-6" />
+                <span className="text-sm">Verified Tutors</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <Users className="h-6 w-6" />
+                <span className="text-sm">10K+ Learners</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <Award className="h-6 w-6" />
+                <span className="text-sm">Certified Courses</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
     </div>
   );
 };

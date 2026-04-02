@@ -1,11 +1,13 @@
 import React, {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
 import {useAdmin} from '../contexts/AdminContext';
+import { useAuth } from '../contexts/AuthContext';
 import { buildAssetUrl } from '../utils/baseUrl';
-import {Play, Users, TrendingUp, Award, CheckCircle} from 'lucide-react';
+import {Play, Users, TrendingUp, Award, CheckCircle, ArrowRight} from 'lucide-react';
 
 const JobSeekers: React.FC = () => {
     const {settings} = useAdmin();
+    const { user } = useAuth();
     const [videoUrl, setVideoUrl] = useState('');
 
     useEffect(() => {
@@ -152,30 +154,36 @@ const JobSeekers: React.FC = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                        Ready to Find Your Next Opportunity?
-                    </h2>
-                    <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-                        Join our platform today and take the first step towards your dream career.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link
-                            to="/register"
-                            className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-                        >
-                            Get Started Now
-                        </Link>
-                        <Link
-                            to="/login"
-                            className="border-2 border-white text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-                        >
-                            Sign In
-                        </Link>
+            {!user ? (
+                <section className="py-20 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                            Ready to Find Your Next Opportunity?
+                        </h2>
+                        <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+                            Join our platform today and take the first step towards your dream career.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Link
+                                to="/register"
+                                className="group bg-white text-blue-700 px-8 py-4 rounded-2xl font-bold hover:bg-blue-50 transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                            >
+                                <CheckCircle className="h-5 w-5"/>
+                                <span>Get Started Now</span>
+                                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform"/>
+                            </Link>
+                            <Link
+                                to="/login"
+                                className="group border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:text-blue-700 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm"
+                            >
+                                <Users className="h-5 w-5"/>
+                                <span>Sign In</span>
+                                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform"/>
+                            </Link>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
         </div>
     );
 };
