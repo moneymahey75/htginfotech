@@ -33,6 +33,42 @@ import {
 
 const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
 
+const CourseThumbnail: React.FC<{ src?: string; alt: string }> = ({src, alt}) => {
+    const [hasError, setHasError] = useState(!src);
+
+    useEffect(() => {
+        setHasError(!src);
+    }, [src]);
+
+    if (hasError) {
+        return (
+            <div className="h-12 w-12 rounded-lg overflow-hidden mr-4 relative bg-slate-100 ring-1 ring-slate-200 flex items-center justify-center">
+                <img
+                    src={COURSE_FALLBACK_IMAGE}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full object-cover scale-125 blur-sm opacity-25"
+                />
+                <div className="absolute inset-0 bg-white/55 backdrop-blur-[1px]" />
+                <img
+                    src={COURSE_FALLBACK_IMAGE}
+                    alt={alt}
+                    className="relative h-8 w-8 object-contain"
+                />
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className="h-12 w-12 rounded-lg object-cover mr-4 bg-gray-100"
+            onError={() => setHasError(true)}
+        />
+    );
+};
+
 interface Course {
     tc_id: string;
     tc_title: string;
@@ -852,16 +888,9 @@ const CourseManagement: React.FC = () => {
                                 <tr key={course.tc_id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <img
-                                                src={course.tc_thumbnail_url || COURSE_FALLBACK_IMAGE}
+                                            <CourseThumbnail
+                                                src={course.tc_thumbnail_url}
                                                 alt={course.tc_title}
-                                                className="h-12 w-12 rounded-lg object-cover mr-4"
-                                                onError={(e) => {
-                                                    const target = e.currentTarget;
-                                                    if (target.src !== COURSE_FALLBACK_IMAGE) {
-                                                        target.src = COURSE_FALLBACK_IMAGE;
-                                                    }
-                                                }}
                                             />
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">
