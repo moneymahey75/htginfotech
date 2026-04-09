@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {supabase} from '../../lib/adminClient';
 import {videoStorage} from '../../lib/videoStorage';
+import {buildAssetUrl} from '../../utils/baseUrl';
 import {useNotification} from '../ui/NotificationProvider';
 import {
     BookOpen,
@@ -29,6 +30,8 @@ import {
     ChevronsRight,
     MoreHorizontal
 } from 'lucide-react';
+
+const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
 
 interface Course {
     tc_id: string;
@@ -150,6 +153,7 @@ const CourseManagement: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
+    const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
 
     const notification = useNotification();
 
@@ -449,6 +453,34 @@ const CourseManagement: React.FC = () => {
                 console.error('Failed to delete course:', error);
                 notification.showError('Delete Failed', 'Failed to delete course');
             }
+        }
+    };
+
+    const handleToggleCourseStatus = async (courseId: string, currentStatus: boolean) => {
+        try {
+            setUpdatingCourseId(courseId);
+            const {error} = await supabase
+                .from('tbl_courses')
+                .update({tc_is_active: !currentStatus})
+                .eq('tc_id', courseId);
+
+            if (error) throw error;
+
+            setCourses((prev) => prev.map((course) => (
+                course.tc_id === courseId
+                    ? {...course, tc_is_active: !currentStatus}
+                    : course
+            )));
+
+            notification.showSuccess(
+                'Status Updated',
+                `Course has been ${!currentStatus ? 'activated' : 'deactivated'}`
+            );
+        } catch (error) {
+            console.error('Failed to update course status:', error);
+            notification.showError('Update Failed', 'Failed to update course status');
+        } finally {
+            setUpdatingCourseId(null);
         }
     };
 
@@ -816,14 +848,20 @@ const CourseManagement: React.FC = () => {
                         <TableSkeleton rows={itemsPerPage}/>
                     ) : (
                         <>
-                            {paginatedCourses.map((course) => (
+                        {paginatedCourses.map((course) => (
                                 <tr key={course.tc_id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <img
-                                                src={course.tc_thumbnail_url}
+                                                src={course.tc_thumbnail_url || COURSE_FALLBACK_IMAGE}
                                                 alt={course.tc_title}
                                                 className="h-12 w-12 rounded-lg object-cover mr-4"
+                                                onError={(e) => {
+                                                    const target = e.currentTarget;
+                                                    if (target.src !== COURSE_FALLBACK_IMAGE) {
+                                                        target.src = COURSE_FALLBACK_IMAGE;
+                                                    }
+                                                }}
                                             />
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">
@@ -862,13 +900,18 @@ const CourseManagement: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          course.tc_is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                      }`}>
+                      <button
+                          type="button"
+                          onClick={() => handleToggleCourseStatus(course.tc_id, course.tc_is_active)}
+                          disabled={updatingCourseId === course.tc_id}
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                              course.tc_is_active
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                          } ${updatingCourseId === course.tc_id ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-purple-300'}`}
+                      >
                         {course.tc_is_active ? 'Active' : 'Inactive'}
-                      </span>
+                      </button>
                                         {course.tc_featured && (
                                             <span
                                                 className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -891,6 +934,18 @@ const CourseManagement: React.FC = () => {
                                                 title="Edit Course"
                                             >
                                                 <Edit className="h-4 w-4"/>
+                                            </button>
+                                            <button
+                                                onClick={() => handleToggleCourseStatus(course.tc_id, course.tc_is_active)}
+                                                disabled={updatingCourseId === course.tc_id}
+                                                className={`p-1 rounded ${
+                                                    course.tc_is_active
+                                                        ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                                                        : 'text-green-600 hover:text-green-800 hover:bg-green-50'
+                                                } ${updatingCourseId === course.tc_id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                title={course.tc_is_active ? 'Deactivate' : 'Activate'}
+                                            >
+                                                {course.tc_is_active ? <AlertCircle className="h-4 w-4"/> : <CheckCircle className="h-4 w-4"/>}
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteCourse(course.tc_id)}

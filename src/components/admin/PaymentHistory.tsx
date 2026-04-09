@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {supabase} from '../../lib/adminClient';
 import {
     Receipt,
@@ -84,6 +84,7 @@ const Loader: React.FC = () => {
 };
 
 const AdminPaymentHistory: React.FC = () => {
+    const [allPayments, setAllPayments] = useState<Payment[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
     const [loading, setLoading] = useState(true);
     const [listLoading, setListLoading] = useState(false);
@@ -97,8 +98,6 @@ const AdminPaymentHistory: React.FC = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [totalCount, setTotalCount] = useState(0);
-
     const [stats, setStats] = useState({
         totalRevenue: 0,
         completedPayments: 0,
@@ -106,47 +105,25 @@ const AdminPaymentHistory: React.FC = () => {
         failedPayments: 0,
     });
 
-    // Load payments with pagination
     const loadPayments = async () => {
         try {
             setLoading(true);
             setListLoading(true);
             setError(null);
 
-            // Build base query with count
-            let query = supabase
+            const {data, error} = await supabase
                 .from('tbl_payments')
                 .select(`
           *,
           tbl_courses (tc_title),
           tbl_users (tu_email)
-        `, {count: 'exact'})
+        `)
                 .order('tp_payment_date', {ascending: false});
-
-            // Apply filters if any
-            if (statusFilter !== 'all') {
-                query = query.eq('tp_payment_status', statusFilter);
-            }
-
-            if (searchTerm) {
-                query = query.or(`
-          tbl_users.tu_email.ilike.%${searchTerm}%,
-          tbl_courses.tc_title.ilike.%${searchTerm}%,
-          tp_stripe_payment_intent_id.ilike.%${searchTerm}%
-        `);
-            }
-
-            // Apply pagination
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-            query = query.range(from, to);
-
-            const {data, error, count} = await query;
 
             if (error) throw error;
 
-            setPayments(data || []);
-            setTotalCount(count || 0);
+            const loadedPayments = data || [];
+            setAllPayments(loadedPayments);
             calculateStats(data || []);
         } catch (error) {
             console.error('Failed to load payments:', error);
@@ -157,15 +134,51 @@ const AdminPaymentHistory: React.FC = () => {
         }
     };
 
-    // Load data when component mounts or filters/pagination change
     useEffect(() => {
         loadPayments();
-    }, [searchTerm, statusFilter, currentPage, itemsPerPage]);
+    }, []);
 
-    // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
+
+    const filteredPayments = useMemo(() => {
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+
+        return allPayments.filter((payment) => {
+            const matchesStatus =
+                statusFilter === 'all' || payment.tp_payment_status === statusFilter;
+
+            const matchesSearch =
+                !normalizedSearch ||
+                [
+                    payment.tbl_users?.tu_email,
+                    payment.tbl_courses?.tc_title,
+                    payment.tp_stripe_payment_intent_id,
+                    payment.tp_payment_method,
+                ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch));
+
+            return matchesStatus && matchesSearch;
+        });
+    }, [allPayments, searchTerm, statusFilter]);
+
+    const totalCount = filteredPayments.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
+
+    const paginatedPayments = useMemo(() => {
+        const from = (currentPage - 1) * itemsPerPage;
+        return filteredPayments.slice(from, from + itemsPerPage);
+    }, [filteredPayments, currentPage, itemsPerPage]);
+
+    useEffect(() => {
+        setPayments(paginatedPayments);
+    }, [paginatedPayments]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     const calculateStats = (paymentsData: Payment[]) => {
         const totalRevenue = paymentsData
@@ -222,6 +235,8 @@ const AdminPaymentHistory: React.FC = () => {
                 return 'bg-yellow-100 text-yellow-800';
             case 'failed':
                 return 'bg-red-100 text-red-800';
+            case 'refunded':
+                return 'bg-blue-100 text-blue-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -241,7 +256,7 @@ const AdminPaymentHistory: React.FC = () => {
     const exportToCSV = () => {
         const csvContent = [
             ['Date', 'User', 'Course', 'Amount', 'Status', 'Payment Method', 'Transaction ID'].map(escapeCSVField).join(','),
-            ...payments.map(p => [
+            ...filteredPayments.map(p => [
                 escapeCSVField(formatDate(p.tp_payment_date)),
                 escapeCSVField(p.tbl_users.tu_email),
                 escapeCSVField(p.tbl_courses.tc_title),
@@ -260,9 +275,6 @@ const AdminPaymentHistory: React.FC = () => {
         a.click();
         window.URL.revokeObjectURL(url);
     };
-
-    // Pagination logic
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     // Get page numbers with ellipsis for better navigation
     const getPageNumbers = () => {
@@ -456,6 +468,7 @@ const AdminPaymentHistory: React.FC = () => {
                         <option value="completed">Completed</option>
                         <option value="pending">Pending</option>
                         <option value="failed">Failed</option>
+                        <option value="refunded">Refunded</option>
                     </select>
                 </div>
 

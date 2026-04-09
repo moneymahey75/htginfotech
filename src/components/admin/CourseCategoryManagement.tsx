@@ -91,6 +91,7 @@ const CourseCategoryManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [updatingCategoryId, setUpdatingCategoryId] = useState<string | null>(null);
 
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
@@ -269,6 +270,7 @@ const CourseCategoryManagement: React.FC = () => {
 
   const handleToggleStatus = async (categoryId: string, currentStatus: boolean) => {
     try {
+      setUpdatingCategoryId(categoryId);
       const { error } = await supabase
           .from('tbl_course_categories')
           .update({ tcc_is_active: !currentStatus })
@@ -276,14 +278,21 @@ const CourseCategoryManagement: React.FC = () => {
 
       if (error) throw error;
 
+      setCategories((prev) => prev.map((category) => (
+        category.tcc_id === categoryId
+          ? { ...category, tcc_is_active: !currentStatus }
+          : category
+      )));
+
       notification.showSuccess(
           'Status Updated',
           `Category has been ${!currentStatus ? 'activated' : 'deactivated'}`
       );
-      loadCategories();
     } catch (error) {
       console.error('Failed to update category status:', error);
       notification.showError('Update Failed', 'Failed to update category status');
+    } finally {
+      setUpdatingCategoryId(null);
     }
   };
 
@@ -613,11 +622,16 @@ const CourseCategoryManagement: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          category.tcc_is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                      }`}>
+                      <button
+                          type="button"
+                          onClick={() => handleToggleStatus(category.tcc_id, category.tcc_is_active)}
+                          disabled={updatingCategoryId === category.tcc_id}
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                              category.tcc_is_active
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                          } ${updatingCategoryId === category.tcc_id ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-orange-300'}`}
+                      >
                         {category.tcc_is_active ? (
                             <>
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -629,7 +643,7 @@ const CourseCategoryManagement: React.FC = () => {
                               Inactive
                             </>
                         )}
-                      </span>
+                      </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(category.tcc_created_at).toLocaleDateString()}
@@ -645,11 +659,12 @@ const CourseCategoryManagement: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => handleToggleStatus(category.tcc_id, category.tcc_is_active)}
+                                disabled={updatingCategoryId === category.tcc_id}
                                 className={`p-1 rounded ${
                                     category.tcc_is_active
                                         ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                                         : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                }`}
+                                } ${updatingCategoryId === category.tcc_id ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 title={category.tcc_is_active ? 'Deactivate' : 'Activate'}
                             >
                               {category.tcc_is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

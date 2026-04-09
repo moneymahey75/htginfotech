@@ -32,6 +32,7 @@ const SliderManagement: React.FC = () => {
     const [editMode, setEditMode] = useState(false);
     const [activeTab, setActiveTab] = useState('details');
     const [isCreating, setIsCreating] = useState(false);
+    const [updatingSliderId, setUpdatingSliderId] = useState<string | null>(null);
     const notification = useNotification();
 
     useEffect(() => {
@@ -127,6 +128,7 @@ const SliderManagement: React.FC = () => {
 
     const handleToggleStatus = async (slider: Slider, currentStatus: boolean) => {
         try {
+            setUpdatingSliderId(slider.ts_id);
             const { error } = await supabase
                 .from('tbl_sliders')
                 .update({ ts_is_active: !currentStatus })
@@ -134,19 +136,25 @@ const SliderManagement: React.FC = () => {
 
             if (error) throw error;
 
+            setSliders((prev) => prev.map((item) => (
+                item.ts_id === slider.ts_id
+                    ? { ...item, ts_is_active: !currentStatus }
+                    : item
+            )));
+
             if (notification) {
                 notification.showSuccess(
                     'Status Updated',
                     `Slider "${slider.ts_title}" has been ${!currentStatus ? 'activated' : 'deactivated'}`
                 );
             }
-
-            await loadSliders();
         } catch (error) {
             console.error('Failed to update slider status:', error);
             if (notification) {
                 notification.showError('Update Failed', 'Failed to update slider status');
             }
+        } finally {
+            setUpdatingSliderId(null);
         }
     };
 
@@ -367,11 +375,16 @@ const SliderManagement: React.FC = () => {
                                 </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      slider.ts_is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                  }`}>
+                  <button
+                      type="button"
+                      onClick={() => handleToggleStatus(slider, slider.ts_is_active)}
+                      disabled={updatingSliderId === slider.ts_id}
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                          slider.ts_is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                      } ${updatingSliderId === slider.ts_id ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-blue-300'}`}
+                  >
                     {slider.ts_is_active ? (
                         <>
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -383,7 +396,7 @@ const SliderManagement: React.FC = () => {
                             Inactive
                         </>
                     )}
-                  </span>
+                  </button>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {new Date(slider.ts_created_at).toLocaleDateString()}
@@ -399,11 +412,12 @@ const SliderManagement: React.FC = () => {
                                     </button>
                                     <button
                                         onClick={() => handleToggleStatus(slider, slider.ts_is_active)}
+                                        disabled={updatingSliderId === slider.ts_id}
                                         className={`p-1 rounded ${
                                             slider.ts_is_active
                                                 ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                                                 : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                        }`}
+                                        } ${updatingSliderId === slider.ts_id ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         title={slider.ts_is_active ? 'Deactivate' : 'Activate'}
                                     >
                                         {slider.ts_is_active ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
