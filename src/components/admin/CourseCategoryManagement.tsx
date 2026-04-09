@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/adminClient';
 import { useNotification } from '../ui/NotificationProvider';
 import { Folder, Search, Plus, CreditCard as Edit, Trash2, Save, X, Eye, EyeOff, Palette, Hash, ArrowUp, ArrowDown, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
@@ -130,30 +130,13 @@ const CourseCategoryManagement: React.FC = () => {
 
       console.log('🔍 Loading course categories...');
 
-      // Build query with count
-      let query = supabase
+      const { data, error, count } = await supabase
           .from('tbl_course_categories')
           .select(`
           *,
           tbl_courses!tc_category_id(tc_id)
         `, { count: 'exact' })
           .order('tcc_sort_order');
-
-      // Apply filters if any
-      if (statusFilter !== 'all') {
-        query = query.eq('tcc_is_active', statusFilter === 'active');
-      }
-
-      if (searchTerm) {
-        query = query.or(`tcc_name.ilike.%${searchTerm}%,tcc_description.ilike.%${searchTerm}%`);
-      }
-
-      // Apply pagination
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
 
       if (error) {
         console.error('❌ Failed to load categories:', error);
@@ -188,6 +171,38 @@ const CourseCategoryManagement: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter]);
+
+  const filteredCategories = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return categories.filter((category) => {
+      const matchesSearch = !normalizedSearch || [
+        category.tcc_name,
+        category.tcc_description,
+        category.tcc_icon,
+      ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch));
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && category.tcc_is_active) ||
+        (statusFilter === 'inactive' && !category.tcc_is_active);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [categories, searchTerm, statusFilter]);
+
+  const filteredCount = filteredCategories.length;
+  const totalPages = Math.max(1, Math.ceil(filteredCount / itemsPerPage));
+  const paginatedCategories = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredCategories.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredCategories, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,9 +345,6 @@ const CourseCategoryManagement: React.FC = () => {
     setShowCategoryModal(true);
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
-
   // Get page numbers with ellipsis for better navigation
   const getPageNumbers = () => {
     const pageNumbers = [];
@@ -432,7 +444,7 @@ const CourseCategoryManagement: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
-                Total: {totalCount} categories
+                Total: {filteredCount} categories
               </div>
               <div className="flex items-center space-x-2">
                 <label className="text-sm text-gray-600">Show:</label>
@@ -528,7 +540,7 @@ const CourseCategoryManagement: React.FC = () => {
                 <TableSkeleton rows={itemsPerPage} />
             ) : (
                 <>
-                  {categories.map((category, index) => (
+                  {paginatedCategories.map((category, index) => (
                       <tr key={category.tcc_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
@@ -545,7 +557,7 @@ const CourseCategoryManagement: React.FC = () => {
                               </button>
                               <button
                                   onClick={() => handleReorderCategory(category.tcc_id, 'down')}
-                                  disabled={index === categories.length - 1}
+                                  disabled={index === paginatedCategories.length - 1}
                                   className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 <ArrowDown className="h-3 w-3" />
@@ -660,12 +672,12 @@ const CourseCategoryManagement: React.FC = () => {
         </div>
 
         {/* Enhanced Pagination Controls */}
-        {totalCount > 0 && (
+        {filteredCount > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-700">
                 Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{' '}
-                <span className="font-medium">{totalCount}</span> categories
+                <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCount)}</span> of{' '}
+                <span className="font-medium">{filteredCount}</span> categories
               </div>
 
               <div className="flex items-center space-x-1">
@@ -737,7 +749,7 @@ const CourseCategoryManagement: React.FC = () => {
             </div>
         )}
 
-        {categories.length === 0 && !listLoading && (
+        {filteredCategories.length === 0 && !listLoading && (
             <div className="text-center py-12">
               <Folder className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>

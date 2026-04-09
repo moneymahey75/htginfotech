@@ -175,12 +175,16 @@ const PaymentManagement: React.FC = () => {
     };
 
     const filteredPayments = payments.filter(payment => {
+        const profile = Array.isArray(payment.tbl_users?.tbl_user_profiles)
+            ? payment.tbl_users?.tbl_user_profiles?.[0]
+            : payment.tbl_users?.tbl_user_profiles;
+        const normalizedSearch = searchTerm.toLowerCase();
         const matchesSearch =
-            payment.tbl_users?.tu_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payment.tbl_users?.tbl_user_profiles?.tup_first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payment.tbl_users?.tbl_user_profiles?.tup_last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payment.tp_transaction_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payment.tbl_user_subscriptions?.tbl_subscription_plans?.tsp_name?.toLowerCase().includes(searchTerm.toLowerCase());
+            String(payment.tbl_users?.tu_email || '').toLowerCase().includes(normalizedSearch) ||
+            String(profile?.tup_first_name || '').toLowerCase().includes(normalizedSearch) ||
+            String(profile?.tup_last_name || '').toLowerCase().includes(normalizedSearch) ||
+            String(payment.tp_transaction_id || '').toLowerCase().includes(normalizedSearch) ||
+            String(payment.tbl_user_subscriptions?.tbl_subscription_plans?.tsp_name || '').toLowerCase().includes(normalizedSearch);
 
         const matchesStatus =
             statusFilter === 'all' || payment.tp_payment_status === statusFilter;

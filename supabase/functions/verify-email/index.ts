@@ -48,8 +48,6 @@ Deno.serve(async (req: Request) => {
       .select("*")
       .eq("tov_otp_code", token)
       .eq("tov_otp_type", "email")
-      .eq("tov_is_verified", false)
-      .gte("tov_expires_at", new Date().toISOString())
       .order("tov_created_at", { ascending: false })
       .limit(1)
       .single();
@@ -69,6 +67,8 @@ Deno.serve(async (req: Request) => {
         tu_id,
         tu_email,
         tu_user_type,
+        tu_email_verified,
+        tu_mobile_verified,
         tbl_user_profiles (
           tup_first_name,
           tup_last_name
@@ -79,6 +79,30 @@ Deno.serve(async (req: Request) => {
 
     if (userError || !userData) {
       throw userError || new Error("User not found");
+    }
+
+    const isExpired = new Date(otpRecord.tov_expires_at).getTime() < Date.now();
+    const isAlreadyVerified = Boolean(otpRecord.tov_is_verified);
+
+    if ((isAlreadyVerified || isExpired) && userData.tu_email_verified) {
+      return createJsonResponse(200, {
+        success: true,
+        message: "Email already verified",
+      });
+    }
+
+    if (isExpired) {
+      return createJsonResponse(400, {
+        success: false,
+        error: "The verification link is invalid or has expired.",
+      });
+    }
+
+    if (isAlreadyVerified) {
+      return createJsonResponse(400, {
+        success: false,
+        error: "The verification link is invalid or has expired.",
+      });
     }
 
     const { error: otpUpdateError } = await supabase
@@ -96,6 +120,7 @@ Deno.serve(async (req: Request) => {
       .from("tbl_users")
       .update({
         tu_email_verified: true,
+        tu_is_verified: true,
       })
       .eq("tu_id", userId);
 

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {supabase} from '../../lib/adminClient';
 import {useNotification} from '../ui/NotificationProvider';
 import {
@@ -142,6 +142,7 @@ const LearnerManagement: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
+    const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
     const notification = useNotification();
 
@@ -154,37 +155,7 @@ const LearnerManagement: React.FC = () => {
 
             console.log('🔍 Loading learners from database...');
 
-            // For search, we need to fetch from profiles table first then join
-            if (searchTerm) {
-                // Search in profiles first to get user IDs
-                const {data: profiles, error: profileError} = await supabase
-                    .from('tbl_user_profiles')
-                    .select(`
-                tup_user_id,
-                tup_first_name,
-                tup_last_name,
-                tup_middle_name,
-                tup_username,
-                tup_mobile,
-               
-                tbl_users!inner(
-                    tu_email,
-                    tu_user_type,
-                    tu_is_verified,
-                    tu_mobile_verified
-                )
-            `)
-                    .or(`tup_first_name.ilike.%${searchTerm}%,tup_last_name.ilike.%${searchTerm}%,tup_middle_name.ilike.%${searchTerm}%,tup_username.ilike.%${searchTerm}%,tup_mobile.ilike.%${searchTerm}%`)
-                    .limit(50);
-
-                if (profileError) {
-                    throw profileError;  // ← only throw on real DB error
-                }
-
-                const profileUserIds = profiles?.map(p => p.tup_user_id) || [];
-
-                // Build the base query with combined search
-                let query = supabase
+            const {data: learners, error, count} = await supabase
                     .from('tbl_users')
                     .select(`
             tu_id,
@@ -211,98 +182,17 @@ const LearnerManagement: React.FC = () => {
               tup_updated_at
             )
           `, {count: 'exact'})
-                    .eq('tu_user_type', 'learner');
+                    .eq('tu_user_type', 'learner')
+                    .order('tu_created_at', {ascending: false});
 
-                // Apply search: match email OR user IDs from profile search
-                if (profileUserIds.length > 0) {
-                    // Create OR condition with email search and profile matches
-                    const userIdList = profileUserIds.map(id => `"${id}"`).join(',');
-                    query = query.or(`tu_email.ilike.%${searchTerm}%,tu_id.in.(${userIdList})`);
-                } else {
-                    // Only search by email if no profile matches
-                    query = query.ilike('tu_email', `%${searchTerm}%`);
-                }
-
-                // Apply other filters
-                if (statusFilter !== 'all') {
-                    query = query.eq('tu_is_active', statusFilter === 'active');
-                }
-
-                if (verificationFilter !== 'all') {
-                    query = query.eq('tu_is_verified', verificationFilter === 'verified');
-                }
-
-                // Apply pagination and ordering
-                query = query
-                    .order('tu_created_at', {ascending: false})
-                    .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-
-                const {data: learners, error, count} = await query;
-
-                if (error) {
-                    console.error('❌ Failed to load learners:', error);
-                    throw error;
-                }
-
-                console.log('✅ Learners loaded:', learners);
-                setLearners(learners || []);
-                setTotalCount(count || 0);
-            } else {
-                // No search term - use simpler query
-                let query = supabase
-                    .from('tbl_users')
-                    .select(`
-            tu_id,
-            tu_email,
-            tu_user_type,
-            tu_is_verified,
-            tu_email_verified,
-            tu_mobile_verified,
-            tu_is_active,
-            tu_created_at,
-            tu_updated_at,
-            tbl_user_profiles (
-              tup_id,
-              tup_first_name,
-              tup_last_name,
-              tup_middle_name,
-              tup_username,
-              tup_mobile,
-              tup_gender,
-              tup_education_level,
-              tup_interests,
-              tup_learning_goals,
-              tup_created_at,
-              tup_updated_at
-            )
-          `, {count: 'exact'})
-                    .eq('tu_user_type', 'learner');
-
-                // Apply filters
-                if (statusFilter !== 'all') {
-                    query = query.eq('tu_is_active', statusFilter === 'active');
-                }
-
-                if (verificationFilter !== 'all') {
-                    query = query.eq('tu_is_verified', verificationFilter === 'verified');
-                }
-
-                // Apply pagination and ordering
-                query = query
-                    .order('tu_created_at', {ascending: false})
-                    .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-
-                const {data: learners, error, count} = await query;
-
-                if (error) {
-                    console.error('❌ Failed to load learners:', error);
-                    throw error;
-                }
-
-                console.log('✅ Learners loaded:', learners);
-                setLearners(learners || []);
-                setTotalCount(count || 0);
+            if (error) {
+                console.error('❌ Failed to load learners:', error);
+                throw error;
             }
+
+            console.log('✅ Learners loaded:', learners);
+            setLearners(learners || []);
+            setTotalCount(count || 0);
 
         } catch (error) {
             console.error('❌ Failed to load learners:', error);
@@ -333,6 +223,56 @@ const LearnerManagement: React.FC = () => {
             : null;
     };
 
+    const filteredLearners = useMemo(() => {
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+
+        return learners.filter((learner) => {
+            const profile = getProfile(learner);
+            const fullName = [
+                profile?.tup_first_name,
+                profile?.tup_middle_name,
+                profile?.tup_last_name,
+            ].filter(Boolean).join(' ').toLowerCase();
+            const isVerified = learner.tu_email_verified || learner.tu_mobile_verified;
+
+            const matchesSearch = !normalizedSearch || [
+                learner.tu_email,
+                profile?.tup_username,
+                profile?.tup_mobile,
+                profile?.tup_first_name,
+                profile?.tup_middle_name,
+                profile?.tup_last_name,
+                fullName,
+            ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch));
+
+            const matchesStatus =
+                statusFilter === 'all' ||
+                (statusFilter === 'active' && learner.tu_is_active) ||
+                (statusFilter === 'inactive' && !learner.tu_is_active);
+
+            const matchesVerification =
+                verificationFilter === 'all' ||
+                (verificationFilter === 'verified' && isVerified) ||
+                (verificationFilter === 'unverified' && !isVerified);
+
+            return matchesSearch && matchesStatus && matchesVerification;
+        });
+    }, [learners, searchTerm, statusFilter, verificationFilter]);
+
+    const filteredCount = filteredLearners.length;
+    const totalPages = Math.max(1, Math.ceil(filteredCount / itemsPerPage));
+
+    const paginatedLearners = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredLearners.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredLearners, currentPage, itemsPerPage]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
+
     const handleViewLearner = (learner: Learner) => {
         setSelectedLearner(learner);
         setShowLearnerDetails(true);
@@ -340,8 +280,59 @@ const LearnerManagement: React.FC = () => {
         setEditMode(false);
     };
 
+    const syncLearnerState = (learnerId: string, updates: Partial<Learner>) => {
+        setLearners(prev => prev.map(item => item.tu_id === learnerId ? {...item, ...updates} : item));
+
+        if (selectedLearner?.tu_id === learnerId) {
+            setSelectedLearner(prev => prev ? {...prev, ...updates} : null);
+        }
+    };
+
+    const handleToggleVerification = async (
+        learner: Learner,
+        field: 'tu_email_verified' | 'tu_mobile_verified'
+    ) => {
+        const nextValue = !learner[field];
+        const nextEmailVerified = field === 'tu_email_verified' ? nextValue : learner.tu_email_verified;
+        const nextMobileVerified = field === 'tu_mobile_verified' ? nextValue : learner.tu_mobile_verified;
+
+        try {
+            setUpdatingUserId(learner.tu_id);
+
+            const {error} = await supabase
+                .from('tbl_users')
+                .update({
+                    [field]: nextValue,
+                    tu_is_verified: nextEmailVerified || nextMobileVerified,
+                })
+                .eq('tu_id', learner.tu_id);
+
+            if (error) throw error;
+
+            syncLearnerState(learner.tu_id, {
+                [field]: nextValue,
+                tu_is_verified: nextEmailVerified || nextMobileVerified,
+            } as Partial<Learner>);
+
+            if (notification) {
+                notification.showSuccess(
+                    'Verification Updated',
+                    `${field === 'tu_email_verified' ? 'Email' : 'Mobile'} verification ${nextValue ? 'enabled' : 'removed'} successfully.`
+                );
+            }
+        } catch (error) {
+            console.error('Failed to update learner verification:', error);
+            if (notification) {
+                notification.showError('Update Failed', 'Failed to update learner verification status');
+            }
+        } finally {
+            setUpdatingUserId(null);
+        }
+    };
+
     const handleToggleStatus = async (learner: Learner, currentStatus: boolean) => {
         try {
+            setUpdatingUserId(learner.tu_id);
             const {error} = await supabase
                 .from('tbl_users')
                 .update({tu_is_active: !currentStatus})
@@ -360,14 +351,14 @@ const LearnerManagement: React.FC = () => {
             await loadLearners();
 
             // If the updated learner is currently selected, update it too
-            if (selectedLearner && selectedLearner.tu_id === learner.tu_id) {
-                setSelectedLearner(prev => prev ? {...prev, tu_is_active: !currentStatus} : null);
-            }
+            syncLearnerState(learner.tu_id, {tu_is_active: !currentStatus});
         } catch (error) {
             console.error('Failed to update learner status:', error);
             if (notification) {
                 notification.showError('Update Failed', 'Failed to update learner status');
             }
+        } finally {
+            setUpdatingUserId(null);
         }
     };
 
@@ -421,9 +412,6 @@ const LearnerManagement: React.FC = () => {
             refreshSelectedLearner(selectedLearner.tu_id);
         }
     };
-
-    // Pagination logic
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     // Improved pagination with limited page numbers
     const getPageNumbers = () => {
@@ -642,8 +630,9 @@ const LearnerManagement: React.FC = () => {
                         <TableSkeleton rows={itemsPerPage}/>
                     ) : (
                         <>
-                            {learners.map((learner) => {
+                            {paginatedLearners.map((learner) => {
                                 const profile = getProfile(learner);
+                                const isUpdating = updatingUserId === learner.tu_id;
                                 return (
                                     <tr key={learner.tu_id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -684,31 +673,45 @@ const LearnerManagement: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex space-x-2">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          <button
+                              type="button"
+                              onClick={() => handleToggleVerification(learner, 'tu_email_verified')}
+                              disabled={isUpdating}
+                              title={learner.tu_email_verified ? 'Mark email as unverified' : 'Mark email as verified'}
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                               learner.tu_email_verified
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
-                          }`}>
+                          } ${isUpdating ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-blue-300'}`}>
                             <Mail className="h-3 w-3 mr-1"/>
                               {learner.tu_email_verified ? 'Email ✓' : 'Email ✗'}
-                          </span>
-                                                <span
-                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleVerification(learner, 'tu_mobile_verified')}
+                                                    disabled={isUpdating}
+                                                    title={learner.tu_mobile_verified ? 'Mark mobile as unverified' : 'Mark mobile as verified'}
+                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                                                         learner.tu_mobile_verified
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
-                                                    }`}>
+                                                    } ${isUpdating ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-blue-300'}`}>
                             <Phone className="h-3 w-3 mr-1"/>
                                                     {learner.tu_mobile_verified ? 'Mobile ✓' : 'Mobile ✗'}
-                          </span>
+                          </button>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        <button
+                            type="button"
+                            onClick={() => handleToggleStatus(learner, learner.tu_is_active)}
+                            disabled={isUpdating}
+                            title={learner.tu_is_active ? 'Deactivate learner' : 'Activate learner'}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                             learner.tu_is_active
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-red-100 text-red-800'
-                        }`}>
+                        } ${isUpdating ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-blue-300'}`}>
                           {learner.tu_is_active ? (
                               <>
                                   <UserCheck className="h-3 w-3 mr-1"/>
@@ -720,7 +723,7 @@ const LearnerManagement: React.FC = () => {
                                   Inactive
                               </>
                           )}
-                        </span>
+                        </button>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <div className="flex items-center">
@@ -739,11 +742,12 @@ const LearnerManagement: React.FC = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleToggleStatus(learner, learner.tu_is_active)}
+                                                    disabled={isUpdating}
                                                     className={`p-1 rounded ${
                                                         learner.tu_is_active
                                                             ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                                                             : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                                    }`}
+                                                    } ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                     title={learner.tu_is_active ? 'Deactivate' : 'Activate'}
                                                 >
                                                     {learner.tu_is_active ? <UserX className="h-4 w-4"/> :
@@ -761,12 +765,12 @@ const LearnerManagement: React.FC = () => {
             </div>
 
             {/* Enhanced Pagination Controls */}
-            {totalCount > 0 && (
+            {filteredCount > 0 && (
                 <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                     <div className="text-sm text-gray-700">
                         Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                        <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{' '}
-                        <span className="font-medium">{totalCount}</span> learners
+                        <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCount)}</span> of{' '}
+                        <span className="font-medium">{filteredCount}</span> learners
                     </div>
 
                     <div className="flex items-center space-x-1">
@@ -839,7 +843,7 @@ const LearnerManagement: React.FC = () => {
             )}
 
             {/* Empty State */}
-            {!listLoading && learners.length === 0 && (
+            {!listLoading && filteredLearners.length === 0 && (
                 <div className="text-center py-12">
                     <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No learners found</h3>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/adminClient';
 import { useNotification } from '../ui/NotificationProvider';
 import { GraduationCap, Search, Filter, Eye, CreditCard as Edit, Trash2, UserCheck, UserX, Mail, Phone, Calendar, ArrowLeft, Save, X, CheckCircle, AlertCircle, User, Settings, TrendingUp, Award, Clock, DollarSign, Star, Users, BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
@@ -130,6 +130,7 @@ const TutorManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [updatingTutorId, setUpdatingTutorId] = useState<string | null>(null);
 
   const notification = useNotification();
 
@@ -142,22 +143,9 @@ const TutorManagement: React.FC = () => {
 
       console.log('🔍 Loading tutors from database...');
 
-      // For search, we need to fetch from profiles table first then join
-      if (searchTerm) {
-        // Search in profiles first to get user IDs
-        const { data: profiles, error: profileError } = await supabase
-            .from('tbl_user_profiles')
-            .select('tup_user_id')
-            .or(`tup_first_name.ilike.%${searchTerm}%,tup_last_name.ilike.%${searchTerm}%,tup_middle_name.ilike.%${searchTerm}%,tup_username.ilike.%${searchTerm}%,tup_mobile.ilike.%${searchTerm}%`);
-
-        if (profileError) throw profileError;
-
-        const profileUserIds = profiles?.map(p => p.tup_user_id) || [];
-
-        // Build the base query with combined search
-        let query = supabase
-            .from('tbl_users')
-            .select(`
+      const { data: tutors, error, count } = await supabase
+          .from('tbl_users')
+          .select(`
             tu_id,
             tu_email,
             tu_user_type,
@@ -191,107 +179,17 @@ const TutorManagement: React.FC = () => {
               tt_is_active
             )
           `, { count: 'exact' })
-            .eq('tu_user_type', 'tutor');
+          .eq('tu_user_type', 'tutor')
+          .order('tu_created_at', { ascending: false });
 
-        // Apply search: match email OR user IDs from profile search
-        if (profileUserIds.length > 0) {
-          // Create OR condition with email search and profile matches
-          const userIdList = profileUserIds.map(id => `"${id}"`).join(',');
-          query = query.or(`tu_email.ilike.%${searchTerm}%,tu_id.in.(${userIdList})`);
-        } else {
-          // Only search by email if no profile matches
-          query = query.ilike('tu_email', `%${searchTerm}%`);
-        }
-
-        // Apply other filters
-        if (statusFilter !== 'all') {
-          query = query.eq('tu_is_active', statusFilter === 'active');
-        }
-
-        if (verificationFilter !== 'all') {
-          query = query.eq('tbl_tutors.tt_is_verified', verificationFilter === 'verified');
-        }
-
-        // Apply pagination and ordering
-        query = query
-            .order('tu_created_at', { ascending: false })
-            .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-
-        const { data: tutors, error, count } = await query;
-
-        if (error) {
-          console.error('❌ Failed to load tutors:', error);
-          throw error;
-        }
-
-        console.log('✅ Tutors loaded:', tutors);
-        setTutors(tutors || []);
-        setTotalCount(count || 0);
-      } else {
-        // No search term - use simpler query
-        let query = supabase
-            .from('tbl_users')
-            .select(`
-            tu_id,
-            tu_email,
-            tu_user_type,
-            tu_is_verified,
-            tu_email_verified,
-            tu_mobile_verified,
-            tu_is_active,
-            tu_created_at,
-            tbl_user_profiles (
-              tup_id,
-              tup_first_name,
-              tup_middle_name,
-              tup_last_name,
-              tup_username,
-              tup_mobile,
-              tup_gender,
-              tup_education_level,
-              tup_created_at
-            ),
-            tbl_tutors (
-              tt_id,
-              tt_bio,
-              tt_specializations,
-              tt_experience_years,
-              tt_education,
-              tt_hourly_rate,
-              tt_rating,
-              tt_total_reviews,
-              tt_total_students,
-              tt_is_verified,
-              tt_is_active
-            )
-          `, { count: 'exact' })
-            .eq('tu_user_type', 'tutor');
-
-        // Apply filters
-        if (statusFilter !== 'all') {
-          query = query.eq('tu_is_active', statusFilter === 'active');
-        }
-
-        if (verificationFilter !== 'all') {
-          query = query.eq('tbl_tutors.tt_is_verified', verificationFilter === 'verified');
-        }
-
-        // Apply pagination and ordering
-        query = query
-            .order('tu_created_at', { ascending: false })
-            .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-
-        const { data: tutors, error, count } = await query;
-
-        if (error) {
-          console.error('❌ Failed to load tutors:', error);
-          throw error;
-        }
-
-        console.log('✅ Tutors loaded:', tutors);
-        setTutors(tutors || []);
-        setTotalCount(count || 0);
+      if (error) {
+        console.error('❌ Failed to load tutors:', error);
+        throw error;
       }
+
+      console.log('✅ Tutors loaded:', tutors);
+      setTutors(tutors || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('❌ Failed to load tutors:', error);
       setError('Failed to load tutors. Please check your database connection.');
@@ -312,7 +210,32 @@ const TutorManagement: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, verificationFilter]);
 
-  // Helper functions to get the first (and typically only) item from arrays
+  const syncTutorState = (tutorId: string, userUpdates: Partial<Tutor>, tutorInfoUpdates?: Record<string, unknown>) => {
+    setTutors(prev => prev.map((item) => {
+      if (item.tu_id !== tutorId) return item;
+      return {
+        ...item,
+        ...userUpdates,
+        ...(tutorInfoUpdates && item.tbl_tutors?.length
+          ? { tbl_tutors: [{ ...item.tbl_tutors[0], ...tutorInfoUpdates }] }
+          : {}),
+      };
+    }));
+
+    if (selectedTutor?.tu_id === tutorId) {
+      setSelectedTutor(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          ...userUpdates,
+          ...(tutorInfoUpdates && prev.tbl_tutors?.length
+            ? { tbl_tutors: [{ ...prev.tbl_tutors[0], ...tutorInfoUpdates }] }
+            : {}),
+        };
+      });
+    }
+  };
+
   const getProfile = (tutor: Tutor) => {
     return tutor.tbl_user_profiles && tutor.tbl_user_profiles.length > 0
         ? tutor.tbl_user_profiles[0]
@@ -325,6 +248,62 @@ const TutorManagement: React.FC = () => {
         : null;
   };
 
+  const getSpecializations = (tutor: Tutor) => {
+    const specializations = getTutorInfo(tutor)?.tt_specializations;
+    return Array.isArray(specializations) ? specializations : [];
+  };
+
+  const filteredTutors = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return tutors.filter((tutor) => {
+      const profile = getProfile(tutor);
+      const tutorInfo = getTutorInfo(tutor);
+      const specializationsList = getSpecializations(tutor);
+      const fullName = [profile?.tup_first_name, profile?.tup_middle_name, profile?.tup_last_name]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const specializations = specializationsList.join(' ').toLowerCase();
+
+      const matchesSearch = !normalizedSearch || [
+        tutor.tu_email,
+        profile?.tup_username,
+        profile?.tup_mobile,
+        profile?.tup_first_name,
+        profile?.tup_middle_name,
+        profile?.tup_last_name,
+        fullName,
+        specializations,
+      ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch));
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && tutor.tu_is_active) ||
+        (statusFilter === 'inactive' && !tutor.tu_is_active);
+
+      const matchesVerification =
+        verificationFilter === 'all' ||
+        (verificationFilter === 'verified' && Boolean(tutorInfo?.tt_is_verified)) ||
+        (verificationFilter === 'unverified' && !Boolean(tutorInfo?.tt_is_verified));
+
+      return matchesSearch && matchesStatus && matchesVerification;
+    });
+  }, [tutors, searchTerm, statusFilter, verificationFilter]);
+
+  const filteredCount = filteredTutors.length;
+  const totalPages = Math.max(1, Math.ceil(filteredCount / itemsPerPage));
+  const paginatedTutors = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredTutors.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTutors, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const handleViewTutor = (tutor: Tutor) => {
     setSelectedTutor(tutor);
     setShowTutorDetails(true);
@@ -334,6 +313,7 @@ const TutorManagement: React.FC = () => {
 
   const handleToggleStatus = async (tutor: Tutor, currentStatus: boolean) => {
     try {
+      setUpdatingTutorId(tutor.tu_id);
       const { error } = await supabase
           .from('tbl_users')
           .update({ tu_is_active: !currentStatus })
@@ -348,14 +328,12 @@ const TutorManagement: React.FC = () => {
       );
 
       await loadTutors();
-
-      // If the updated tutor is currently selected, update it too
-      if (selectedTutor && selectedTutor.tu_id === tutor.tu_id) {
-        setSelectedTutor(prev => prev ? {...prev, tu_is_active: !currentStatus} : null);
-      }
+      syncTutorState(tutor.tu_id, { tu_is_active: !currentStatus });
     } catch (error) {
       console.error('Failed to update tutor status:', error);
       notification.showError('Update Failed', 'Failed to update tutor status');
+    } finally {
+      setUpdatingTutorId(null);
     }
   };
 
@@ -366,27 +344,24 @@ const TutorManagement: React.FC = () => {
         throw new Error('Tutor information not found');
       }
 
+      const nextVerified = !Boolean(tutorInfo.tt_is_verified);
+      setUpdatingTutorId(tutor.tu_id);
+
       const { error } = await supabase
           .from('tbl_tutors')
-          .update({ tt_is_verified: true })
+          .update({ tt_is_verified: nextVerified })
           .eq('tt_id', tutorInfo.tt_id);
 
       if (error) throw error;
 
-      notification.showSuccess('Tutor Verified', 'Tutor has been verified successfully');
+      notification.showSuccess('Tutor Updated', `Tutor verification ${nextVerified ? 'enabled' : 'removed'} successfully`);
       await loadTutors();
-
-      // If the verified tutor is currently selected, update it too
-      if (selectedTutor && selectedTutor.tu_id === tutor.tu_id) {
-        const updatedTutor = { ...selectedTutor };
-        if (updatedTutor.tbl_tutors && updatedTutor.tbl_tutors.length > 0) {
-          updatedTutor.tbl_tutors[0].tt_is_verified = true;
-        }
-        setSelectedTutor(updatedTutor);
-      }
+      syncTutorState(tutor.tu_id, {}, { tt_is_verified: nextVerified });
     } catch (error) {
       console.error('Failed to verify tutor:', error);
       notification.showError('Verification Failed', 'Failed to verify tutor');
+    } finally {
+      setUpdatingTutorId(null);
     }
   };
 
@@ -449,9 +424,6 @@ const TutorManagement: React.FC = () => {
       refreshSelectedTutor(selectedTutor.tu_id);
     }
   };
-
-  // Pagination logic
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   // Improved pagination with limited page numbers
   const getPageNumbers = () => {
@@ -573,7 +545,7 @@ const TutorManagement: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
-                Total: {totalCount} tutors
+                Total: {filteredCount} tutors
               </div>
               <div className="flex items-center space-x-2">
                 <label className="text-sm text-gray-600">Show:</label>
@@ -674,9 +646,11 @@ const TutorManagement: React.FC = () => {
                 <TableSkeleton rows={itemsPerPage} />
             ) : (
                 <>
-                  {tutors.map((tutor) => {
+                  {paginatedTutors.map((tutor) => {
                     const profile = getProfile(tutor);
                     const tutorInfo = getTutorInfo(tutor);
+                    const specializations = getSpecializations(tutor);
+                    const isUpdating = updatingTutorId === tutor.tu_id;
 
                     return (
                         <tr key={tutor.tu_id} className="hover:bg-gray-50">
@@ -721,14 +695,14 @@ const TutorManagement: React.FC = () => {
                               {tutorInfo?.tt_total_students || 0} students
                             </div>
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {tutorInfo?.tt_specializations?.slice(0, 2).map((spec, index) => (
+                              {specializations.slice(0, 2).map((spec, index) => (
                                   <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                               {spec}
                             </span>
                               ))}
-                              {(tutorInfo?.tt_specializations?.length || 0) > 2 && (
+                              {specializations.length > 2 && (
                                   <span className="text-xs text-gray-500">
-                              +{(tutorInfo?.tt_specializations?.length || 0) - 2} more
+                              +{specializations.length - 2} more
                             </span>
                               )}
                             </div>
@@ -743,11 +717,15 @@ const TutorManagement: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        <button
+                            type="button"
+                            onClick={() => handleVerifyTutor(tutor)}
+                            disabled={isUpdating}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                             tutorInfo?.tt_is_verified
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        } ${isUpdating ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-green-300'}`}>
                           {tutorInfo?.tt_is_verified ? (
                               <>
                                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -759,14 +737,18 @@ const TutorManagement: React.FC = () => {
                                 Pending
                               </>
                           )}
-                        </span>
+                        </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        <button
+                            type="button"
+                            onClick={() => handleToggleStatus(tutor, tutor.tu_is_active)}
+                            disabled={isUpdating}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                             tutor.tu_is_active
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-red-100 text-red-800'
-                        }`}>
+                        } ${isUpdating ? 'opacity-60 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-green-300'}`}>
                           {tutor.tu_is_active ? (
                               <>
                                 <UserCheck className="h-3 w-3 mr-1" />
@@ -778,7 +760,7 @@ const TutorManagement: React.FC = () => {
                                 Inactive
                               </>
                           )}
-                        </span>
+                        </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex items-center">
@@ -795,22 +777,22 @@ const TutorManagement: React.FC = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
-                              {!tutorInfo?.tt_is_verified && (
-                                  <button
-                                      onClick={() => handleVerifyTutor(tutor)}
-                                      className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
-                                      title="Verify Tutor"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </button>
-                              )}
+                              <button
+                                  onClick={() => handleVerifyTutor(tutor)}
+                                  disabled={isUpdating}
+                                  className={`p-1 rounded ${tutorInfo?.tt_is_verified ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50' : 'text-green-600 hover:text-green-800 hover:bg-green-50'} ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                  title={tutorInfo?.tt_is_verified ? 'Mark Pending' : 'Verify Tutor'}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
                               <button
                                   onClick={() => handleToggleStatus(tutor, tutor.tu_is_active)}
+                                  disabled={isUpdating}
                                   className={`p-1 rounded ${
                                       tutor.tu_is_active
                                           ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                                           : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                  }`}
+                                  } ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
                                   title={tutor.tu_is_active ? 'Deactivate' : 'Activate'}
                               >
                                 {tutor.tu_is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
@@ -827,12 +809,12 @@ const TutorManagement: React.FC = () => {
         </div>
 
         {/* Enhanced Pagination Controls */}
-        {totalCount > 0 && (
+        {filteredCount > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-700">
                 Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{' '}
-                <span className="font-medium">{totalCount}</span> tutors
+                <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCount)}</span> of{' '}
+                <span className="font-medium">{filteredCount}</span> tutors
               </div>
 
               <div className="flex items-center space-x-1">
@@ -904,7 +886,7 @@ const TutorManagement: React.FC = () => {
             </div>
         )}
 
-        {tutors.length === 0 && !listLoading && (
+        {filteredTutors.length === 0 && !listLoading && (
             <div className="text-center py-12">
               <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No tutors found</h3>
@@ -939,6 +921,7 @@ const TutorDetails: React.FC<{
 
   const profile = getProfile(currentTutor);
   const tutorInfo = getTutorInfo(currentTutor);
+  const tutorSpecializations = Array.isArray(tutorInfo?.tt_specializations) ? tutorInfo.tt_specializations : [];
 
   const [editData, setEditData] = useState({
     first_name: profile?.tup_first_name || '',
@@ -951,7 +934,7 @@ const TutorDetails: React.FC<{
     hourly_rate: tutorInfo?.tt_hourly_rate || 0,
     experience_years: tutorInfo?.tt_experience_years || 0,
     education: tutorInfo?.tt_education || '',
-    specializations: tutorInfo?.tt_specializations || [],
+    specializations: tutorSpecializations,
     email: tutor.tu_email,
     is_active: tutor.tu_is_active,
     is_verified: tutorInfo?.tt_is_verified || false
@@ -980,7 +963,7 @@ const TutorDetails: React.FC<{
       hourly_rate: updatedTutorInfo?.tt_hourly_rate || 0,
       experience_years: updatedTutorInfo?.tt_experience_years || 0,
       education: updatedTutorInfo?.tt_education || '',
-      specializations: updatedTutorInfo?.tt_specializations || [],
+      specializations: Array.isArray(updatedTutorInfo?.tt_specializations) ? updatedTutorInfo.tt_specializations : [],
       email: tutor.tu_email,
       is_active: tutor.tu_is_active,
       is_verified: updatedTutorInfo?.tt_is_verified || false
@@ -1210,7 +1193,7 @@ const TutorDetails: React.FC<{
         hourly_rate: updatedTutorInfo?.tt_hourly_rate || 0,
         experience_years: updatedTutorInfo?.tt_experience_years || 0,
         education: updatedTutorInfo?.tt_education || '',
-        specializations: updatedTutorInfo?.tt_specializations || [],
+        specializations: Array.isArray(updatedTutorInfo?.tt_specializations) ? updatedTutorInfo.tt_specializations : [],
         email: updatedTutor.tu_email,
         is_active: updatedTutor.tu_is_active,
         is_verified: updatedTutorInfo?.tt_is_verified || false
@@ -1477,11 +1460,14 @@ const TutorDetails: React.FC<{
                             </div>
                         ) : (
                             <div className="mt-1 flex flex-wrap gap-2">
-                              {tutorInfo?.tt_specializations?.map((spec, index) => (
+                              {tutorSpecializations.map((spec, index) => (
                                   <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
                             {spec}
                           </span>
-                              )) || <span className="text-gray-500 text-sm">No specializations listed</span>}
+                              ))}
+                              {tutorSpecializations.length === 0 && (
+                                  <span className="text-gray-500 text-sm">No specializations listed</span>
+                              )}
                             </div>
                         )}
                       </div>

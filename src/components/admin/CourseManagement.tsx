@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {supabase} from '../../lib/adminClient';
 import {videoStorage} from '../../lib/videoStorage';
 import {useNotification} from '../ui/NotificationProvider';
@@ -196,8 +196,7 @@ const CourseManagement: React.FC = () => {
             setListLoading(true);
             setError(null);
 
-            // Build the base query with count
-            let query = supabase
+            const {data, error, count} = await supabase
                 .from('tbl_courses')
                 .select(`
           *,
@@ -205,27 +204,8 @@ const CourseManagement: React.FC = () => {
             tcc_name,
             tcc_color
           )
-        `, {count: 'exact'});
-
-            // Apply filters if any
-            if (categoryFilter !== 'all') {
-                query = query.eq('tc_category_id', categoryFilter);
-            }
-
-            if (statusFilter !== 'all') {
-                query = query.eq('tc_is_active', statusFilter === 'active');
-            }
-
-            if (searchTerm) {
-                query = query.or(`tc_title.ilike.%${searchTerm}%,tc_description.ilike.%${searchTerm}%,tc_short_description.ilike.%${searchTerm}%`);
-            }
-
-            // Apply pagination and ordering
-            query = query
-                .order('tc_created_at', {ascending: false})
-                .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-
-            const {data, error, count} = await query;
+        `, {count: 'exact'})
+                .order('tc_created_at', {ascending: false});
 
             if (error) throw error;
 
@@ -285,6 +265,40 @@ const CourseManagement: React.FC = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, categoryFilter, statusFilter]);
+
+    const filteredCourses = useMemo(() => {
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+
+        return courses.filter((course) => {
+            const matchesSearch = !normalizedSearch || [
+                course.tc_title,
+                course.tc_description,
+                course.tc_short_description,
+                course.tbl_course_categories?.tcc_name,
+            ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch));
+
+            const matchesCategory = categoryFilter === 'all' || String(course.tc_category_id || '') === categoryFilter;
+            const matchesStatus =
+                statusFilter === 'all' ||
+                (statusFilter === 'active' && course.tc_is_active) ||
+                (statusFilter === 'inactive' && !course.tc_is_active);
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+    }, [courses, searchTerm, categoryFilter, statusFilter]);
+
+    const filteredCount = filteredCourses.length;
+    const totalPages = Math.max(1, Math.ceil(filteredCount / itemsPerPage));
+    const paginatedCourses = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredCourses.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredCourses, currentPage, itemsPerPage]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     const handleSaveCourse = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -595,9 +609,6 @@ const CourseManagement: React.FC = () => {
         }));
     };
 
-    // Pagination logic
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
-
     // Improved pagination with limited page numbers
     const getPageNumbers = () => {
         const pageNumbers = [];
@@ -697,7 +708,7 @@ const CourseManagement: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                         <div className="text-sm text-gray-500">
-                            Total: {totalCount} courses
+                            Total: {filteredCount} courses
                         </div>
                         <div className="flex items-center space-x-2">
                             <label className="text-sm text-gray-600">Show:</label>
@@ -805,7 +816,7 @@ const CourseManagement: React.FC = () => {
                         <TableSkeleton rows={itemsPerPage}/>
                     ) : (
                         <>
-                            {courses.map((course) => (
+                            {paginatedCourses.map((course) => (
                                 <tr key={course.tc_id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -899,12 +910,12 @@ const CourseManagement: React.FC = () => {
             </div>
 
             {/* Enhanced Pagination Controls */}
-            {totalCount > 0 && (
+            {filteredCount > 0 && (
                 <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                     <div className="text-sm text-gray-700">
                         Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                        <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{' '}
-                        <span className="font-medium">{totalCount}</span> courses
+                        <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCount)}</span> of{' '}
+                        <span className="font-medium">{filteredCount}</span> courses
                     </div>
 
                     <div className="flex items-center space-x-1">
@@ -976,7 +987,7 @@ const CourseManagement: React.FC = () => {
                 </div>
             )}
 
-            {courses.length === 0 && !listLoading && (
+            {filteredCourses.length === 0 && !listLoading && (
                 <div className="text-center py-12">
                     <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
