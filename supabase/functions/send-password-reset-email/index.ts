@@ -116,7 +116,6 @@ Deno.serve(async (req: Request) => {
       subject: passwordResetEmail.subject,
       html: passwordResetEmail.html,
       siteName: branding.siteName,
-      settings,
     });
 
     return createJsonResponse(200, {

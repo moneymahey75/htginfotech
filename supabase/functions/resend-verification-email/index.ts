@@ -127,7 +127,6 @@ Deno.serve(async (req: Request) => {
       subject: verificationEmail.subject,
       html: verificationEmail.html,
       siteName: branding.siteName,
-      settings,
     });
 
     return createJsonResponse(200, {
