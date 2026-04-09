@@ -179,7 +179,6 @@ Deno.serve(async (req: Request) => {
       subject: verificationEmail.subject,
       html: verificationEmail.html,
       siteName: branding.siteName,
-      settings: systemSettings,
     });
 
     return new Response(

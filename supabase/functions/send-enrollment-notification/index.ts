@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.54.0";
-import { buildBranding, loadSystemSettings, sendSmtpEmail } from "../_shared/email.ts";
+import { buildBranding, loadSystemSettings } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,14 +41,12 @@ Deno.serve(async (req: Request) => {
 
     console.log("Admin notifications created successfully");
 
-    const systemSettings = await loadSystemSettings(supabase);
-    const smtpConfigured =
-      Boolean(String(systemSettings.smtp_host || "").trim()) &&
-      Boolean(String(systemSettings.smtp_username || "").trim()) &&
-      Boolean(String(systemSettings.smtp_password || "").trim()) &&
-      Number(systemSettings.smtp_port || 0) > 0;
+    const { data: smtpSettings } = await supabase
+      .from("tbl_smtp_settings")
+      .select("*")
+      .single();
 
-    if (smtpConfigured) {
+    if (smtpSettings && smtpSettings.tss_is_enabled) {
       const { data: admins } = await supabase
         .from("tbl_users")
         .select(`
@@ -65,6 +63,7 @@ Deno.serve(async (req: Request) => {
 
         const emailPromises = admins.map(async (admin: any) => {
           const adminName = admin.tbl_user_profiles?.[0]?.tup_first_name || "Admin";
+          const systemSettings = await loadSystemSettings(supabase);
           const branding = buildBranding(systemSettings, { request: req });
           const emailBody = `
             <!DOCTYPE html>
@@ -128,15 +127,25 @@ Deno.serve(async (req: Request) => {
           `;
 
           try {
-            await sendSmtpEmail({
-              to: admin.tu_email,
-              subject: notificationTitle,
-              html: emailBody,
-              siteName: branding.siteName,
-              fromEmail: String(systemSettings.smtp_username || "").trim() || undefined,
-              settings: systemSettings,
+            const response = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+              },
+              body: JSON.stringify({
+                from: smtpSettings.tss_sender_email || "noreply@htginfotech.com",
+                to: admin.tu_email,
+                subject: notificationTitle,
+                html: emailBody,
+              }),
             });
-            console.log(`Email sent successfully to ${admin.tu_email}`);
+
+            if (!response.ok) {
+              console.error(`Failed to send email to ${admin.tu_email}:`, await response.text());
+            } else {
+              console.log(`Email sent successfully to ${admin.tu_email}`);
+            }
           } catch (error) {
             console.error(`Error sending email to ${admin.tu_email}:`, error);
           }
