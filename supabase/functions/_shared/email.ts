@@ -14,6 +14,7 @@ export interface BrandingSettings {
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const normalizePublicAssetPath = (value: string) =>
   value.replace(/(https?:\/\/[^/]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)/gi, "$1/$2");
+const knownHostedAssetPattern = /(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)$/i;
 
 const normalizeUrlCandidate = (value: unknown) => String(value || "").trim();
 
@@ -25,6 +26,17 @@ const toAbsoluteUrl = (baseUrl: string, pathOrUrl: unknown) => {
   }
 
   if (/^https?:\/\//i.test(normalizedValue)) {
+    if (baseUrl) {
+      try {
+        const parsedUrl = new URL(normalizedValue);
+        if (knownHostedAssetPattern.test(parsedUrl.pathname)) {
+          return normalizePublicAssetPath(`${trimTrailingSlash(baseUrl)}/${parsedUrl.pathname.replace(/^\/+/, "")}`);
+        }
+      } catch {
+        // Fall back to the original absolute URL below.
+      }
+    }
+
     return normalizePublicAssetPath(normalizedValue);
   }
 
@@ -358,12 +370,12 @@ export const buildBranding = (
   };
 };
 
-const getTransportConfig = () => {
-  const host = String(Deno.env.get("SMTP_HOST") || "").trim();
-  const port = Number(Deno.env.get("SMTP_PORT") || "587");
-  const user = String(Deno.env.get("SMTP_USER") || "").trim();
-  const pass = String(Deno.env.get("SMTP_PASS") || "").trim();
-  const secureMode = String(Deno.env.get("SMTP_SECURE") || "").trim().toUpperCase();
+const getTransportConfig = (settings?: SystemSettingsMap) => {
+  const host = String(settings?.smtp_host || "").trim();
+  const port = Number(settings?.smtp_port || "587");
+  const user = String(settings?.smtp_username || "").trim();
+  const pass = String(settings?.smtp_password || "").trim();
+  const secureMode = String(settings?.smtp_encryption || "").trim().toUpperCase();
 
   if (!host || !port || !user || !pass) {
     throw new Error("SMTP configuration is incomplete");
@@ -391,6 +403,7 @@ export const sendSmtpEmail = async ({
   siteName,
   fromEmail,
   replyTo,
+  settings,
 }: {
   to: string;
   subject: string;
@@ -398,9 +411,10 @@ export const sendSmtpEmail = async ({
   siteName: string;
   fromEmail?: string;
   replyTo?: string;
+  settings?: SystemSettingsMap;
 }) => {
   const { default: nodemailer } = await import("npm:nodemailer@6.10.1");
-  const transportConfig = getTransportConfig();
+  const transportConfig = getTransportConfig(settings);
   const transporter = nodemailer.createTransport(transportConfig);
   const normalizedSubject = normalizeEmailMarkup(subject);
   const normalizedHtml = normalizeEmailMarkup(html);

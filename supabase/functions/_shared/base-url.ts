@@ -10,25 +10,75 @@ const normalizeCandidate = (value?: string | null) => {
 const isLocalhostCandidate = (value?: string | null) =>
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(value || "").trim());
 
+const isSupabaseRuntimeCandidate = (value?: string | null) => {
+  const normalizedValue = normalizeCandidate(value);
+
+  if (!normalizedValue) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(normalizedValue).hostname.toLowerCase();
+    return (
+      hostname === "edge-runtime.supabase.com" ||
+      hostname.endsWith(".functions.supabase.co") ||
+      hostname.endsWith(".supabase.co")
+    );
+  } catch {
+    return false;
+  }
+};
+
+const normalizeOriginCandidate = (value?: string | null) => {
+  const normalizedValue = normalizeCandidate(value);
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  try {
+    return trimTrailingSlash(new URL(normalizedValue).origin);
+  } catch {
+    return "";
+  }
+};
+
 export const getRequestBaseUrl = (request?: Request) => {
   if (!request) {
     return "";
+  }
+
+  const origin = normalizeOriginCandidate(request.headers.get("origin"));
+  if (origin && !isSupabaseRuntimeCandidate(origin)) {
+    return origin;
+  }
+
+  const referer = normalizeOriginCandidate(request.headers.get("referer"));
+  if (referer && !isSupabaseRuntimeCandidate(referer)) {
+    return referer;
   }
 
   const forwardedProto = request.headers.get("x-forwarded-proto");
   const forwardedHost = request.headers.get("x-forwarded-host");
 
   if (forwardedHost) {
-    return normalizeCandidate(`${forwardedProto || "https"}://${forwardedHost}`);
+    const candidate = normalizeCandidate(`${forwardedProto || "https"}://${forwardedHost}`);
+    if (!isSupabaseRuntimeCandidate(candidate)) {
+      return candidate;
+    }
   }
 
   const host = request.headers.get("host");
 
   if (host) {
-    return normalizeCandidate(`${forwardedProto || "https"}://${host}`);
+    const candidate = normalizeCandidate(`${forwardedProto || "https"}://${host}`);
+    if (!isSupabaseRuntimeCandidate(candidate)) {
+      return candidate;
+    }
   }
 
-  return normalizeCandidate(new URL(request.url).origin);
+  const requestOrigin = normalizeCandidate(new URL(request.url).origin);
+  return isSupabaseRuntimeCandidate(requestOrigin) ? "" : requestOrigin;
 };
 
 export const resolveBaseUrl = ({
@@ -40,11 +90,19 @@ export const resolveBaseUrl = ({
   explicitSiteUrl?: string;
   settings?: SystemSettingsMap;
 }) => {
+  const explicitCandidate = normalizeCandidate(explicitSiteUrl);
+  if (explicitCandidate) {
+    return explicitCandidate;
+  }
+
+  const requestCandidate = getRequestBaseUrl(request);
+  if (requestCandidate) {
+    return requestCandidate;
+  }
+
   const candidates = [
-    normalizeCandidate(explicitSiteUrl),
     normalizeCandidate(String(settings?.website_url || "")),
     normalizeCandidate(String(settings?.site_url || "")),
-    getRequestBaseUrl(request),
     normalizeCandidate(Deno.env.get("SITE_URL")),
   ];
 

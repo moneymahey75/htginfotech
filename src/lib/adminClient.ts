@@ -1,6 +1,7 @@
 import { supabase as regularSupabase } from './supabase';
 
 const ADMIN_QUERY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-query`;
+const ADMIN_FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 class AdminQueryBuilder {
   private table: string;
@@ -188,3 +189,56 @@ class AdminSupabaseClient {
 }
 
 export const supabase = new AdminSupabaseClient();
+
+export const invokeAdminFunction = async <T>(
+  functionName: string,
+  options: {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    body?: unknown;
+  } = {},
+): Promise<{ data: T | null; error: { message: string } | null }> => {
+  try {
+    const adminSession = localStorage.getItem('admin_session_token');
+
+    if (!adminSession) {
+      return {
+        data: null,
+        error: { message: 'Admin session required' },
+      };
+    }
+
+    const response = await fetch(`${ADMIN_FUNCTIONS_BASE_URL}/${functionName}`, {
+      method: options.method || 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Session': adminSession,
+      },
+      ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: {
+          message: typeof payload?.error === 'string'
+            ? payload.error
+            : `HTTP ${response.status}`,
+        },
+      };
+    }
+
+    return {
+      data: (payload?.data ?? payload ?? null) as T | null,
+      error: payload?.error
+        ? { message: typeof payload.error === 'string' ? payload.error : 'Unknown error' }
+        : null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: error instanceof Error ? error.message : 'Unknown error' },
+    };
+  }
+};

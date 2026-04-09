@@ -84,6 +84,7 @@ const GeneralSettings: React.FC = () => {
         }
     };
 
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData(prev => ({
             ...prev,

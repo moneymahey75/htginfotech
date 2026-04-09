@@ -70,6 +70,7 @@ Deno.serve(async (req: Request) => {
       subject: welcomeEmail.subject,
       html: welcomeEmail.html,
       siteName: branding.siteName,
+      settings,
     });
 
     return new Response(

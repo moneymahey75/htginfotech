@@ -55,3 +55,8 @@ entrypoint = "./functions/resend-verification-email/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-password-reset-email/index.ts"
+
+[functions.smtp-settings]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/smtp-settings/index.ts"

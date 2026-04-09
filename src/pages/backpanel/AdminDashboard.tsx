@@ -48,7 +48,8 @@ import {
     GraduationCap,
     Image as ImageIcon,
     Folder,
-    Video
+    Video,
+    Mail
 } from 'lucide-react';
 
 interface SubAdmin {
@@ -274,10 +275,10 @@ const AdminDashboard: React.FC = () => {
         {id: 'general', label: 'General Settings', icon: Globe},
         {id: 'registration', label: 'Registration Settings', icon: UserCheck},
         {id: 'stripe', label: 'Stripe Connect', icon: CreditCard},
+        {id: 'smtp', label: 'SMTP Detail', icon: Mail},
         {id: 'videostorage', label: 'Video Storage', icon: Video},
         {id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck},
         {id: 'emailtemplates', label: 'Email Templates', icon: FileText},
-        // { id: 'smtp', label: 'Email Settings', icon: FileText },
         // { id: 'sms', label: 'SMS Settings', icon: FileText }
     ];
 

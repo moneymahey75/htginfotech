@@ -183,6 +183,7 @@ Deno.serve(async (req: Request) => {
           siteName,
           fromEmail,
           replyTo: email,
+          settings,
         });
       } catch (adminEmailError) {
         console.error("Contact admin email failed:", {
@@ -212,6 +213,7 @@ Deno.serve(async (req: Request) => {
           siteName,
           fromEmail,
           replyTo: recipientEmail,
+          settings,
         });
       } catch (confirmationError) {
         console.error("Contact confirmation email failed:", {

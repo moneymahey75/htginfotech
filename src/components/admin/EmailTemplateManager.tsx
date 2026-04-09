@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { emailTemplateDefaults, normalizeEmailMarkup, stripWordBreakTags } from '../../lib/emailTemplateDefaults';
 import { supabase as adminSupabase } from '../../lib/adminClient';
+import { getBaseUrl } from '../../utils/baseUrl';
 
 type Json =
   | string
@@ -583,6 +584,7 @@ const EmailTemplateManager: React.FC = () => {
         body: {
           templateName: testTemplate.tet_name,
           email: normalizedEmail,
+          siteUrl: getBaseUrl(),
         },
       });
 
@@ -614,7 +616,7 @@ const EmailTemplateManager: React.FC = () => {
           <div>
             <h4 className="text-lg font-semibold text-gray-900">Email Templates</h4>
             <p className="text-gray-600">
-              Manage email templates.
+              Manage email templates. Test emails use SMTP values from admin system settings.
             </p>
           </div>
         </div>
