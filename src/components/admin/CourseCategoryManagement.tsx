@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/adminClient';
 import { useNotification } from '../ui/NotificationProvider';
-import { Folder, Search, Plus, CreditCard as Edit, Trash2, Save, X, Eye, EyeOff, Palette, Hash, ArrowUp, ArrowDown, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
+import { Folder, Search, Plus, Trash2, Save, X, Eye, Palette, Hash, ArrowUp, ArrowDown, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
 interface CourseCategory {
   tcc_id: string;
@@ -653,29 +653,19 @@ const CourseCategoryManagement: React.FC = () => {
                             <button
                                 onClick={() => openEditCategory(category)}
                                 className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                                title="Edit Category"
+                                title="View Category"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Eye className="h-4 w-4" />
                             </button>
-                            <button
-                                onClick={() => handleToggleStatus(category.tcc_id, category.tcc_is_active)}
-                                disabled={updatingCategoryId === category.tcc_id}
-                                className={`p-1 rounded ${
-                                    category.tcc_is_active
-                                        ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                                        : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                } ${updatingCategoryId === category.tcc_id ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                title={category.tcc_is_active ? 'Deactivate' : 'Activate'}
-                            >
-                              {category.tcc_is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                            <button
-                                onClick={() => handleDeleteCategory(category.tcc_id, category.tcc_name)}
-                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                                title="Delete Category"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {(category.course_count || 0) === 0 && (
+                              <button
+                                  onClick={() => handleDeleteCategory(category.tcc_id, category.tcc_name)}
+                                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                                  title="Delete Category"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getCourseCategories, getCourses } from '../lib/supabase';
 import { buildAssetUrl } from '../utils/baseUrl';
@@ -123,6 +123,27 @@ const Courses: React.FC = () => {
     return matchesSearch && matchesCategory && matchesPrice && matchesDifficulty;
   });
 
+  const visibleCategories = useMemo(() => {
+    const categoryNamesWithCourses = new Set(
+      courses
+        .map((course) => course.tbl_course_categories?.tcc_name)
+        .filter(Boolean)
+    );
+
+    return categories.filter((category) => categoryNamesWithCourses.has(category.tcc_name));
+  }, [categories, courses]);
+
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      return;
+    }
+
+    const categoryStillVisible = visibleCategories.some((category) => category.tcc_name === selectedCategory);
+    if (!categoryStillVisible) {
+      setSelectedCategory('all');
+    }
+  }, [selectedCategory, visibleCategories]);
+
   const sortedCourses = [...filteredCourses].sort((a, b) => {
     switch (sortBy) {
       case 'price_low':
@@ -239,7 +260,7 @@ const Courses: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="all">All Categories</option>
-                  {categories.map((category) => (
+                  {visibleCategories.map((category) => (
                     <option key={category.tcc_id} value={category.tcc_name}>
                       {category.tcc_name}
                     </option>

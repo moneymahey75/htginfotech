@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {useAdminAuth} from '../../contexts/AdminAuthContext';
+import type { PermissionModule, PermissionSet } from '../../contexts/AdminAuthContext';
 import {useNavigate} from 'react-router-dom';
 import {supabase} from '../../lib/supabase';
 import GeneralSettings from '../../components/admin/GeneralSettings';
@@ -62,6 +63,18 @@ interface SubAdmin {
     createdAt: string;
 }
 
+const createDefaultDashboardPermissions = (): PermissionSet => ({
+    enrollments: {read: false, write: false, delete: false},
+    learners: {read: false, write: false, delete: false},
+    tutors: {read: false, write: false, delete: false},
+    courses: {read: false, write: false, delete: false},
+    categories: {read: false, write: false, delete: false},
+    payments: {read: false, write: false, delete: false},
+    sliders: {read: false, write: false, delete: false},
+    settings: {read: false, write: false, delete: false},
+    admins: {read: false, write: false, delete: false}
+});
+
 const AdminDashboard: React.FC = () => {
     const {
         admin,
@@ -75,6 +88,7 @@ const AdminDashboard: React.FC = () => {
     } = useAdminAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
+    const [activeTabRefreshKey, setActiveTabRefreshKey] = useState(0);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -92,15 +106,7 @@ const AdminDashboard: React.FC = () => {
     const [newSubAdmin, setNewSubAdmin] = useState({
         email: '',
         fullName: '',
-        permissions: {
-            users: {read: false, write: false, delete: false},
-            companies: {read: false, write: false, delete: false},
-            subscriptions: {read: false, write: false, delete: false},
-            payments: {read: false, write: false, delete: false},
-            settings: {read: false, write: false, delete: false},
-            admins: {read: false, write: false, delete: false},
-            reports: {read: false, write: false, delete: false}
-        }
+        permissions: createDefaultDashboardPermissions()
     });
 
     useEffect(() => {
@@ -159,15 +165,7 @@ const AdminDashboard: React.FC = () => {
             setNewSubAdmin({
                 email: '',
                 fullName: '',
-                permissions: {
-                    users: {read: false, write: false, delete: false},
-                    companies: {read: false, write: false, delete: false},
-                    subscriptions: {read: false, write: false, delete: false},
-                    payments: {read: false, write: false, delete: false},
-                    settings: {read: false, write: false, delete: false},
-                    admins: {read: false, write: false, delete: false},
-                    reports: {read: false, write: false, delete: false}
-                }
+                permissions: createDefaultDashboardPermissions()
             });
             loadSubAdmins();
         } catch (error) {
@@ -202,7 +200,7 @@ const AdminDashboard: React.FC = () => {
             permissions: {
                 ...prev.permissions,
                 [module]: {
-                    ...prev.permissions[module],
+                    ...prev.permissions[module as PermissionModule],
                     [action]: value
                 }
             }
@@ -252,16 +250,15 @@ const AdminDashboard: React.FC = () => {
 
     const tabs = [
         {id: 'overview', label: 'Overview', icon: BarChart3, permission: null},
-        {id: 'enrollments', label: 'Enrollments', icon: UserCheck, permission: 'users'},
-        {id: 'learners', label: 'Learners', icon: BookOpen, permission: 'users'},
-        {id: 'tutors', label: 'Tutors', icon: GraduationCap, permission: 'users'},
-        {id: 'courses', label: 'Courses', icon: BookOpen, permission: 'users'},
-        {id: 'categories', label: 'Course Categories', icon: Folder, permission: 'users'},
-        //{ id: 'subscriptions', label: 'Subscriptions', icon: CreditCard, permission: 'subscriptions' },
-        {id: 'payments', label: 'Payments', icon: DollarSign, permission: 'payments'},
-        {id: 'admins', label: 'Sub-Admins', icon: Shield, permission: 'admins'},
-        {id: 'sliders', label: 'Home Sliders', icon: ImageIcon, permission: 'content'},
-        {id: 'settings', label: 'Settings', icon: Settings, permission: 'settings'}
+        {id: 'enrollments', label: 'Enrollments', icon: UserCheck, permission: 'enrollments' as PermissionModule},
+        {id: 'learners', label: 'Learners', icon: BookOpen, permission: 'learners' as PermissionModule},
+        {id: 'tutors', label: 'Tutors', icon: GraduationCap, permission: 'tutors' as PermissionModule},
+        {id: 'courses', label: 'Courses', icon: BookOpen, permission: 'courses' as PermissionModule},
+        {id: 'categories', label: 'Course Categories', icon: Folder, permission: 'categories' as PermissionModule},
+        {id: 'payments', label: 'Payments', icon: DollarSign, permission: 'payments' as PermissionModule},
+        {id: 'admins', label: 'Sub-Admins', icon: Shield, permission: 'admins' as PermissionModule},
+        {id: 'sliders', label: 'Home Sliders', icon: ImageIcon, permission: 'sliders' as PermissionModule},
+        {id: 'settings', label: 'Settings', icon: Settings, permission: 'settings' as PermissionModule}
     ];
 
     const visibleTabs = tabs.filter(tab =>
@@ -270,16 +267,37 @@ const AdminDashboard: React.FC = () => {
 
     // Settings sub-tabs
     const [settingsTab, setSettingsTab] = useState('general');
+    const [settingsTabRefreshKey, setSettingsTabRefreshKey] = useState(0);
     const settingsTabs = [
         {id: 'general', label: 'General Settings', icon: Globe},
         {id: 'registration', label: 'Registration Settings', icon: UserCheck},
         {id: 'stripe', label: 'Stripe Connect', icon: CreditCard},
         {id: 'videostorage', label: 'Video Storage', icon: Video},
         {id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck},
+        {id: 'smtp', label: 'SMTP Settings', icon: FileText},
         {id: 'emailtemplates', label: 'Email Templates', icon: FileText},
-        // { id: 'smtp', label: 'Email Settings', icon: FileText },
         // { id: 'sms', label: 'SMS Settings', icon: FileText }
     ];
+
+    const handleMainTabClick = (tabId: string) => {
+        if (activeTab === tabId) {
+            setActiveTabRefreshKey(prev => prev + 1);
+            return;
+        }
+
+        setActiveTab(tabId);
+        setActiveTabRefreshKey(0);
+    };
+
+    const handleSettingsTabClick = (tabId: string) => {
+        if (settingsTab === tabId) {
+            setSettingsTabRefreshKey(prev => prev + 1);
+            return;
+        }
+
+        setSettingsTab(tabId);
+        setSettingsTabRefreshKey(0);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -333,7 +351,7 @@ const AdminDashboard: React.FC = () => {
                     {visibleTabs.map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => handleMainTabClick(tab.id)}
                             className={`w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-left transition-all duration-200 ${
                                 activeTab === tab.id
                                     ? 'bg-red-50 text-red-600 border border-red-200'
@@ -451,45 +469,45 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
 
-                    {activeTab === 'enrollments' && hasPermission('users', 'read') && (
-                        <EnrollmentManagement/>
+                    {activeTab === 'enrollments' && hasPermission('enrollments', 'read') && (
+                        <EnrollmentManagement key={`enrollments-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'learners' && hasPermission('users', 'read') && (
-                        <LearnerManagement/>
+                    {activeTab === 'learners' && hasPermission('learners', 'read') && (
+                        <LearnerManagement key={`learners-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'tutors' && hasPermission('users', 'read') && (
-                        <TutorManagement/>
+                    {activeTab === 'tutors' && hasPermission('tutors', 'read') && (
+                        <TutorManagement key={`tutors-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'courses' && hasPermission('users', 'read') && (
-                        <CourseManagement/>
+                    {activeTab === 'courses' && hasPermission('courses', 'read') && (
+                        <CourseManagement key={`courses-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'categories' && hasPermission('users', 'read') && (
-                        <CourseCategoryManagement/>
+                    {activeTab === 'categories' && hasPermission('categories', 'read') && (
+                        <CourseCategoryManagement key={`categories-${activeTabRefreshKey}`}/>
                     )}
 
 
-                    {activeTab === 'subscriptions' && hasPermission('subscriptions', 'read') && (
-                        <SubscriptionManagement/>
+                    {activeTab === 'subscriptions' && false && hasPermission('payments', 'read') && (
+                        <SubscriptionManagement key={`subscriptions-${activeTabRefreshKey}`}/>
                     )}
 
                     {activeTab === 'payments' && hasPermission('payments', 'read') && (
-                        <AdminPaymentHistory/>
+                        <AdminPaymentHistory key={`payments-${activeTabRefreshKey}`}/>
                     )}
 
                     {activeTab === 'admins' && hasPermission('admins', 'read') && (
-                        <AdminManagement/>
+                        <AdminManagement key={`admins-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'sliders' && hasPermission('content', 'read') && (
-                        <SliderManagement/>
+                    {activeTab === 'sliders' && hasPermission('sliders', 'read') && (
+                        <SliderManagement key={`sliders-${activeTabRefreshKey}`}/>
                     )}
 
                     {activeTab === 'settings' && hasPermission('settings', 'read') && (
-                        <div className="bg-white rounded-xl shadow-sm">
+                        <div key={`settings-shell-${activeTabRefreshKey}`} className="bg-white rounded-xl shadow-sm">
                             {/* Vertical Settings Navigation */}
                             <div className="flex">
                                 <div className="w-64 border-r border-gray-200">
@@ -501,7 +519,7 @@ const AdminDashboard: React.FC = () => {
                                         {settingsTabs.map((tab) => (
                                             <button
                                                 key={tab.id}
-                                                onClick={() => setSettingsTab(tab.id)}
+                                                onClick={() => handleSettingsTabClick(tab.id)}
                                                 className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 ${
                                                     settingsTab === tab.id
                                                         ? 'bg-blue-50 text-blue-600 border border-blue-200'
@@ -517,14 +535,14 @@ const AdminDashboard: React.FC = () => {
 
                                 {/* Settings Content */}
                                 <div className="flex-1 p-6">
-                                    {settingsTab === 'general' && <GeneralSettings/>}
-                                    {settingsTab === 'registration' && <RegistrationSettings/>}
-                                    {settingsTab === 'stripe' && <StripeConnectSettings/>}
-                                    {settingsTab === 'videostorage' && <VideoStorageSettings/>}
-                                    {settingsTab === 'contactsocial' && <ContactSocialSettings/>}
-                                    {settingsTab === 'emailtemplates' && <EmailTemplateManager/>}
-                                    {settingsTab === 'smtp' && <SMTPSettings/>}
-                                    {settingsTab === 'sms' && <SMSSettings/>}
+                                    {settingsTab === 'general' && <GeneralSettings key={`general-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'registration' && <RegistrationSettings key={`registration-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'stripe' && <StripeConnectSettings key={`stripe-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'videostorage' && <VideoStorageSettings key={`videostorage-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'contactsocial' && <ContactSocialSettings key={`contactsocial-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'emailtemplates' && <EmailTemplateManager key={`emailtemplates-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'smtp' && <SMTPSettings key={`smtp-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'sms' && <SMSSettings key={`sms-${settingsTabRefreshKey}`}/>}
                                 </div>
                             </div>
                         </div>

@@ -889,6 +889,7 @@ export const getCourseCategories = async () => {
   const { data, error } = await supabase
     .from('tbl_course_categories')
     .select('*')
+    .eq('tcc_is_active', true)
     .order('tcc_sort_order', { ascending: true })
 
   if (error) throw error
@@ -900,8 +901,10 @@ export const getCourses = async () => {
     .from('tbl_courses')
     .select(`
       *,
-      tbl_course_categories (*)
+      tbl_course_categories!inner (*)
     `)
+    .eq('tc_is_active', true)
+    .eq('tbl_course_categories.tcc_is_active', true)
     .order('tc_title')
 
   if (error) throw error
@@ -913,11 +916,13 @@ export const getCourseById = async (courseId: string) => {
     .from('tbl_courses')
     .select(`
       *,
-      tbl_course_categories (*),
+      tbl_course_categories!inner (*),
       tbl_course_content (*)
     `)
     .eq('tc_id', courseId)
-    .single()
+    .eq('tc_is_active', true)
+    .eq('tbl_course_categories.tcc_is_active', true)
+    .maybeSingle()
 
   if (error) throw error
   return data
@@ -928,11 +933,16 @@ export const enrollInCourse = async (userId: string, courseId: string, amount: n
     // Get course details to determine pricing type
     const { data: courseArray } = await supabase
         .from('tbl_courses')
-        .select('tc_pricing_type, tc_access_days')
+        .select('tc_pricing_type, tc_access_days, tc_is_active')
         .eq('tc_id', courseId)
         .limit(1);
 
     const course = courseArray?.[0];
+
+    if (!course?.tc_is_active) {
+      throw new Error('This course is not available right now.')
+    }
+
     let expiryDate = null;
 
     if (course?.tc_pricing_type === "paid_days" && course?.tc_access_days) {

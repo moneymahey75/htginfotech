@@ -7,7 +7,6 @@ import {
   FileText,
   Loader2,
   Mail,
-  Pencil,
   Plus,
   RefreshCw,
   X,
@@ -711,16 +710,6 @@ const EmailTemplateManager: React.FC = () => {
                       >
                         <Eye className="h-4 w-4" />
                         <span className="sr-only">View</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(template)}
-                        title="Edit template"
-                        aria-label={`Edit ${formatTemplateName(template.tet_name)}`}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-indigo-200 text-indigo-700 transition hover:bg-indigo-50"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
                       </button>
                       <button
                         type="button"

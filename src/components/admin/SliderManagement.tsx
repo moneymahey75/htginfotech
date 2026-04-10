@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/adminClient';
 import { useNotification } from '../ui/NotificationProvider';
-import { Image as ImageIcon, Search, Filter, Eye, CreditCard as Edit, Trash2, Plus, ArrowLeft, Save, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, Upload, Link as LinkIcon, Text, Type, ListOrdered } from 'lucide-react';
+import { Image as ImageIcon, Search, Eye, Pencil, Trash2, Plus, ArrowLeft, Save, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, Upload, Link as LinkIcon, Text, Type, ListOrdered } from 'lucide-react';
 
 interface Slider {
     ts_id: string;
@@ -411,18 +411,6 @@ const SliderManagement: React.FC = () => {
                                         <Eye className="h-4 w-4" />
                                     </button>
                                     <button
-                                        onClick={() => handleToggleStatus(slider, slider.ts_is_active)}
-                                        disabled={updatingSliderId === slider.ts_id}
-                                        className={`p-1 rounded ${
-                                            slider.ts_is_active
-                                                ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                                                : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                        } ${updatingSliderId === slider.ts_id ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                        title={slider.ts_is_active ? 'Deactivate' : 'Activate'}
-                                    >
-                                        {slider.ts_is_active ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                                    </button>
-                                    <button
                                         onClick={() => handleDeleteSlider(slider.ts_id)}
                                         className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                                         title="Delete"
@@ -646,7 +634,7 @@ const SliderDetails: React.FC<{
                                             onClick={() => setEditMode(true)}
                                             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                                         >
-                                            <Edit className="h-4 w-4" />
+                                            <Pencil className="h-4 w-4" />
                                             <span>Edit Slider</span>
                                         </button>
                                     )

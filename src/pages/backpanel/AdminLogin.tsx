@@ -14,6 +14,7 @@ const AdminLogin: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState((location.state as any)?.error || '');
+  const [successMessage] = useState((location.state as any)?.success || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ const AdminLogin: React.FC = () => {
       await login(formData.email, formData.password);
       navigate('/backpanel/dashboard');
     } catch (err) {
-      setError('Invalid email or password');
+      setError(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
     }
@@ -77,6 +78,12 @@ const AdminLogin: React.FC = () => {
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
               <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+              <p className="text-green-300 text-sm">{successMessage}</p>
             </div>
           )}
 

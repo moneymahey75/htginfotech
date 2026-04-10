@@ -6,12 +6,10 @@ import {useNotification} from '../ui/NotificationProvider';
 import {
     BookOpen,
     Search,
-    Filter,
     Eye,
-    CreditCard as Edit,
+    Pencil,
     Trash2,
     Plus,
-    Save,
     X,
     Upload,
     Play,
@@ -22,13 +20,10 @@ import {
     Clock,
     Star,
     ArrowLeft,
-    CheckCircle,
-    AlertCircle,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    MoreHorizontal
 } from 'lucide-react';
 
 const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
@@ -86,6 +81,7 @@ interface Course {
     tc_featured: boolean;
     tc_is_active: boolean;
     tc_created_at: string;
+    tc_category_id?: string;
     tbl_course_categories: {
         tcc_name: string;
         tcc_color: string;
@@ -98,6 +94,8 @@ interface CourseCategory {
     tcc_description: string;
     tcc_icon: string;
     tcc_color: string;
+    tcc_is_active?: boolean;
+    tcc_sort_order?: number;
 }
 
 interface Lesson {
@@ -168,6 +166,16 @@ const Loader: React.FC = () => {
     );
 };
 
+const truncateText = (value?: string, maxLength = 15) => {
+    const safeValue = String(value || '').trim();
+
+    if (safeValue.length <= maxLength) {
+        return safeValue || 'Not provided';
+    }
+
+    return `${safeValue.slice(0, maxLength)}...`;
+};
+
 const CourseManagement: React.FC = () => {
     const [courses, setCourses] = useState<Course[]>([]);
     const [categories, setCategories] = useState<CourseCategory[]>([]);
@@ -179,7 +187,9 @@ const CourseManagement: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [showCourseModal, setShowCourseModal] = useState(false);
     const [showLessonsModal, setShowLessonsModal] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+    const [selectedCategoryCourse, setSelectedCategoryCourse] = useState<Course | null>(null);
     const [editMode, setEditMode] = useState(false);
     const [editLessonMode, setEditLessonMode] = useState(false);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -190,6 +200,7 @@ const CourseManagement: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
     const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
+    const [updatingCategoryId, setUpdatingCategoryId] = useState<string | null>(null);
 
     const notification = useNotification();
 
@@ -629,6 +640,54 @@ const CourseManagement: React.FC = () => {
         loadLessons(course.tc_id);
     };
 
+    const openCategoryModal = (course: Course) => {
+        setSelectedCategoryCourse(course);
+        setShowCategoryModal(true);
+    };
+
+    const closeCategoryModal = () => {
+        setSelectedCategoryCourse(null);
+        setShowCategoryModal(false);
+    };
+
+    const handleQuickCategoryUpdate = async (course: Course, categoryId: string) => {
+        try {
+            setUpdatingCategoryId(course.tc_id);
+
+            const { error } = await supabase
+                .from('tbl_courses')
+                .update({ tc_category_id: categoryId })
+                .eq('tc_id', course.tc_id);
+
+            if (error) throw error;
+
+            const nextCategory = categories.find((category) => category.tcc_id === categoryId);
+
+            setCourses((prev) => prev.map((item) => (
+                item.tc_id === course.tc_id
+                    ? {
+                        ...item,
+                        tc_category_id: categoryId,
+                        tbl_course_categories: nextCategory
+                            ? {
+                                tcc_name: nextCategory.tcc_name,
+                                tcc_color: nextCategory.tcc_color,
+                            }
+                            : item.tbl_course_categories,
+                    }
+                    : item
+            )));
+
+            notification.showSuccess('Category Updated', 'Course category has been updated successfully');
+            closeCategoryModal();
+        } catch (error) {
+            console.error('Failed to update course category:', error);
+            notification.showError('Update Failed', 'Failed to update course category');
+        } finally {
+            setUpdatingCategoryId(null);
+        }
+    };
+
     // Learning outcomes handlers
     const addLearningOutcome = () => {
         setCourseFormData(prev => ({
@@ -893,20 +952,24 @@ const CourseManagement: React.FC = () => {
                                                 alt={course.tc_title}
                                             />
                                             <div>
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {course.tc_title}
+                                                <div className="text-sm font-medium text-gray-900" title={course.tc_title}>
+                                                    {truncateText(course.tc_title)}
                                                 </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {course.tc_short_description}
+                                                <div className="text-sm text-gray-500" title={course.tc_short_description}>
+                                                    {truncateText(course.tc_short_description)}
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {course.tbl_course_categories?.tcc_name}
-                      </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => openCategoryModal(course)}
+                                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                                            title="Change category"
+                                        >
+                                            {course.tbl_course_categories?.tcc_name || 'Select Category'}
+                                        </button>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-gray-900">
@@ -953,28 +1016,16 @@ const CourseManagement: React.FC = () => {
                                             <button
                                                 onClick={() => openLessonsModal(course)}
                                                 className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                                                title="Manage Lessons"
+                                                title="View Course"
                                             >
-                                                <Play className="h-4 w-4"/>
+                                                <Eye className="h-4 w-4"/>
                                             </button>
                                             <button
                                                 onClick={() => openEditCourse(course)}
                                                 className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
                                                 title="Edit Course"
                                             >
-                                                <Edit className="h-4 w-4"/>
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleCourseStatus(course.tc_id, course.tc_is_active)}
-                                                disabled={updatingCourseId === course.tc_id}
-                                                className={`p-1 rounded ${
-                                                    course.tc_is_active
-                                                        ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                                                        : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                                } ${updatingCourseId === course.tc_id ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                title={course.tc_is_active ? 'Deactivate' : 'Activate'}
-                                            >
-                                                {course.tc_is_active ? <AlertCircle className="h-4 w-4"/> : <CheckCircle className="h-4 w-4"/>}
+                                                <Pencil className="h-4 w-4"/>
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteCourse(course.tc_id)}
@@ -992,6 +1043,72 @@ const CourseManagement: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {showCategoryModal && selectedCategoryCourse && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                            <div>
+                                <h4 className="text-lg font-semibold text-gray-900">Change Course Category</h4>
+                                <p className="text-sm text-gray-500">
+                                    {selectedCategoryCourse.tc_title}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeCategoryModal}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {categories.map((category) => {
+                                    const isSelected = selectedCategoryCourse.tc_category_id === category.tcc_id;
+
+                                    return (
+                                        <button
+                                            key={category.tcc_id}
+                                            type="button"
+                                            onClick={() => handleQuickCategoryUpdate(selectedCategoryCourse, category.tcc_id)}
+                                            disabled={updatingCategoryId === selectedCategoryCourse.tc_id}
+                                            className={`text-left rounded-xl border px-4 py-3 transition-colors ${
+                                                isSelected
+                                                    ? 'border-purple-500 bg-purple-50'
+                                                    : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+                                            } ${updatingCategoryId === selectedCategoryCourse.tc_id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        >
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {category.tcc_name}
+                                                </span>
+                                                {isSelected && (
+                                                    <span className="text-xs font-medium text-purple-700">
+                                                        Current
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {category.tcc_description && (
+                                                <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                                                    {category.tcc_description}
+                                                </p>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {categories.length === 0 && (
+                                <div className="text-sm text-gray-500">
+                                    No active categories available.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Enhanced Pagination Controls */}
             {filteredCount > 0 && (
@@ -1753,7 +1870,7 @@ const CourseManagement: React.FC = () => {
                                                             className="text-blue-600 hover:text-blue-800 p-1"
                                                             title="Edit Lesson"
                                                         >
-                                                            <Edit className="h-4 w-4"/>
+                                                            <Pencil className="h-4 w-4"/>
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteLesson(lesson.tcc_id)}

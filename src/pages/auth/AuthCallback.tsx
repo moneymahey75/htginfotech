@@ -45,7 +45,10 @@ const AuthCallback: React.FC = () => {
           }
         } else if (type === 'email_verification' && token) {
           const { data: verificationResult, error: verificationError } = await supabase.functions.invoke('verify-email', {
-            body: { token }
+            body: {
+              token,
+              siteUrl: getBaseUrl(),
+            }
           });
 
           if (verificationError) {
@@ -98,6 +101,7 @@ const AuthCallback: React.FC = () => {
                     firstName: firstName,
                     lastName: lastName,
                     userType: userType,
+                    siteUrl: getBaseUrl(),
                   }),
                 }
               );

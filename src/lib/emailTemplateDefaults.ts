@@ -1,5 +1,5 @@
 export interface EmailTemplateDefinition {
-  name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email' | 'password_reset';
+  name: 'verification_email' | 'welcome_email' | 'contact_admin_email' | 'contact_confirmation_email' | 'password_reset' | 'sub_admin_password_reset';
   label: string;
   subject: string;
   body: string;
@@ -193,6 +193,38 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
     }),
   },
   {
+    name: 'sub_admin_password_reset',
+    label: 'Sub Admin Password Reset',
+    subject: 'Set your password - {{site_name}}',
+    templateType: 'sub_admin_password_reset',
+    variables: ['user_name', 'first_name', 'reset_link', 'reset_password_link', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
+    body: buildEmailShell({
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          Your sub-admin account for {{site_name}} is ready. Please set your password to access the admin panel.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
+            Click the button below to create your password securely. This link is unique to your account and will expire automatically.
+          </p>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{reset_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Set Password</a>
+        </div>
+        <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
+          If the button above is not clickable, please copy the following URL and paste it into your browser.
+        </p>
+        <p style="margin:0 0 20px;word-break:break-word;">
+          <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          Regards,<br>{{site_name}} Team
+        </p>
+      `,
+    }),
+  },
+  {
     name: 'contact_confirmation_email',
     label: 'Contact Confirmation Email',
     subject: 'We received your message - {{site_name}}',
@@ -241,16 +273,28 @@ export const normalizeEmailMarkup = (value: string) =>
     .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, '')
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
     .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/htginfotech-logo\.png\1/gi,
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
       (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
     )
     .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/htginfotech-logo\.png\1/gi,
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
       (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
     )
     .replace(
       /src=(['"])(https?:\/\/[^'"]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string, baseUrl: string, fileName: string) => `src=${quote}${baseUrl}/${fileName}${quote}`,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])(https?:\/\/[^'"]+)\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
     )
     .replace(
       /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,

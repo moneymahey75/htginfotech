@@ -3,22 +3,119 @@ import { supabase } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 import { withTimeout } from '../utils/loadingRecovery';
 
+export type PermissionAction = 'read' | 'write' | 'delete';
+export type PermissionModule =
+  | 'enrollments'
+  | 'learners'
+  | 'tutors'
+  | 'courses'
+  | 'categories'
+  | 'payments'
+  | 'sliders'
+  | 'settings'
+  | 'admins';
+
+export type PermissionSet = Record<PermissionModule, Record<PermissionAction, boolean>>;
+
+const createDefaultPermissions = (): PermissionSet => ({
+  enrollments: { read: false, write: false, delete: false },
+  learners: { read: false, write: false, delete: false },
+  tutors: { read: false, write: false, delete: false },
+  courses: { read: false, write: false, delete: false },
+  categories: { read: false, write: false, delete: false },
+  payments: { read: false, write: false, delete: false },
+  sliders: { read: false, write: false, delete: false },
+  settings: { read: false, write: false, delete: false },
+  admins: { read: false, write: false, delete: false },
+});
+
+const canonicalPermissionModules: PermissionModule[] = [
+  'enrollments',
+  'learners',
+  'tutors',
+  'courses',
+  'categories',
+  'payments',
+  'sliders',
+  'settings',
+  'admins',
+];
+
+const mergePermissionSources = (
+  rawPermissions: Partial<Record<string, Partial<Record<PermissionAction, boolean>>>>,
+  keys: string[]
+): Record<PermissionAction, boolean> => {
+  return keys.reduce<Record<PermissionAction, boolean>>(
+    (merged, key) => {
+      const source = rawPermissions[key];
+      if (!source || typeof source !== 'object') {
+        return merged;
+      }
+
+      return {
+        read: merged.read || Boolean(source.read),
+        write: merged.write || Boolean(source.write),
+        delete: merged.delete || Boolean(source.delete),
+      };
+    },
+    { read: false, write: false, delete: false }
+  );
+};
+
+const normalizePermissions = (rawPermissions: Partial<Record<string, Partial<Record<PermissionAction, boolean>>>> | null | undefined): PermissionSet => {
+  const normalized = createDefaultPermissions();
+
+  if (!rawPermissions || typeof rawPermissions !== 'object') {
+    return normalized;
+  }
+
+  const permissionAliases: Record<PermissionModule, string[]> = {
+    enrollments: ['enrollments', 'subscriptions', 'dailytasks'],
+    learners: ['learners', 'customers'],
+    tutors: ['tutors', 'companies'],
+    courses: ['courses', 'subscriptions'],
+    categories: ['categories', 'coupons'],
+    payments: ['payments', 'wallets'],
+    sliders: ['sliders'],
+    settings: ['settings'],
+    admins: ['admins'],
+  };
+
+  (Object.keys(normalized) as PermissionModule[]).forEach((module) => {
+    normalized[module] = mergePermissionSources(rawPermissions, permissionAliases[module]);
+  });
+
+  return normalized;
+};
+
+const serializePermissionsForStorage = (permissions: PermissionSet): PermissionSet => ({
+  enrollments: { ...permissions.enrollments },
+  learners: { ...permissions.learners },
+  tutors: { ...permissions.tutors },
+  courses: { ...permissions.courses },
+  categories: { ...permissions.categories },
+  payments: { ...permissions.payments },
+  sliders: { ...permissions.sliders },
+  settings: { ...permissions.settings },
+  admins: { ...permissions.admins },
+});
+
+const hasLegacyPermissionKeys = (
+  rawPermissions: Partial<Record<string, Partial<Record<PermissionAction, boolean>>>> | null | undefined
+): boolean => {
+  if (!rawPermissions || typeof rawPermissions !== 'object') {
+    return false;
+  }
+
+  return Object.keys(rawPermissions).some((key) => !canonicalPermissionModules.includes(key as PermissionModule));
+};
+
 interface AdminUser {
   id: string;
   email: string;
   fullName: string;
   role: 'super_admin' | 'sub_admin';
-  permissions: {
-    customers: { read: boolean; write: boolean; delete: boolean };
-    companies: { read: boolean; write: boolean; delete: boolean };
-    subscriptions: { read: boolean; write: boolean; delete: boolean };
-    payments: { read: boolean; write: boolean; delete: boolean };
-    settings: { read: boolean; write: boolean; delete: boolean };
-    admins: { read: boolean; write: boolean; delete: boolean };
-    coupons: { read: boolean, write: boolean, delete: boolean },
-    dailytasks: { read: boolean, write: boolean, delete: boolean },
-    wallets: { read: boolean, write: boolean, delete: boolean },
-  };
+  permissions: PermissionSet;
   isActive: boolean;
   lastLogin?: string;
   createdAt: string;
@@ -42,13 +139,14 @@ interface AdminAuthContextType {
   createSubAdmin: (data: {
     email: string;
     fullName: string;
-    permissions: AdminUser['permissions'];
+    isActive: boolean;
+    permissions: PermissionSet;
   }) => Promise<void>;
-  updateSubAdmin: (id: string, data: Partial<SubAdmin>) => Promise<void>;
+  updateSubAdmin: (id: string, data: Partial<SubAdmin>) => Promise<SubAdmin>;
   deleteSubAdmin: (id: string) => Promise<void>;
-  resetSubAdminPassword: (id: string) => Promise<string>;
+  resetSubAdminPassword: (id: string) => Promise<void>;
   getSubAdmins: () => Promise<SubAdmin[]>;
-  hasPermission: (module: keyof AdminUser['permissions'], action: 'read' | 'write' | 'delete') => boolean;
+  hasPermission: (module: PermissionModule, action: PermissionAction) => boolean;
   loading: boolean;
 }
 
@@ -140,7 +238,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         email: user.tau_email,
         fullName: user.tau_full_name,
         role: user.tau_role,
-        permissions: user.tau_permissions,
+        permissions: normalizePermissions(user.tau_permissions),
         isActive: user.tau_is_active,
         lastLogin: user.tau_last_login || '',
         createdAt: user.tau_created_at || ''
@@ -254,7 +352,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         email: user.tau_email,
         fullName: user.tau_full_name,
         role: user.tau_role,
-        permissions: user.tau_permissions,
+        permissions: normalizePermissions(user.tau_permissions),
         isActive: user.tau_is_active,
         lastLogin: user.tau_last_login || '',
         createdAt: user.tau_created_at || ''
@@ -285,10 +383,32 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     notification.showInfo('Logged Out', 'Successfully logged out of admin panel.');
   };
 
+  const sendSubAdminPasswordResetEmail = async (subAdminId: string, siteUrl?: string) => {
+    const adminSession = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') || '' : '';
+    const { data, error } = await supabase.functions.invoke('send-subadmin-password-reset-email', {
+      body: {
+        subAdminId,
+        siteUrl: siteUrl || (typeof window !== 'undefined' ? window.location.origin : ''),
+      },
+      headers: {
+        'X-Admin-Session': adminSession,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Failed to send password setup email.');
+    }
+  };
+
   const createSubAdmin = async (data: {
     email: string;
     fullName: string;
-    permissions: AdminUser['permissions'];
+    isActive: boolean;
+    permissions: PermissionSet;
   }) => {
     try {
       // Check if email already exists - use .maybeSingle() or handle empty result
@@ -322,8 +442,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             tau_full_name: data.fullName,
             tau_password_hash: hashedPassword,
             tau_role: 'sub_admin',
-            tau_permissions: data.permissions,
-            tau_is_active: true,
+            tau_permissions: serializePermissionsForStorage(data.permissions),
+            tau_is_active: data.isActive,
             tau_created_by: admin!.id,
             tau_created_at: new Date().toISOString()
           })
@@ -335,12 +455,27 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(insertError.message || 'Failed to create sub-admin');
       }
 
-      console.log('Temporary password for email:', tempPassword);
+      console.log('Temporary password prepared for sub-admin setup:', tempPassword);
 
-      notification.showSuccess(
-          'Sub-Admin Created',
-          `Sub-admin created successfully. Login credentials have been sent to ${data.email}`
-      );
+      if (newAdmin?.tau_is_active) {
+        try {
+          await sendSubAdminPasswordResetEmail(newAdmin.tau_id, typeof window !== 'undefined' ? window.location.origin : '');
+          notification.showSuccess(
+              'Sub-Admin Created',
+              `Password setup email sent successfully to ${data.email}.`
+          );
+        } catch (emailError: any) {
+          notification.showWarning(
+              'Sub-Admin Created',
+              `The sub-admin was created, but the password setup email could not be sent. ${emailError?.message || ''}`.trim()
+          );
+        }
+      } else {
+        notification.showWarning(
+            'Sub-Admin Created',
+            'The sub-admin was created, but no password setup email was sent because the account is inactive.'
+        );
+      }
 
       return newAdmin;
     } catch (error: any) {
@@ -362,14 +497,14 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (data.permissions) {
-        updateData.tau_permissions = data.permissions;
+        updateData.tau_permissions = serializePermissionsForStorage(data.permissions);
       }
 
-      if (data.fullName) {
+      if (data.fullName !== undefined) {
         updateData.tau_full_name = data.fullName;
       }
 
-      if (data.email) {
+      if (data.email !== undefined) {
         updateData.tau_email = data.email;
       }
 
@@ -383,7 +518,28 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(error.message || 'Failed to update sub-admin');
       }
 
+      const { data: updatedAdmin, error: fetchError } = await supabase
+          .from('tbl_admin_users')
+          .select('*')
+          .eq('tau_id', id)
+          .maybeSingle();
+
+      if (fetchError || !updatedAdmin) {
+        console.error('Database fetch-after-update error:', fetchError);
+        throw new Error(fetchError?.message || 'Sub-admin updated, but the latest record could not be loaded.');
+      }
+
       notification.showSuccess('Sub-Admin Updated', 'Sub-admin details updated successfully.');
+      return {
+        id: updatedAdmin.tau_id,
+        email: updatedAdmin.tau_email,
+        fullName: updatedAdmin.tau_full_name,
+        permissions: normalizePermissions(updatedAdmin.tau_permissions),
+        isActive: updatedAdmin.tau_is_active,
+        createdBy: updatedAdmin.tau_created_by,
+        lastLogin: updatedAdmin.tau_last_login,
+        createdAt: updatedAdmin.tau_created_at
+      };
     } catch (error: any) {
       console.error('Update sub-admin error:', error);
       notification.showError('Update Failed', error.message || 'Failed to update sub-admin');
@@ -411,29 +567,14 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const resetSubAdminPassword = async (id: string): Promise<string> => {
+  const resetSubAdminPassword = async (id: string): Promise<void> => {
     try {
-      const newPassword = generateTempPassword();
-      const bcrypt = await import('bcryptjs');
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-      const { error } = await supabase
-          .from('tbl_admin_users')
-          .update({ tau_password_hash: hashedPassword })
-          .eq('tau_id', id);
-
-      if (error) {
-        console.error('Database password reset error:', error);
-        throw new Error(error.message || 'Failed to reset password');
-      }
+      await sendSubAdminPasswordResetEmail(id, typeof window !== 'undefined' ? window.location.origin : '');
 
       notification.showSuccess(
           'Password Reset',
-          'New password has been sent to the sub-admin\'s email address.'
+          'Password reset email has been sent to the sub-admin.'
       );
-
-      return newPassword;
     } catch (error: any) {
       console.error('Reset password error:', error);
       notification.showError('Reset Failed', error.message || 'Failed to reset password');
@@ -454,12 +595,27 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error('Failed to fetch sub-admins');
       }
 
+      const legacyPermissionMigrations = (subAdmins || [])
+        .filter((item) => hasLegacyPermissionKeys(item.tau_permissions))
+        .map((item) =>
+          supabase
+            .from('tbl_admin_users')
+            .update({
+              tau_permissions: serializePermissionsForStorage(normalizePermissions(item.tau_permissions))
+            })
+            .eq('tau_id', item.tau_id)
+        );
+
+      if (legacyPermissionMigrations.length > 0) {
+        await Promise.allSettled(legacyPermissionMigrations);
+      }
+
       // Handle case where no sub-admins exist (empty array is fine)
       return subAdmins?.map(admin => ({
         id: admin.tau_id,
         email: admin.tau_email,
         fullName: admin.tau_full_name,
-        permissions: admin.tau_permissions,
+        permissions: normalizePermissions(admin.tau_permissions),
         isActive: admin.tau_is_active,
         createdBy: admin.tau_created_by,
         lastLogin: admin.tau_last_login,
@@ -472,10 +628,10 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const hasPermission = (module: keyof AdminUser['permissions'], action: 'read' | 'write' | 'delete'): boolean => {
+  const hasPermission = (module: PermissionModule, action: PermissionAction): boolean => {
     if (!admin) return false;
     if (admin.role === 'super_admin') return true;
-    return admin.permissions[module][action];
+    return Boolean(admin.permissions?.[module]?.[action]);
   };
 
   const generateTempPassword = (): string => {

@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   buildBranding,
+  escapeHtml,
   loadSystemSettings,
   renderEmailTemplate,
   sendSmtpEmail,
@@ -64,19 +65,6 @@ const formatDateTime = () =>
     timeZone: "UTC",
   }).format(new Date());
 
-const runInBackground = (task: Promise<unknown>) => {
-  const edgeRuntime = (globalThis as { EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void } }).EdgeRuntime;
-
-  if (edgeRuntime?.waitUntil) {
-    edgeRuntime.waitUntil(task);
-    return;
-  }
-
-  task.catch((error) => {
-    console.error("Background task failed:", error);
-  });
-};
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { status: 200, headers: corsHeaders });
@@ -110,93 +98,66 @@ Deno.serve(async (req: Request) => {
     const requestBaseUrl = getRequestBaseUrl(req);
     const siteUrl = getSiteUrl(pageUrl, requestBaseUrl);
 
-    runInBackground((async () => {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
         },
-      );
+      },
+    );
 
-      let recipientEmail = "";
-      let fromEmail = "";
-      let siteName = "HTG Infotech";
-      let branding = buildBranding({}, {
-        siteUrl,
-      });
-      let emailTemplateVariables: Record<string, string> = {};
+    const settings = await loadSystemSettings(supabase);
+    const branding = buildBranding(settings, {
+      siteUrl,
+    });
+    const recipientEmail = normalizeText(settings.primary_email);
+    const fromEmail = normalizeText(settings.smtp_username);
+    const siteName = branding.siteName;
 
-      try {
-        const settings = await loadSystemSettings(supabase);
-        branding = buildBranding(settings, {
-          siteUrl,
-        });
-        recipientEmail = normalizeText(settings.primary_email);
-        fromEmail = normalizeText(settings.smtp_username);
-        siteName = branding.siteName;
+    if (!recipientEmail) {
+      throw new Error("Primary admin email is not configured in system settings");
+    }
 
-        emailTemplateVariables = {
-          asset_url: branding.assetUrl,
-          website_url: branding.siteUrl,
-          logo_url: branding.logoUrl,
-          site_name: branding.siteName,
-          site_url: branding.siteUrl,
-          current_year: String(new Date().getFullYear()),
-          sender_name: name,
-          sender_email: email,
-          contact_subject: subject,
-          message_body: message.replaceAll("\n", "<br />"),
-          inquiry_type: inquiryType,
-          submitted_at: submittedAt,
-          page_url: branding.siteUrl,
-          support_email: recipientEmail,
-        };
-      } catch (setupError) {
-        console.error("Contact email setup failed:", {
-          error: setupError,
-          recipient: email,
-          subject,
-        });
-        return;
-      }
+    const emailTemplateVariables: Record<string, string> = {
+      asset_url: branding.assetUrl,
+      website_url: branding.siteUrl,
+      logo_url: branding.logoUrl,
+      site_name: branding.siteName,
+      site_url: branding.siteUrl,
+      current_year: String(new Date().getFullYear()),
+      sender_name: escapeHtml(name),
+      sender_email: escapeHtml(email),
+      contact_subject: escapeHtml(subject),
+      message_body: escapeHtml(message).replaceAll("\n", "<br />"),
+      inquiry_type: escapeHtml(inquiryType),
+      submitted_at: escapeHtml(submittedAt),
+      page_url: escapeHtml(pageUrl || branding.siteUrl),
+      support_email: escapeHtml(recipientEmail),
+    };
 
-      try {
-        if (!recipientEmail) {
-          throw new Error("Primary admin email is not configured in system settings");
-        }
+    const adminTemplate = await renderEmailTemplate({
+      supabase,
+      templateName: "contact_admin_email",
+      branding,
+      variables: emailTemplateVariables,
+    });
 
-        const adminTemplate = await renderEmailTemplate({
-          supabase,
-          templateName: "contact_admin_email",
-          branding,
-          variables: emailTemplateVariables,
-        });
+    await sendSmtpEmail({
+      to: recipientEmail,
+      subject: adminTemplate.subject,
+      html: adminTemplate.html,
+      siteName,
+      fromEmail,
+      replyTo: email,
+      settings,
+    });
 
-        await sendSmtpEmail({
-          to: recipientEmail,
-          subject: adminTemplate.subject,
-          html: adminTemplate.html,
-          siteName,
-          fromEmail,
-          replyTo: email,
-        });
-      } catch (adminEmailError) {
-        console.error("Contact admin email failed:", {
-          error: adminEmailError,
-          subject,
-          fromEmail: email,
-          inquiryType,
-        });
-      }
+    let warning: string | undefined;
 
-      if (!sendConfirmation) {
-        return;
-      }
-
+    if (sendConfirmation) {
       try {
         const confirmationTemplate = await renderEmailTemplate({
           supabase,
@@ -212,6 +173,7 @@ Deno.serve(async (req: Request) => {
           siteName,
           fromEmail,
           replyTo: recipientEmail,
+          settings,
         });
       } catch (confirmationError) {
         console.error("Contact confirmation email failed:", {
@@ -219,13 +181,15 @@ Deno.serve(async (req: Request) => {
           recipient: email,
           subject,
         });
+        warning = "Your message was sent to our team, but we could not send the confirmation email right now.";
       }
-    })());
+    }
 
     return buildResponse(200, {
       success: true,
       message: "Your message has been sent successfully.",
       confirmationSent: sendConfirmation,
+      ...(warning ? { warning } : {}),
     });
   } catch (error) {
     console.error("Contact email error:", error);

@@ -93,6 +93,7 @@ Deno.serve(async (req: Request) => {
       subject: renderedTemplate.subject,
       html: renderedTemplate.html,
       siteName: branding.siteName,
+      settings,
     });
 
     return buildResponse(200, {

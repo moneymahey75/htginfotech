@@ -15,6 +15,20 @@ export const getRequestBaseUrl = (request?: Request) => {
     return "";
   }
 
+  const originHeader = request.headers.get("origin");
+  if (originHeader) {
+    return normalizeCandidate(originHeader);
+  }
+
+  const refererHeader = request.headers.get("referer");
+  if (refererHeader) {
+    try {
+      return normalizeCandidate(new URL(refererHeader).origin);
+    } catch {
+      // ignore invalid referer and continue with other candidates
+    }
+  }
+
   const forwardedProto = request.headers.get("x-forwarded-proto");
   const forwardedHost = request.headers.get("x-forwarded-host");
 
@@ -42,10 +56,10 @@ export const resolveBaseUrl = ({
 }) => {
   const candidates = [
     normalizeCandidate(explicitSiteUrl),
-    normalizeCandidate(String(settings?.website_url || "")),
-    normalizeCandidate(String(settings?.site_url || "")),
     getRequestBaseUrl(request),
     normalizeCandidate(Deno.env.get("SITE_URL")),
+    normalizeCandidate(String(settings?.website_url || "")),
+    normalizeCandidate(String(settings?.site_url || "")),
   ];
 
   const firstNonLocalCandidate = candidates.find((candidate) => candidate && !isLocalhostCandidate(candidate));

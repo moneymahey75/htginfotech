@@ -17,6 +17,7 @@ import CourseLearning from './pages/dashboard/CourseLearning';
 import BackpanelLogin from './pages/backpanel/AdminLogin';
 import BackpanelDashboard from './pages/backpanel/AdminDashboard';
 import EmailTemplatePreview from './pages/backpanel/EmailTemplatePreview';
+import SubAdminResetPassword from './pages/backpanel/SubAdminResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import UpdatePassword from './pages/auth/UpdatePassword';
@@ -68,6 +69,7 @@ function App() {
                 <Routes>
                   {/* Backpanel Routes (No Navbar/Footer) */}
                   <Route path="/backpanel/login" element={<BackpanelLogin />} />
+                  <Route path="/backpanel/reset-password" element={<SubAdminResetPassword />} />
                   <Route path="/backpanel/dashboard" element={
                     <AdminProtectedRoute>
                       <BackpanelDashboard />

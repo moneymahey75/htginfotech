@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import type { PermissionModule, PermissionSet } from '../../contexts/AdminAuthContext';
 import {
   Shield,
   Users,
   Plus,
-  Eye,
   Edit,
   Trash2,
-  RefreshCw,
-  Check,
-  X,
   Calendar,
-  Mail,
   UserCheck,
   UserX,
   Key,
@@ -22,22 +18,59 @@ interface SubAdmin {
   id: string;
   email: string;
   fullName: string;
-  permissions: {
-    customers: { read: boolean; write: boolean; delete: boolean };
-    companies: { read: boolean; write: boolean; delete: boolean };
-    subscriptions: { read: boolean; write: boolean; delete: boolean };
-    payments: { read: boolean; write: boolean; delete: boolean };
-    settings: { read: boolean; write: boolean; delete: boolean };
-    admins: { read: boolean; write: boolean; delete: boolean };
-    coupons: { read: boolean, write: boolean, delete: boolean };
-    dailytasks: { read: boolean, write: boolean, delete: boolean };
-    wallets: { read: boolean, write: boolean, delete: boolean };
-  };
+  permissions: PermissionSet;
   isActive: boolean;
   createdBy: string;
   lastLogin?: string;
   createdAt: string;
 }
+
+const permissionModuleLabels: Record<Exclude<PermissionModule, 'admins'>, string> = {
+  enrollments: 'Enrollments',
+  learners: 'Learners',
+  tutors: 'Tutors',
+  courses: 'Courses',
+  categories: 'Course Categories',
+  payments: 'Payments',
+  sliders: 'Home Sliders',
+  settings: 'Settings',
+};
+
+const visiblePermissionModules = Object.keys(permissionModuleLabels) as Array<Exclude<PermissionModule, 'admins'>>;
+type VisiblePermissionModule = (typeof visiblePermissionModules)[number];
+type PermissionAction = keyof PermissionSet[PermissionModule];
+
+const createDefaultPermissions = (): PermissionSet => ({
+  enrollments: { read: false, write: false, delete: false },
+  learners: { read: false, write: false, delete: false },
+  tutors: { read: false, write: false, delete: false },
+  courses: { read: false, write: false, delete: false },
+  categories: { read: false, write: false, delete: false },
+  payments: { read: false, write: false, delete: false },
+  sliders: { read: false, write: false, delete: false },
+  settings: { read: false, write: false, delete: false },
+  admins: { read: false, write: false, delete: false },
+});
+
+const clonePermissions = (permissions: PermissionSet): PermissionSet => ({
+  enrollments: { ...permissions.enrollments },
+  learners: { ...permissions.learners },
+  tutors: { ...permissions.tutors },
+  courses: { ...permissions.courses },
+  categories: { ...permissions.categories },
+  payments: { ...permissions.payments },
+  sliders: { ...permissions.sliders },
+  settings: { ...permissions.settings },
+  admins: { ...permissions.admins },
+});
+
+const createDefaultSubAdminForm = () => ({
+  id: '',
+  email: '',
+  fullName: '',
+  isActive: true,
+  permissions: createDefaultPermissions(),
+});
 
 const AdminManagement: React.FC = () => {
   const { admin, hasPermission, getSubAdmins, createSubAdmin, updateSubAdmin, deleteSubAdmin, resetSubAdminPassword } = useAdminAuth();
@@ -45,43 +78,13 @@ const AdminManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedSubAdmin, setSelectedSubAdmin] = useState<SubAdmin | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
-  const [newSubAdmin, setNewSubAdmin] = useState({
-    email: '',
-    fullName: '',
-    permissions: {
-      customers: { read: false, write: false, delete: false },
-      companies: { read: false, write: false, delete: false },
-      subscriptions: { read: false, write: false, delete: false },
-      payments: { read: false, write: false, delete: false },
-      settings: { read: false, write: false, delete: false },
-      admins: { read: false, write: false, delete: false },
-      coupons: { read: false, write: false, delete: false },
-      dailytasks: { read: false, write: false, delete: false },
-      wallets: { read: false, write: false, delete: false },
-    }
-  });
+  const [newSubAdmin, setNewSubAdmin] = useState(createDefaultSubAdminForm);
 
-  const [editSubAdmin, setEditSubAdmin] = useState({
-    id: '',
-    email: '',
-    fullName: '',
-    isActive: true,
-    permissions: {
-      customers: { read: false, write: false, delete: false },
-      companies: { read: false, write: false, delete: false },
-      subscriptions: { read: false, write: false, delete: false },
-      payments: { read: false, write: false, delete: false },
-      settings: { read: false, write: false, delete: false },
-      admins: { read: false, write: false, delete: false },
-      coupons: { read: false, write: false, delete: false },
-      dailytasks: { read: false, write: false, delete: false },
-      wallets: { read: false, write: false, delete: false },
-    }
-  });
+  const [editSubAdmin, setEditSubAdmin] = useState(createDefaultSubAdminForm);
 
   useEffect(() => {
     loadSubAdmins();
@@ -99,26 +102,18 @@ const AdminManagement: React.FC = () => {
     }
   };
 
+  const syncSubAdminState = (subAdminId: string, updates: Partial<SubAdmin>) => {
+    setSubAdmins((current) =>
+      current.map((item) => (item.id === subAdminId ? { ...item, ...updates } : item))
+    );
+  };
+
   const handleCreateSubAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await createSubAdmin(newSubAdmin);
       setShowCreateModal(false);
-      setNewSubAdmin({
-        email: '',
-        fullName: '',
-        permissions: {
-          customers: { read: false, write: false, delete: false },
-          companies: { read: false, write: false, delete: false },
-          coupons: { read: false, write: false, delete: false },
-          dailytasks: { read: false, write: false, delete: false },
-          wallets: { read: false, write: false, delete: false },
-          subscriptions: { read: false, write: false, delete: false },
-          payments: { read: false, write: false, delete: false },
-          settings: { read: false, write: false, delete: false },
-          admins: { read: false, write: false, delete: false },
-        }
-      });
+      setNewSubAdmin(createDefaultSubAdminForm());
       loadSubAdmins();
     } catch (error) {
       console.error('Failed to create sub-admin:', error);
@@ -128,24 +123,54 @@ const AdminManagement: React.FC = () => {
   const handleEditSubAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateSubAdmin(editSubAdmin.id, {
+      const updatedSubAdmin = await updateSubAdmin(editSubAdmin.id, {
+        email: editSubAdmin.email,
         fullName: editSubAdmin.fullName,
         isActive: editSubAdmin.isActive,
-        permissions: editSubAdmin.permissions
+        permissions: clonePermissions(editSubAdmin.permissions)
+      });
+      syncSubAdminState(editSubAdmin.id, updatedSubAdmin);
+      setEditSubAdmin({
+        id: updatedSubAdmin.id,
+        email: updatedSubAdmin.email,
+        fullName: updatedSubAdmin.fullName,
+        isActive: updatedSubAdmin.isActive,
+        permissions: clonePermissions(updatedSubAdmin.permissions)
       });
       setShowEditModal(false);
-      loadSubAdmins();
     } catch (error) {
       console.error('Failed to update sub-admin:', error);
     }
   };
 
   const handleToggleStatus = async (subAdminId: string, currentStatus: boolean) => {
+    const nextStatus = !currentStatus;
+    syncSubAdminState(subAdminId, { isActive: nextStatus });
+    setEditSubAdmin((current) =>
+      current.id === subAdminId ? { ...current, isActive: nextStatus } : current
+    );
+    setStatusUpdatingId(subAdminId);
+
     try {
-      await updateSubAdmin(subAdminId, { isActive: !currentStatus });
-      loadSubAdmins();
+      const updatedSubAdmin = await updateSubAdmin(subAdminId, { isActive: nextStatus });
+      syncSubAdminState(subAdminId, updatedSubAdmin);
+      setEditSubAdmin((current) =>
+        current.id === subAdminId
+          ? {
+              ...current,
+              isActive: updatedSubAdmin.isActive,
+              permissions: clonePermissions(updatedSubAdmin.permissions)
+            }
+          : current
+      );
     } catch (error) {
+      syncSubAdminState(subAdminId, { isActive: currentStatus });
+      setEditSubAdmin((current) =>
+        current.id === subAdminId ? { ...current, isActive: currentStatus } : current
+      );
       console.error('Failed to update sub-admin status:', error);
+    } finally {
+      setStatusUpdatingId(null);
     }
   };
 
@@ -176,7 +201,7 @@ const AdminManagement: React.FC = () => {
       email: subAdmin.email,
       fullName: subAdmin.fullName,
       isActive: subAdmin.isActive,
-      permissions: { ...subAdmin.permissions }
+      permissions: clonePermissions(subAdmin.permissions)
     });
     setShowEditModal(true);
   };
@@ -185,7 +210,7 @@ const AdminManagement: React.FC = () => {
     const setter = isEdit ? setEditSubAdmin : setNewSubAdmin;
     setter(prev => {
       const updatedPermissions = { ...prev.permissions };
-      Object.keys(updatedPermissions).forEach(module => {
+      visiblePermissionModules.forEach(module => {
         updatedPermissions[module] = {
           read: select,
           write: select,
@@ -199,7 +224,7 @@ const AdminManagement: React.FC = () => {
     });
   };
 
-  const handleModuleSelectAll = (module: string, select: boolean, isEdit: boolean = false) => {
+  const handleModuleSelectAll = (module: VisiblePermissionModule, select: boolean, isEdit: boolean = false) => {
     const setter = isEdit ? setEditSubAdmin : setNewSubAdmin;
     setter(prev => ({
       ...prev,
@@ -214,7 +239,12 @@ const AdminManagement: React.FC = () => {
     }));
   };
 
-  const updatePermission = (module: string, action: string, value: boolean, isEdit: boolean = false) => {
+  const updatePermission = (
+    module: VisiblePermissionModule,
+    action: PermissionAction,
+    value: boolean,
+    isEdit: boolean = false
+  ) => {
     const setter = isEdit ? setEditSubAdmin : setNewSubAdmin;
     setter(prev => {
       const updatedPermissions = { ...prev.permissions };
@@ -249,11 +279,58 @@ const AdminManagement: React.FC = () => {
   });
 
   const getPermissionSummary = (permissions: SubAdmin['permissions']) => {
-    const totalPermissions = Object.values(permissions).reduce((total, modulePerms) => {
+    const totalPermissions = visiblePermissionModules.reduce((total, module) => {
+      const modulePerms = permissions[module];
       return total + Object.values(modulePerms).filter(Boolean).length;
     }, 0);
-    const maxPermissions = Object.keys(permissions).length * 3;
+    const maxPermissions = visiblePermissionModules.length * 3;
     return `${totalPermissions}/${maxPermissions}`;
+  };
+
+  const renderPermissionSections = (isEdit = false) => {
+    const currentPermissions = isEdit ? editSubAdmin.permissions : newSubAdmin.permissions;
+
+    return (
+    <div className="space-y-4">
+      {visiblePermissionModules.map((module) => (
+        <div key={module} className="border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-gray-900">{permissionModuleLabels[module]}</h4>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={() => handleModuleSelectAll(module, false, isEdit)}
+                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+              >
+                None
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModuleSelectAll(module, true, isEdit)}
+                className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+              >
+                All
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {(['read', 'write', 'delete'] as const).map((action) => (
+              <label key={action} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={currentPermissions[module][action]}
+                  onChange={(e) => updatePermission(module, action, e.target.checked, isEdit)}
+                  disabled={action !== 'read' && !currentPermissions[module].read}
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <span className="ml-2 text-sm text-gray-700 capitalize">{action}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+    );
   };
 
   if (loading) {
@@ -406,23 +483,43 @@ const AdminManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      subAdmin.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                  }`}>
-                    {subAdmin.isActive ? (
-                        <>
-                          <UserCheck className="h-3 w-3 mr-1" />
-                          Active
-                        </>
-                    ) : (
-                        <>
-                          <UserX className="h-3 w-3 mr-1" />
-                          Inactive
-                        </>
-                    )}
-                  </span>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={subAdmin.isActive}
+                        aria-label={subAdmin.isActive ? 'Deactivate sub-admin' : 'Activate sub-admin'}
+                        disabled={statusUpdatingId === subAdmin.id}
+                        onClick={() => handleToggleStatus(subAdmin.id, subAdmin.isActive)}
+                        className={`inline-flex items-center gap-3 rounded-full border px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                            subAdmin.isActive
+                                ? 'border-green-200 bg-green-50 text-green-800 hover:bg-green-100'
+                                : 'border-red-200 bg-red-50 text-red-800 hover:bg-red-100'
+                        }`}
+                    >
+                      <span
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              subAdmin.isActive ? 'bg-green-500' : 'bg-red-400'
+                          }`}
+                      >
+                        <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                subAdmin.isActive ? 'translate-x-5' : 'translate-x-1'
+                            }`}
+                        />
+                      </span>
+                      <span className="inline-flex items-center">
+                        {subAdmin.isActive ? (
+                            <UserCheck className="mr-1 h-3 w-3" />
+                        ) : (
+                            <UserX className="mr-1 h-3 w-3" />
+                        )}
+                        {statusUpdatingId === subAdmin.id
+                          ? 'Updating...'
+                          : subAdmin.isActive
+                            ? 'Active'
+                            : 'Inactive'}
+                      </span>
+                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {subAdmin.lastLogin ? (
@@ -450,17 +547,6 @@ const AdminManagement: React.FC = () => {
                                 title="Edit Sub-Admin"
                             >
                               <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={() => handleToggleStatus(subAdmin.id, subAdmin.isActive)}
-                                className={`${
-                                    subAdmin.isActive
-                                        ? 'text-red-600 hover:text-red-800'
-                                        : 'text-green-600 hover:text-green-800'
-                                }`}
-                                title={subAdmin.isActive ? 'Deactivate' : 'Activate'}
-                            >
-                              {subAdmin.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                             </button>
                             <button
                                 onClick={() => handleResetPassword(subAdmin.id)}
@@ -537,6 +623,30 @@ const AdminManagement: React.FC = () => {
                   </div>
 
                   <div>
+                    <label className="flex items-center">
+                      <input
+                          type="checkbox"
+                          checked={newSubAdmin.isActive}
+                          onChange={(e) => setNewSubAdmin(prev => ({ ...prev, isActive: e.target.checked }))}
+                          className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Active Status</span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                          type="checkbox"
+                          checked={editSubAdmin.isActive}
+                          onChange={(e) => setEditSubAdmin(prev => ({ ...prev, isActive: e.target.checked }))}
+                          className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Active Status</span>
+                    </label>
+                  </div>
+
+                  <div>
                     <div className="flex items-center justify-between mb-4">
                       <label className="block text-sm font-medium text-gray-700">Permissions</label>
                       <div className="flex space-x-2">
@@ -557,45 +667,7 @@ const AdminManagement: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {Object.keys(newSubAdmin.permissions).map((module) => (
-                          <div key={module} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-medium text-gray-900 capitalize">{module}</h4>
-                              <div className="flex space-x-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handleModuleSelectAll(module, false)}
-                                    className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                >
-                                  None
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleModuleSelectAll(module, true)}
-                                    className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                >
-                                  All
-                                </button>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                              {['read', 'write', 'delete'].map((action) => (
-                                  <label key={action} className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={newSubAdmin.permissions[module][action]}
-                                        onChange={(e) => updatePermission(module, action, e.target.checked)}
-                                        disabled={action !== 'read' && !newSubAdmin.permissions[module].read}
-                                        className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700 capitalize">{action}</span>
-                                  </label>
-                              ))}
-                            </div>
-                          </div>
-                      ))}
-                    </div>
+                    {renderPermissionSections()}
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-4">
@@ -638,23 +710,11 @@ const AdminManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                     <input
                         type="email"
+                        required
                         value={editSubAdmin.email}
-                        disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                        onChange={(e) => setEditSubAdmin(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center">
-                      <input
-                          type="checkbox"
-                          checked={editSubAdmin.isActive}
-                          onChange={(e) => setEditSubAdmin(prev => ({ ...prev, isActive: e.target.checked }))}
-                          className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Active Status</span>
-                    </label>
                   </div>
 
                   <div>
@@ -678,45 +738,7 @@ const AdminManagement: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {Object.keys(editSubAdmin.permissions).map((module) => (
-                          <div key={module} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-medium text-gray-900 capitalize">{module}</h4>
-                              <div className="flex space-x-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handleModuleSelectAll(module, false, true)}
-                                    className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                >
-                                  None
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleModuleSelectAll(module, true, true)}
-                                    className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                >
-                                  All
-                                </button>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                              {['read', 'write', 'delete'].map((action) => (
-                                  <label key={action} className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={editSubAdmin.permissions[module][action]}
-                                        onChange={(e) => updatePermission(module, action, e.target.checked, true)}
-                                        disabled={action !== 'read' && !editSubAdmin.permissions[module].read}
-                                        className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700 capitalize">{action}</span>
-                                  </label>
-                              ))}
-                            </div>
-                          </div>
-                      ))}
-                    </div>
+                    {renderPermissionSections(true)}
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-4">

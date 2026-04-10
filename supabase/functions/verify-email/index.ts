@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { token } = await req.json();
+    const { token, siteUrl } = await req.json();
 
     if (!token) {
       return createJsonResponse(400, {
@@ -137,7 +137,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const settings = await loadSystemSettings(supabase);
-    const branding = buildBranding(settings, { request: req });
+    const branding = buildBranding(settings, { request: req, siteUrl });
     const profile = extractUserProfile(userData.tbl_user_profiles);
     const firstName = profile?.tup_first_name || "User";
     const lastName = profile?.tup_last_name || "";
@@ -155,6 +155,7 @@ Deno.serve(async (req: Request) => {
       subject: welcomeEmail.subject,
       html: welcomeEmail.html,
       siteName: branding.siteName,
+      settings,
     });
 
     return createJsonResponse(200, {

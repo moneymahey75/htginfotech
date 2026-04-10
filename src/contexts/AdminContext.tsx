@@ -272,6 +272,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return acc;
         }, {});
 
+        setEmailSMTP({
+          host: settingsMap.smtp_host || 'smtp.resend.com',
+          port: Number(settingsMap.smtp_port ?? 587) || 587,
+          username: settingsMap.smtp_username || '',
+          password: settingsMap.smtp_password || '',
+          encryption: String(settingsMap.smtp_encryption || 'TLS').toUpperCase()
+        });
+
         setSettings({
           site_name: settingsMap.site_name || defaultSettings.site_name,
           logo_url: settingsMap.logo_url || defaultSettings.logo_url,
@@ -334,10 +342,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         console.log('No settings found in database, using defaults');
         setSettings(defaultSettings);
+        setEmailSMTP({
+          host: 'smtp.resend.com',
+          port: 587,
+          username: '',
+          password: '',
+          encryption: 'TLS'
+        });
       }
     } catch (error) {
       console.error('Error loading settings from database:', error);
       setSettings(defaultSettings);
+      setEmailSMTP({
+        host: 'smtp.resend.com',
+        port: 587,
+        username: '',
+        password: '',
+        encryption: 'TLS'
+      });
     } finally {
       setLoading(false);
     }

@@ -22,16 +22,16 @@ interface Payment {
     tp_amount: number;
     tp_currency: string;
     tp_payment_status: string;
-    tp_payment_date: string;
+    tp_created_at: string;
     tp_payment_method: string;
     tp_receipt_url: string | null;
     tp_stripe_payment_intent_id: string | null;
     tbl_courses: {
         tc_title: string;
-    };
+    } | null;
     tbl_users: {
         tu_email: string;
-    };
+    } | null;
 }
 
 interface PaymentSplitTransaction {
@@ -118,7 +118,7 @@ const AdminPaymentHistory: React.FC = () => {
           tbl_courses (tc_title),
           tbl_users (tu_email)
         `)
-                .order('tp_payment_date', {ascending: false});
+                .order('tp_created_at', {ascending: false});
 
             if (error) throw error;
 
@@ -257,9 +257,9 @@ const AdminPaymentHistory: React.FC = () => {
         const csvContent = [
             ['Date', 'User', 'Course', 'Amount', 'Status', 'Payment Method', 'Transaction ID'].map(escapeCSVField).join(','),
             ...filteredPayments.map(p => [
-                escapeCSVField(formatDate(p.tp_payment_date)),
-                escapeCSVField(p.tbl_users.tu_email),
-                escapeCSVField(p.tbl_courses.tc_title),
+                escapeCSVField(formatDate(p.tp_created_at)),
+                escapeCSVField(p.tbl_users?.tu_email || 'Unknown User'),
+                escapeCSVField(p.tbl_courses?.tc_title || 'No Course'),
                 escapeCSVField(`$${parseFloat(p.tp_amount.toString()).toFixed(2)}`),
                 escapeCSVField(p.tp_payment_status),
                 escapeCSVField(p.tp_payment_method),
@@ -493,13 +493,13 @@ const AdminPaymentHistory: React.FC = () => {
                                 {payments.map((payment) => (
                                     <tr key={payment.tp_id} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {formatDate(payment.tp_payment_date)}
+                                            {formatDate(payment.tp_created_at)}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-900">
-                                            {payment.tbl_users.tu_email}
+                                            {payment.tbl_users?.tu_email || 'Unknown User'}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-900">
-                                            {payment.tbl_courses.tc_title}
+                                            {payment.tbl_courses?.tc_title || 'No Course'}
                                         </td>
                                         <td className="py-3 px-4 text-sm font-medium text-gray-900">
                                             ${parseFloat(payment.tp_amount.toString()).toFixed(2)}

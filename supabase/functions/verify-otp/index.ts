@@ -198,6 +198,7 @@ async function sendWelcomeEmail(userId: string, supabase: any) {
       subject: welcomeEmail.subject,
       html: welcomeEmail.html,
       siteName: branding.siteName,
+      settings: settingsMap,
     })
 
     console.log('✅ Welcome email sent successfully')

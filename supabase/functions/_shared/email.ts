@@ -239,6 +239,39 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
     tet_template_type: "password_reset",
     tet_variables: ["user_name", "first_name", "reset_link", "reset_password_link", "asset_url", "logo_url", "site_name", "site_url", "current_year"],
   },
+  sub_admin_password_reset: {
+    tet_name: "sub_admin_password_reset",
+    tet_subject: "Set your password - {{site_name}}",
+    tet_body: buildBrandedEmailShell({
+      eyebrow: "",
+      title: "Set Your Password",
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          Your sub-admin account for {{site_name}} is ready. Please set your password to access the admin panel.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
+            Click the button below to create your password securely. This link is unique to your account and will expire automatically.
+          </p>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{reset_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Set Password</a>
+        </div>
+        <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
+          If the button above is not clickable, please copy the following URL and paste it into your browser.
+        </p>
+        <p style="margin:0 0 20px;word-break:break-word;">
+          <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          Regards,<br>{{site_name}} Team
+        </p>
+      `,
+    }),
+    tet_template_type: "sub_admin_password_reset",
+    tet_variables: ["user_name", "first_name", "reset_link", "reset_password_link", "asset_url", "logo_url", "site_name", "site_url", "current_year"],
+  },
   contact_admin_email: {
     tet_name: "contact_admin_email",
     tet_subject: "New Contact Us Submission: {{contact_subject}}",
@@ -358,12 +391,18 @@ export const buildBranding = (
   };
 };
 
-const getTransportConfig = () => {
-  const host = String(Deno.env.get("SMTP_HOST") || "").trim();
-  const port = Number(Deno.env.get("SMTP_PORT") || "587");
-  const user = String(Deno.env.get("SMTP_USER") || "").trim();
-  const pass = String(Deno.env.get("SMTP_PASS") || "").trim();
-  const secureMode = String(Deno.env.get("SMTP_SECURE") || "").trim().toUpperCase();
+const readSettingString = (settings: SystemSettingsMap | undefined, key: string) =>
+  String(settings?.[key] || "").trim();
+
+const getTransportConfig = (settings?: SystemSettingsMap) => {
+  const host = readSettingString(settings, "smtp_host") || String(Deno.env.get("SMTP_HOST") || "").trim();
+  const rawPort = readSettingString(settings, "smtp_port") || String(Deno.env.get("SMTP_PORT") || "587").trim();
+  const port = Number(rawPort || "587");
+  const user = readSettingString(settings, "smtp_username") || String(Deno.env.get("SMTP_USER") || "").trim();
+  const pass = readSettingString(settings, "smtp_password") || String(Deno.env.get("SMTP_PASS") || "").trim();
+  const secureMode = (
+    readSettingString(settings, "smtp_encryption") || String(Deno.env.get("SMTP_SECURE") || "")
+  ).trim().toUpperCase();
 
   if (!host || !port || !user || !pass) {
     throw new Error("SMTP configuration is incomplete");
@@ -391,6 +430,7 @@ export const sendSmtpEmail = async ({
   siteName,
   fromEmail,
   replyTo,
+  settings,
 }: {
   to: string;
   subject: string;
@@ -398,15 +438,16 @@ export const sendSmtpEmail = async ({
   siteName: string;
   fromEmail?: string;
   replyTo?: string;
+  settings?: SystemSettingsMap;
 }) => {
   const { default: nodemailer } = await import("npm:nodemailer@6.10.1");
-  const transportConfig = getTransportConfig();
+  const transportConfig = getTransportConfig(settings);
   const transporter = nodemailer.createTransport(transportConfig);
   const normalizedSubject = normalizeEmailMarkup(subject);
   const normalizedHtml = normalizeEmailMarkup(html);
 
   await transporter.sendMail({
-    from: `${siteName} <${String(fromEmail || transportConfig.auth.user).trim() || transportConfig.auth.user}>`,
+    from: `${siteName} <${String(fromEmail || readSettingString(settings, "smtp_username") || transportConfig.auth.user).trim() || transportConfig.auth.user}>`,
     to,
     subject: normalizedSubject,
     html: normalizedHtml,
@@ -442,16 +483,28 @@ const normalizeEmailMarkup = (value: string) =>
     .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, "")
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
     .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/htginfotech-logo\.png\1/gi,
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
       (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
     )
     .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/htginfotech-logo\.png\1/gi,
+      /src=(['"])\{\{\s*asset_url\s*\}\}\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
       (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
     )
     .replace(
       /src=(['"])(https?:\/\/[^'"]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string, baseUrl: string, fileName: string) => `src=${quote}${baseUrl}/${fileName}${quote}`,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])(https?:\/\/[^'"]+)\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
+    )
+    .replace(
+      /src=(['"])\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
+      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
     )
     .replace(
       /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
@@ -545,7 +598,7 @@ export const renderEmailMarkup = (
 ) => replaceTemplatePlaceholders(stripWordBreakTags(html), variables);
 
 const TEMPLATE_NAME_ALIASES: Record<
-  "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset",
+  "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
   string[]
 > = {
   verification_email: ["verification_email", "VERIFICATION_EMAIL", "Verification Email"],
@@ -553,11 +606,12 @@ const TEMPLATE_NAME_ALIASES: Record<
   contact_admin_email: ["contact_admin_email", "CONTACT_ADMIN_EMAIL", "Contact Admin Email"],
   contact_confirmation_email: ["contact_confirmation_email", "CONTACT_CONFIRMATION_EMAIL", "Contact Confirmation Email"],
   password_reset: ["password_reset", "PASSWORD_RESET", "Password Reset"],
+  sub_admin_password_reset: ["sub_admin_password_reset", "SUB_ADMIN_PASSWORD_RESET", "Sub Admin Password Reset"],
 };
 
 export const getEmailTemplate = async (
   supabase: any,
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset",
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
 ) => {
   const selectColumns = "tet_name, tet_subject, tet_body, tet_html_body, tet_template_type, tet_variables";
   const candidateNames = TEMPLATE_NAME_ALIASES[templateName];
@@ -583,8 +637,8 @@ export const getEmailTemplate = async (
     }
   }
 
-  if (templateName === "password_reset") {
-    throw new Error("Password Reset template not found in tbl_email_templates.");
+  if (templateName === "password_reset" || templateName === "sub_admin_password_reset") {
+    throw new Error(`${templateName === "password_reset" ? "Password Reset" : "Sub Admin Password Reset"} template not found in tbl_email_templates.`);
   }
 
   return DEFAULT_TEMPLATES[templateName];
@@ -597,7 +651,7 @@ export const renderEmailTemplate = async ({
   branding,
 }: {
   supabase: any;
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset";
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset";
   variables: Record<string, string>;
   branding: BrandingSettings;
 }) => {
@@ -678,6 +732,33 @@ export const buildPasswordResetEmailContent = async ({
   return renderEmailTemplate({
     supabase,
     templateName: "password_reset",
+    branding,
+    variables: {
+      reset_link: resetPasswordLink,
+      asset_url: branding.assetUrl,
+      site_name: branding.siteName,
+      site_url: branding.siteUrl,
+      current_year: String(new Date().getFullYear()),
+      user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
+      first_name: resolvedFirstName,
+      reset_password_link: resetPasswordLink,
+    },
+  });
+};
+
+export const buildSubAdminPasswordResetEmailContent = async ({
+  supabase,
+  firstName,
+  lastName,
+  resetPasswordLink,
+  branding,
+}: PasswordResetEmailPayload & { supabase: any }) => {
+  const resolvedFirstName = normalizeFirstName(firstName);
+  const resolvedLastName = String(lastName ?? "").trim();
+
+  return renderEmailTemplate({
+    supabase,
+    templateName: "sub_admin_password_reset",
     branding,
     variables: {
       reset_link: resetPasswordLink,

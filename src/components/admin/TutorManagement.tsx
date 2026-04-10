@@ -769,33 +769,13 @@ const TutorManagement: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
+                            <div className="flex items-center justify-center">
                               <button
                                   onClick={() => handleViewTutor(tutor)}
                                   className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
                                   title="View Details"
                               >
                                 <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                  onClick={() => handleVerifyTutor(tutor)}
-                                  disabled={isUpdating}
-                                  className={`p-1 rounded ${tutorInfo?.tt_is_verified ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50' : 'text-green-600 hover:text-green-800 hover:bg-green-50'} ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                  title={tutorInfo?.tt_is_verified ? 'Mark Pending' : 'Verify Tutor'}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </button>
-                              <button
-                                  onClick={() => handleToggleStatus(tutor, tutor.tu_is_active)}
-                                  disabled={isUpdating}
-                                  className={`p-1 rounded ${
-                                      tutor.tu_is_active
-                                          ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                                          : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                  } ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                  title={tutor.tu_is_active ? 'Deactivate' : 'Activate'}
-                              >
-                                {tutor.tu_is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                               </button>
                             </div>
                           </td>

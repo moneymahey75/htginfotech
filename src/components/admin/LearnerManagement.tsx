@@ -88,10 +88,6 @@ const TableSkeleton: React.FC<{ rows?: number }> = ({rows = 5}) => {
                         <div className="h-3 bg-gray-200 rounded w-28"></div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
-                        <div className="h-3 bg-gray-200 rounded w-24"></div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex space-x-2">
                             <div className="h-6 bg-gray-200 rounded-full w-16"></div>
                             <div className="h-6 bg-gray-200 rounded-full w-18"></div>
@@ -609,9 +605,6 @@ const LearnerManagement: React.FC = () => {
                             Contact
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Learning Info
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Verification
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -662,14 +655,6 @@ const LearnerManagement: React.FC = () => {
                                             <div className="text-sm text-gray-900">{learner.tu_email}</div>
                                             <div
                                                 className="text-sm text-gray-500">{profile?.tup_mobile || 'Not provided'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {profile?.tup_education_level || 'Not specified'}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {profile?.tup_interests?.length || 0} interests
-                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex space-x-2">
@@ -731,27 +716,14 @@ const LearnerManagement: React.FC = () => {
                                                 {new Date(learner.tu_created_at).toLocaleDateString()}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div className="flex space-x-2">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                                            <div className="flex items-center justify-center">
                                                 <button
                                                     onClick={() => handleViewLearner(learner)}
                                                     className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
                                                     title="View Details"
                                                 >
                                                     <Eye className="h-4 w-4"/>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleToggleStatus(learner, learner.tu_is_active)}
-                                                    disabled={isUpdating}
-                                                    className={`p-1 rounded ${
-                                                        learner.tu_is_active
-                                                            ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                                                            : 'text-green-600 hover:text-green-800 hover:bg-green-50'
-                                                    } ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                    title={learner.tu_is_active ? 'Deactivate' : 'Activate'}
-                                                >
-                                                    {learner.tu_is_active ? <UserX className="h-4 w-4"/> :
-                                                        <UserCheck className="h-4 w-4"/>}
                                                 </button>
                                             </div>
                                         </td>
