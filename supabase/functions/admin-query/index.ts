@@ -20,6 +20,32 @@ interface QueryRequest {
   onConflict?: string;
 }
 
+const MAX_SESSION_AGE_MS = 8 * 60 * 60 * 1000;
+const ALLOWED_TABLES = new Set([
+  'tbl_admin_users',
+  'tbl_course_categories',
+  'tbl_course_content',
+  'tbl_course_enrollments',
+  'tbl_courses',
+  'tbl_email_templates',
+  'tbl_notifications',
+  'tbl_payment_split_transactions',
+  'tbl_payment_splits',
+  'tbl_payments',
+  'tbl_sliders',
+  'tbl_stripe_config',
+  'tbl_stripe_connect_accounts',
+  'tbl_subscription_plans',
+  'tbl_system_settings',
+  'tbl_tutor_assignments',
+  'tbl_tutors',
+  'tbl_user_profiles',
+  'tbl_user_subscriptions',
+  'tbl_users',
+  'tbl_video_storage_settings',
+  'users',
+]);
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -60,11 +86,26 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminId = sessionMatch[1];
+    const sessionTimestamp = Number(sessionMatch[2]);
+
+    if (!Number.isFinite(sessionTimestamp)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid session timestamp' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (Date.now() - sessionTimestamp > MAX_SESSION_AGE_MS) {
+      return new Response(
+        JSON.stringify({ error: 'Admin session expired' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Verify admin exists and is active
     const { data: admin, error: adminError } = await supabaseAdmin
       .from('tbl_admin_users')
-      .select('tau_id, tau_is_active')
+      .select('tau_id, tau_is_active, tau_role')
       .eq('tau_id', adminId)
       .eq('tau_is_active', true)
       .maybeSingle();
@@ -79,6 +120,20 @@ Deno.serve(async (req: Request) => {
     // Parse query request
     const queryRequest: QueryRequest = await req.json();
     const { table, operation, select, filters, order, limit, range, single, count, data, onConflict } = queryRequest;
+
+    if (!ALLOWED_TABLES.has(table)) {
+      return new Response(
+        JSON.stringify({ error: `Table ${table} is not allowed for admin queries` }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (table === 'tbl_admin_users' && operation !== 'select' && admin.tau_role !== 'super_admin') {
+      return new Response(
+        JSON.stringify({ error: 'Only super administrators can manage admin users' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     let query: any;
 

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase as adminSupabase } from '../lib/adminClient';
+import { supabase as publicSupabase } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 import { withTimeout } from '../utils/loadingRecovery';
 
@@ -28,18 +29,6 @@ const createDefaultPermissions = (): PermissionSet => ({
   settings: { read: false, write: false, delete: false },
   admins: { read: false, write: false, delete: false },
 });
-
-const canonicalPermissionModules: PermissionModule[] = [
-  'enrollments',
-  'learners',
-  'tutors',
-  'courses',
-  'categories',
-  'payments',
-  'sliders',
-  'settings',
-  'admins',
-];
 
 const mergePermissionSources = (
   rawPermissions: Partial<Record<string, Partial<Record<PermissionAction, boolean>>>>,
@@ -70,12 +59,12 @@ const normalizePermissions = (rawPermissions: Partial<Record<string, Partial<Rec
   }
 
   const permissionAliases: Record<PermissionModule, string[]> = {
-    enrollments: ['enrollments', 'subscriptions', 'dailytasks'],
+    enrollments: ['enrollments', 'dailytasks'],
     learners: ['learners', 'customers'],
     tutors: ['tutors', 'companies'],
     courses: ['courses', 'subscriptions'],
     categories: ['categories', 'coupons'],
-    payments: ['payments', 'wallets'],
+    payments: ['payments'],
     sliders: ['sliders'],
     settings: ['settings'],
     admins: ['admins'],
@@ -99,16 +88,6 @@ const serializePermissionsForStorage = (permissions: PermissionSet): PermissionS
   settings: { ...permissions.settings },
   admins: { ...permissions.admins },
 });
-
-const hasLegacyPermissionKeys = (
-  rawPermissions: Partial<Record<string, Partial<Record<PermissionAction, boolean>>>> | null | undefined
-): boolean => {
-  if (!rawPermissions || typeof rawPermissions !== 'object') {
-    return false;
-  }
-
-  return Object.keys(rawPermissions).some((key) => !canonicalPermissionModules.includes(key as PermissionModule));
-};
 
 interface AdminUser {
   id: string;
@@ -210,7 +189,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Get admin data from database using service role to bypass RLS
       const { data: user, error } = await withTimeout(
-        supabase
+        adminSupabase
           .from('tbl_admin_users')
           .select('*')
           .eq('tau_id', adminId)
@@ -263,7 +242,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       let error: any = null;
 
       // Try to get admin user from database using service role to bypass RLS
-      const result = await supabase
+      const result = await publicSupabase
           .from('tbl_admin_users')
           .select('*')
           .eq('tau_email', email.trim())
@@ -362,7 +341,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Update last login
       try {
-        await supabase
+        await adminSupabase
             .from('tbl_admin_users')
             .update({ tau_last_login: new Date().toISOString() })
             .eq('tau_id', user.tau_id);
@@ -385,7 +364,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const sendSubAdminPasswordResetEmail = async (subAdminId: string, siteUrl?: string) => {
     const adminSession = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') || '' : '';
-    const { data, error } = await supabase.functions.invoke('send-subadmin-password-reset-email', {
+    const { data, error } = await publicSupabase.functions.invoke('send-subadmin-password-reset-email', {
       body: {
         subAdminId,
         siteUrl: siteUrl || (typeof window !== 'undefined' ? window.location.origin : ''),
@@ -412,7 +391,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }) => {
     try {
       // Check if email already exists - use .maybeSingle() or handle empty result
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUser, error: checkError } = await adminSupabase
           .from('tbl_admin_users')
           .select('tau_id')
           .eq('tau_email', data.email.trim())
@@ -435,7 +414,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const hashedPassword = await bcrypt.hash(tempPassword, saltRounds);
 
       // Insert new sub-admin into database
-      const { data: newAdmin, error: insertError } = await supabase
+      const { data: newAdmin, error: insertError } = await adminSupabase
           .from('tbl_admin_users')
           .insert({
             tau_email: data.email.trim(),
@@ -508,7 +487,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateData.tau_email = data.email;
       }
 
-      const { error } = await supabase
+      const { error } = await adminSupabase
           .from('tbl_admin_users')
           .update(updateData)
           .eq('tau_id', id);
@@ -518,7 +497,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(error.message || 'Failed to update sub-admin');
       }
 
-      const { data: updatedAdmin, error: fetchError } = await supabase
+      const { data: updatedAdmin, error: fetchError } = await adminSupabase
           .from('tbl_admin_users')
           .select('*')
           .eq('tau_id', id)
@@ -549,7 +528,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteSubAdmin = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await adminSupabase
           .from('tbl_admin_users')
           .delete()
           .eq('tau_id', id);
@@ -584,7 +563,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const getSubAdmins = async (): Promise<SubAdmin[]> => {
     try {
-      const { data: subAdmins, error } = await supabase
+      const { data: subAdmins, error } = await adminSupabase
           .from('tbl_admin_users')
           .select('*')
           .eq('tau_role', 'sub_admin')
@@ -592,22 +571,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (error) {
         console.error('Database fetch error:', error);
-        throw new Error('Failed to fetch sub-admins');
-      }
-
-      const legacyPermissionMigrations = (subAdmins || [])
-        .filter((item) => hasLegacyPermissionKeys(item.tau_permissions))
-        .map((item) =>
-          supabase
-            .from('tbl_admin_users')
-            .update({
-              tau_permissions: serializePermissionsForStorage(normalizePermissions(item.tau_permissions))
-            })
-            .eq('tau_id', item.tau_id)
-        );
-
-      if (legacyPermissionMigrations.length > 0) {
-        await Promise.allSettled(legacyPermissionMigrations);
+        throw new Error(error.message || 'Failed to fetch sub-admins');
       }
 
       // Handle case where no sub-admins exist (empty array is fine)
@@ -623,7 +587,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })) || [];
     } catch (error) {
       console.error('Get sub-admins error:', error);
-      notification.showError('Fetch Failed', 'Failed to fetch sub-admins');
+      const message = error instanceof Error ? error.message : 'Failed to fetch sub-admins';
+      notification.showError('Fetch Failed', message);
       return [];
     }
   };

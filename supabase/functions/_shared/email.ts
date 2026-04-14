@@ -241,22 +241,22 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   },
   sub_admin_password_reset: {
     tet_name: "sub_admin_password_reset",
-    tet_subject: "Set your password - {{site_name}}",
+    tet_subject: "Reset your admin password - {{site_name}}",
     tet_body: buildBrandedEmailShell({
       eyebrow: "",
-      title: "Set Your Password",
+      title: "Reset Your Admin Password",
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Your sub-admin account for {{site_name}} is ready. Please set your password to access the admin panel.
+          We received a request to reset the password for your sub-admin account on {{site_name}}.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
-            Click the button below to create your password securely. This link is unique to your account and will expire automatically.
+            Click the button below to choose a new password and access the admin panel securely. This reset link is unique to your account and will expire automatically.
           </p>
         </div>
         <div style="text-align:center;margin:28px 0;">
-          <a href="{{reset_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Set Password</a>
+          <a href="{{reset_link}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Reset Admin Password</a>
         </div>
         <p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">
           If the button above is not clickable, please copy the following URL and paste it into your browser.
@@ -265,7 +265,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
           <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          Regards,<br>{{site_name}} Team
+          If you did not request this password reset, you can safely ignore this email.<br>{{site_name}} Team
         </p>
       `,
     }),
@@ -378,10 +378,7 @@ export const buildBranding = (
     settings,
   });
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const configuredLogoUrl = String(settings.logo_url || "").trim();
-  const logoUrl = configuredLogoUrl
-    ? toAbsoluteUrl(siteUrl, configuredLogoUrl)
-    : toAbsoluteUrl(siteUrl, "/htginfotech-logo.png");
+  const logoUrl = toAbsoluteUrl(siteUrl, "/htginfotech-logo.png");
 
   return {
     siteName,
@@ -635,10 +632,6 @@ export const getEmailTemplate = async (
     if (matchedTemplate) {
       return matchedTemplate;
     }
-  }
-
-  if (templateName === "password_reset" || templateName === "sub_admin_password_reset") {
-    throw new Error(`${templateName === "password_reset" ? "Password Reset" : "Sub Admin Password Reset"} template not found in tbl_email_templates.`);
   }
 
   return DEFAULT_TEMPLATES[templateName];

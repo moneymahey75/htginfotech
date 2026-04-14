@@ -138,6 +138,7 @@ const AdminManagement: React.FC = () => {
         permissions: clonePermissions(updatedSubAdmin.permissions)
       });
       setShowEditModal(false);
+      await loadSubAdmins();
     } catch (error) {
       console.error('Failed to update sub-admin:', error);
     }

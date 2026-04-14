@@ -10,6 +10,11 @@ const normalizeCandidate = (value?: string | null) => {
 const isLocalhostCandidate = (value?: string | null) =>
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(value || "").trim());
 
+const isSupabaseRuntimeCandidate = (value?: string | null) =>
+  /^https?:\/\/(?:[^/]+\.)?(supabase\.co|supabase\.in|edge-runtime\.supabase\.com)(:\d+)?$/i.test(
+    String(value || "").trim(),
+  );
+
 export const getRequestBaseUrl = (request?: Request) => {
   if (!request) {
     return "";
@@ -56,12 +61,15 @@ export const resolveBaseUrl = ({
 }) => {
   const candidates = [
     normalizeCandidate(explicitSiteUrl),
-    getRequestBaseUrl(request),
     normalizeCandidate(Deno.env.get("SITE_URL")),
     normalizeCandidate(String(settings?.website_url || "")),
     normalizeCandidate(String(settings?.site_url || "")),
+    getRequestBaseUrl(request),
+    "https://htginfotech.com",
   ];
 
-  const firstNonLocalCandidate = candidates.find((candidate) => candidate && !isLocalhostCandidate(candidate));
+  const firstNonLocalCandidate = candidates.find(
+    (candidate) => candidate && !isLocalhostCandidate(candidate) && !isSupabaseRuntimeCandidate(candidate),
+  );
   return firstNonLocalCandidate || candidates.find(Boolean) || "";
 };

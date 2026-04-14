@@ -1,6 +1,7 @@
 import { supabase as regularSupabase } from './supabase';
 
 const ADMIN_QUERY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-query`;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 class AdminQueryBuilder {
   private table: string;
@@ -150,6 +151,8 @@ class AdminQueryBuilder {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'X-Admin-Session': adminSession,
         },
         body: JSON.stringify(payload),
@@ -180,6 +183,10 @@ class AdminSupabaseClient {
 
   get auth() {
     return regularSupabase.auth;
+  }
+
+  get functions() {
+    return regularSupabase.functions;
   }
 
   get storage() {
