@@ -363,14 +363,10 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const sendSubAdminPasswordResetEmail = async (subAdminId: string, siteUrl?: string) => {
-    const adminSession = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') || '' : '';
-    const { data, error } = await publicSupabase.functions.invoke('send-subadmin-password-reset-email', {
+    const { data, error } = await adminSupabase.functions.invoke('send-subadmin-password-reset-email', {
       body: {
         subAdminId,
         siteUrl: siteUrl || (typeof window !== 'undefined' ? window.location.origin : ''),
-      },
-      headers: {
-        'X-Admin-Session': adminSession,
       },
     });
 

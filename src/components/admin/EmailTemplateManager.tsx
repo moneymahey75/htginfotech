@@ -160,19 +160,11 @@ const getFunctionClient = () => {
     return null;
   }
 
-  const adminSession =
-    typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') || '' : '';
-
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
-    },
-    global: {
-      headers: {
-        'X-Admin-Session': adminSession,
-      },
     },
   });
 };
@@ -578,10 +570,18 @@ const EmailTemplateManager: React.FC = () => {
     setError(null);
 
     try {
+      const adminSession =
+        typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') || '' : '';
+
       const { data, error: invokeError } = await functionClient.functions.invoke('send-template-test-email', {
         body: {
           templateName: testTemplate.tet_name,
           email: normalizedEmail,
+        },
+        headers: {
+          'X-Admin-Session': adminSession,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'apikey': supabaseAnonKey,
         },
       });
 

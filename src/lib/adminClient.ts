@@ -2,6 +2,60 @@ import { supabase as regularSupabase } from './supabase';
 
 const ADMIN_QUERY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-query`;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+
+const invokeAdminFunction = async (
+  functionName: string,
+  options?: {
+    body?: unknown;
+    headers?: Record<string, string>;
+  },
+) => {
+  try {
+    const adminSession = localStorage.getItem('admin_session_token');
+
+    if (!adminSession) {
+      return {
+        data: null,
+        error: { message: 'Admin session required' }
+      };
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/${functionName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'X-Admin-Session': adminSession,
+        ...(options?.headers || {}),
+      },
+      body: JSON.stringify(options?.body ?? {}),
+    });
+
+    const responseText = await response.text();
+    const parsedBody = responseText ? JSON.parse(responseText) : null;
+
+    if (!response.ok) {
+      return {
+        data: parsedBody,
+        error: {
+          message: parsedBody?.error || parsedBody?.message || `HTTP ${response.status}`
+        }
+      };
+    }
+
+    return {
+      data: parsedBody,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: error instanceof Error ? error.message : 'Unknown error' }
+    };
+  }
+};
 
 class AdminQueryBuilder {
   private table: string;
@@ -186,7 +240,9 @@ class AdminSupabaseClient {
   }
 
   get functions() {
-    return regularSupabase.functions;
+    return {
+      invoke: invokeAdminFunction,
+    };
   }
 
   get storage() {
