@@ -1,8 +1,12 @@
 import { supabase as regularSupabase } from './supabase';
 
-const ADMIN_QUERY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-query`;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const getAdminSession = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return localStorage.getItem('admin_session_token');
+};
 
 const invokeAdminFunction = async (
   functionName: string,
@@ -12,7 +16,7 @@ const invokeAdminFunction = async (
   },
 ) => {
   try {
-    const adminSession = localStorage.getItem('admin_session_token');
+    const adminSession = getAdminSession();
 
     if (!adminSession) {
       return {
@@ -21,33 +25,17 @@ const invokeAdminFunction = async (
       };
     }
 
-    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/${functionName}`, {
-      method: 'POST',
+    const { data, error } = await regularSupabase.functions.invoke(functionName, {
+      body: options?.body ?? {},
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'X-Admin-Session': adminSession,
         ...(options?.headers || {}),
       },
-      body: JSON.stringify(options?.body ?? {}),
     });
 
-    const responseText = await response.text();
-    const parsedBody = responseText ? JSON.parse(responseText) : null;
-
-    if (!response.ok) {
-      return {
-        data: parsedBody,
-        error: {
-          message: parsedBody?.error || parsedBody?.message || `HTTP ${response.status}`
-        }
-      };
-    }
-
     return {
-      data: parsedBody,
-      error: null,
+      data,
+      error: error ? { message: error.message } : null,
     };
   } catch (error) {
     return {
@@ -160,7 +148,7 @@ class AdminQueryBuilder {
 
   private async execute() {
     try {
-      const adminSession = localStorage.getItem('admin_session_token');
+      const adminSession = getAdminSession();
 
       if (!adminSession) {
         return {
@@ -201,26 +189,21 @@ class AdminQueryBuilder {
         count: this.needsCount
       };
 
-      const response = await fetch(ADMIN_QUERY_FUNCTION_URL, {
-        method: 'POST',
+      const { data, error } = await regularSupabase.functions.invoke('admin-query', {
+        body: payload,
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'X-Admin-Session': adminSession,
         },
-        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
+      if (error) {
         return {
           data: null,
-          error: { message: `HTTP ${response.status}: ${errorText}` }
+          error: { message: error.message }
         };
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       return {
         data: null,
