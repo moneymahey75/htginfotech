@@ -105,14 +105,9 @@ export const buildBrandedEmailShell = ({
         <table role="presentation" style="width:100%;max-width:720px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
             <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
-              <img
-                src="{{logo_url}}"
-                alt="Logo"
-                width="120"
-                style="display:block;margin:0 auto 10px auto;"
-              />
+              <img src="https://htginfotech.com/htginfotech-logo.png" alt="Logo" width="120" style="display:block;margin:0 auto 10px auto;"/>
               <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
-                ${title || "{{site_name}}"}
+                ${title || "HTG Infotech"}
               </h2>
             </td>
           </tr>
@@ -123,17 +118,13 @@ export const buildBrandedEmailShell = ({
           </tr>
           <tr>
             <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
-              <p style="margin:0 0 8px 0">{{site_name}}</p>
+              <p style="margin:0 0 8px 0">HTG Infotech</p>
               <p style="margin:0 0 8px 0">
-                <a
-                  href="{{website_url}}"
-                  style="color:#4f46e5;text-decoration:none"
-                  target="_blank"
-                >
+                <a href="https://htginfotech.com" style="color:#4f46e5;text-decoration:none" target="_blank">
                   Visit Website
                 </a>
               </p>
-              <p style="margin:0">© {{current_year}} {{site_name}}</p>
+              <p style="margin:0">© {{current_year}} HTG Infotech</p>
             </td>
           </tr>
         </table>
@@ -146,14 +137,14 @@ export const buildBrandedEmailShell = ({
 const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   verification_email: {
     tet_name: "verification_email",
-    tet_subject: "Verify your email address - {{site_name}}",
+    tet_subject: "Verify your email address - HTG Infotech",
     tet_body: buildBrandedEmailShell({
-      eyebrow: "{{site_name}} Account Verification",
+      eyebrow: "HTG Infotech Account Verification",
       title: "Verify Your Email",
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Thank you for signing up with {{site_name}}. Please verify your email address to complete your registration and activate your account.
+          Thank you for signing up with HTG Infotech. Please verify your email address to complete your registration and activate your account.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -170,7 +161,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
           <a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          Regards,<br>{{site_name}} Team
+          Regards,<br>HTG Infotech Team
         </p>
       `,
     }),
@@ -179,14 +170,14 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   },
   welcome_email: {
     tet_name: "welcome_email",
-    tet_subject: "Welcome to {{site_name}}!",
+    tet_subject: "Welcome to HTG Infotech!",
     tet_body: buildBrandedEmailShell({
       eyebrow: "",
-      title: "Welcome to {{site_name}}!",
+      title: "Welcome to HTG Infotech!",
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Welcome to {{site_name}}. Your email has been verified successfully, and your account is now ready to use.
+          Welcome to HTG Infotech. Your email has been verified successfully, and your account is now ready to use.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <h3 style="margin:0 0 12px;color:#111827;font-size:18px;">What You Can Do Next</h3>
@@ -194,13 +185,13 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
             <li>Browse our available courses and services</li>
             <li>Complete your profile information</li>
             <li>Explore your dashboard</li>
-            <li>Connect with the {{site_name}} community</li>
+            <li>Connect with the HTG Infotech community</li>
           </ul>
         </div>
         <div style="text-align:center;margin:28px 0;">
           <a href="{{site_url}}/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Browse Courses</a>
         </div>
-        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>{{site_name}} Team</p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>HTG Infotech Team</p>
       `,
     }),
     tet_template_type: "user_registration",
@@ -208,14 +199,14 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   },
   password_reset: {
     tet_name: "password_reset",
-    tet_subject: "Reset your password - {{site_name}}",
+    tet_subject: "Reset your password - HTG Infotech",
     tet_body: buildBrandedEmailShell({
       eyebrow: "",
       title: "Reset Your Password",
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          We received a request to reset the password for your {{site_name}} account.
+          We received a request to reset the password for your HTG Infotech account.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -232,7 +223,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
           <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          If you did not request a password reset, you can safely ignore this email.<br>{{site_name}} Team
+          If you did not request a password reset, you can safely ignore this email.<br>HTG Infotech Team
         </p>
       `,
     }),
@@ -241,14 +232,14 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   },
   sub_admin_password_reset: {
     tet_name: "sub_admin_password_reset",
-    tet_subject: "Reset your admin password - {{site_name}}",
+    tet_subject: "Reset your admin password - HTG Infotech",
     tet_body: buildBrandedEmailShell({
       eyebrow: "",
       title: "Reset Your Admin Password",
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          We received a request to reset the password for your sub-admin account on {{site_name}}.
+          We received a request to reset the password for your sub-admin account on HTG Infotech.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -265,7 +256,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
           <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          If you did not request this password reset, you can safely ignore this email.<br>{{site_name}} Team
+          If you did not request this password reset, you can safely ignore this email.<br>HTG Infotech Team
         </p>
       `,
     }),
@@ -282,7 +273,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello Admin,</p>
         <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.7;">
-          A new contact request has been submitted through {{site_name}}. The sender details and message are included below.
+          A new contact request has been submitted through HTG Infotech. The sender details and message are included below.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <table role="presentation" style="width:100%;border-collapse:collapse;">
@@ -307,7 +298,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
   },
   contact_confirmation_email: {
     tet_name: "contact_confirmation_email",
-    tet_subject: "We received your message - {{site_name}}",
+    tet_subject: "We received your message - HTG Infotech",
     tet_body: buildBrandedEmailShell({
       eyebrow: "",
       title: "We Received Your Message",
@@ -315,7 +306,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{sender_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Thank you for contacting {{site_name}}. This is a confirmation that your message has been received and shared with our team.
+          Thank you for contacting HTG Infotech. This is a confirmation that your message has been received and shared with our team.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <table role="presentation" style="width:100%;border-collapse:collapse;">
@@ -378,7 +369,7 @@ export const buildBranding = (
     settings,
   });
   const siteName = String(settings.site_name || "HTG Infotech").trim();
-  const logoUrl = toAbsoluteUrl(siteUrl, "/htginfotech-logo.png");
+  const logoUrl = "https://htginfotech.com/htginfotech-logo.png";
 
   return {
     siteName,
@@ -479,30 +470,6 @@ const normalizeEmailMarkup = (value: string) =>
     .replace(/&lt;\s*\/?\s*wbr\s*&gt;/gi, "")
     .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, "")
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
-    .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])(https?:\/\/[^'"]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])(https?:\/\/[^'"]+)\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
     .replace(
       /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
       '<a href="{{reset_link}}"$1>$2</a>',
@@ -606,6 +573,29 @@ const TEMPLATE_NAME_ALIASES: Record<
   sub_admin_password_reset: ["sub_admin_password_reset", "SUB_ADMIN_PASSWORD_RESET", "Sub Admin Password Reset"],
 };
 
+const DEFAULT_TEMPLATE_ENTRIES = Object.entries(DEFAULT_TEMPLATES) as Array<[string, EmailTemplateRecord]>;
+
+const getDefaultTemplateForName = (templateName: string) => {
+  if (DEFAULT_TEMPLATES[templateName]) {
+    return DEFAULT_TEMPLATES[templateName];
+  }
+
+  const normalizedTemplateName = String(templateName || "").trim().toLowerCase();
+
+  const matchedAliasKey = (Object.entries(TEMPLATE_NAME_ALIASES) as Array<[string, string[]]>).find(([, aliases]) =>
+    aliases.some((alias) => alias.trim().toLowerCase() === normalizedTemplateName),
+  )?.[0];
+
+  if (matchedAliasKey && DEFAULT_TEMPLATES[matchedAliasKey]) {
+    return DEFAULT_TEMPLATES[matchedAliasKey];
+  }
+
+  return DEFAULT_TEMPLATE_ENTRIES.find(([key, template]) =>
+    key.trim().toLowerCase() === normalizedTemplateName ||
+    template.tet_name.trim().toLowerCase() === normalizedTemplateName,
+  )?.[1];
+};
+
 export const getEmailTemplate = async (
   supabase: any,
   templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
@@ -634,7 +624,7 @@ export const getEmailTemplate = async (
     }
   }
 
-  return DEFAULT_TEMPLATES[templateName];
+  return getDefaultTemplateForName(templateName);
 };
 
 export const renderEmailTemplate = async ({
@@ -649,6 +639,11 @@ export const renderEmailTemplate = async ({
   branding: BrandingSettings;
 }) => {
   const template = await getEmailTemplate(supabase, templateName);
+
+  if (!template) {
+    throw new Error(`Email template could not be resolved for ${templateName}.`);
+  }
+
   const resolvedResetLink = variables.reset_link || variables.reset_password_link || "";
   const mergedVariables = {
     ...variables,

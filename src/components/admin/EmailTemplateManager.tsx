@@ -7,6 +7,7 @@ import {
   FileText,
   Loader2,
   Mail,
+  Pencil,
   Plus,
   RefreshCw,
   X,
@@ -109,6 +110,9 @@ const sanitizePreviewHtml = (value: string) =>
 
 const getTemplateHtml = (template: Pick<EmailTemplateRow, 'tet_html_body' | 'tet_body'>) =>
   template.tet_html_body?.trim() || template.tet_body?.trim() || '';
+
+const sortTemplatesByName = (templates: EmailTemplateRow[]) =>
+  [...templates].sort((a, b) => a.tet_name.localeCompare(b.tet_name));
 
 const createEmptyFormState = (): EmailTemplateFormState => ({
   tet_name: '',
@@ -294,6 +298,17 @@ const EmailTemplateManager: React.FC = () => {
 
   const pushToast = (type: ToastMessage['type'], message: string) => {
     setToasts((current) => [...current, { id: Date.now() + Math.random(), type, message }]);
+  };
+
+  const syncTemplateState = (template: EmailTemplateRow) => {
+    setTemplates((current) =>
+      sortTemplatesByName(
+        current.map((item) => (item.tet_id === template.tet_id ? template : item))
+      )
+    );
+    setPreviewTemplate((current) => (current?.tet_id === template.tet_id ? template : current));
+    setEditingTemplate((current) => (current?.tet_id === template.tet_id ? template : current));
+    setTestTemplate((current) => (current?.tet_id === template.tet_id ? template : current));
   };
 
   const loadTemplates = async () => {
@@ -520,11 +535,7 @@ const EmailTemplateManager: React.FC = () => {
           throw new Error('Template update did not return a record.');
         }
 
-        setTemplates((current) =>
-          current
-            .map((template) => (template.tet_id === updatedTemplate.tet_id ? updatedTemplate : template))
-            .sort((a, b) => a.tet_name.localeCompare(b.tet_name))
-        );
+        syncTemplateState(updatedTemplate);
         pushToast('success', 'Email template updated successfully.');
       } else {
         const { data: insertedRows, error: insertError } = await adminSupabase
@@ -543,7 +554,7 @@ const EmailTemplateManager: React.FC = () => {
           throw new Error('Template creation did not return a record.');
         }
 
-        setTemplates((current) => [...current, insertedTemplate].sort((a, b) => a.tet_name.localeCompare(b.tet_name)));
+        setTemplates((current) => sortTemplatesByName([...current, insertedTemplate]));
         pushToast('success', 'Email template created successfully.');
       }
 
@@ -710,6 +721,16 @@ const EmailTemplateManager: React.FC = () => {
                       >
                         <Eye className="h-4 w-4" />
                         <span className="sr-only">View</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(template)}
+                        title="Edit template"
+                        aria-label={`Edit ${formatTemplateName(template.tet_name)}`}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-amber-300 text-amber-700 transition hover:bg-amber-50"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
                       </button>
                       <button
                         type="button"

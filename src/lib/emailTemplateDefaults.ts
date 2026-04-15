@@ -30,13 +30,13 @@ const buildEmailShell = ({
           <tr>
             <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
               <img
-                src="{{logo_url}}"
+                src="https://htginfotech.com/htginfotech-logo.png"
                 alt="Logo"
                 width="120"
                 style="display:block;margin:0 auto 10px auto;"
               />
               <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
-                ${title || '{{site_name}}'}
+                ${title || 'HTG Infotech'}
               </h2>
             </td>
           </tr>
@@ -47,17 +47,11 @@ const buildEmailShell = ({
           </tr>
           <tr>
             <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
-              <p style="margin:0 0 8px 0">{{site_name}}</p>
+              <p style="margin:0 0 8px 0">HTG Infotech</p>
               <p style="margin:0 0 8px 0">
-                <a
-                  href="{{website_url}}"
-                  style="color:#4f46e5;text-decoration:none"
-                  target="_blank"
-                >
-                  Visit Website
-                </a>
+                <a href="https://htginfotech.com" style="color:#4f46e5;text-decoration:none" target="_blank">Visit Website</a>
               </p>
-              <p style="margin:0">© {{current_year}} {{site_name}}</p>
+              <p style="margin:0">© {{current_year}} HTG Infotech</p>
             </td>
           </tr>
         </table>
@@ -71,14 +65,14 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
   {
     name: 'verification_email',
     label: 'Verification Email',
-    subject: 'Verify your email address - {{site_name}}',
+    subject: 'Verify your email address - HTG Infotech',
     templateType: 'email_verification',
     variables: ['user_name', 'first_name', 'verification_link', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Thank you for signing up with {{site_name}}. Please verify your email address to complete your registration and activate your account.
+          Thank you for signing up with HTG Infotech. Please verify your email address to complete your registration and activate your account.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -95,7 +89,7 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
           <a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          Regards,<br>{{site_name}} Team
+          Regards,<br>HTG Infotech Team
         </p>
       `,
     }),
@@ -103,14 +97,14 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
   {
     name: 'welcome_email',
     label: 'Welcome Email',
-    subject: 'Welcome to {{site_name}}!',
+    subject: 'Welcome to HTG Infotech!',
     templateType: 'user_registration',
     variables: ['user_name', 'first_name', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Welcome to {{site_name}}. Your email has been verified successfully, and your account is now ready to use.
+          Welcome to HTG Infotech. Your email has been verified successfully, and your account is now ready to use.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <h3 style="margin:0 0 12px;color:#111827;font-size:18px;">What You Can Do Next</h3>
@@ -118,13 +112,13 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
             <li>Browse our available courses and services</li>
             <li>Complete your profile information</li>
             <li>Explore your dashboard</li>
-            <li>Connect with the {{site_name}} community</li>
+            <li>Connect with the HTG Infotech community</li>
           </ul>
         </div>
         <div style="text-align:center;margin:28px 0;">
-          <a href="{{site_url}}/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Browse Courses</a>
+          <a href="https://htginfotech.com/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Browse Courses</a>
         </div>
-        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>{{site_name}} Team</p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>HTG Infotech Team</p>
       `,
     }),
   },
@@ -138,7 +132,7 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello Admin,</p>
         <p style="margin:0 0 18px;color:#374151;font-size:16px;line-height:1.7;">
-          A new contact request has been submitted through {{site_name}}. The sender details and message are included below.
+          A new contact request has been submitted through HTG Infotech. The sender details and message are included below.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <table role="presentation" style="width:100%;border-collapse:collapse;">
@@ -163,14 +157,14 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
   {
     name: 'password_reset',
     label: 'Password Reset',
-    subject: 'Reset your password - {{site_name}}',
+    subject: 'Reset your password - HTG Infotech',
     templateType: 'password_reset',
     variables: ['user_name', 'first_name', 'reset_link', 'reset_password_link', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          We received a request to reset the password for your {{site_name}} account.
+          We received a request to reset the password for your HTG Infotech account.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -187,7 +181,7 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
           <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          If you did not request a password reset, you can safely ignore this email.<br>{{site_name}} Team
+          If you did not request a password reset, you can safely ignore this email.<br>HTG Infotech Team
         </p>
       `,
     }),
@@ -195,14 +189,14 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
   {
     name: 'sub_admin_password_reset',
     label: 'Sub Admin Password Reset',
-    subject: 'Reset your admin password - {{site_name}}',
+    subject: 'Reset your admin password - HTG Infotech',
     templateType: 'sub_admin_password_reset',
     variables: ['user_name', 'first_name', 'reset_link', 'reset_password_link', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          We received a request to reset the password for your sub-admin account on {{site_name}}.
+          We received a request to reset the password for your sub-admin account on HTG Infotech.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -219,7 +213,7 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
           <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
         </p>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-          If you did not request this password reset, you can safely ignore this email.<br>{{site_name}} Team
+          If you did not request this password reset, you can safely ignore this email.<br>HTG Infotech Team
         </p>
       `,
     }),
@@ -227,14 +221,14 @@ export const emailTemplateDefaults: EmailTemplateDefinition[] = [
   {
     name: 'contact_confirmation_email',
     label: 'Contact Confirmation Email',
-    subject: 'We received your message - {{site_name}}',
+    subject: 'We received your message - HTG Infotech',
     templateType: 'contact_confirmation',
     variables: ['sender_name', 'contact_subject', 'message_body', 'inquiry_type', 'submitted_at', 'support_email', 'asset_url', 'website_url', 'logo_url', 'site_name', 'site_url', 'current_year'],
     body: buildEmailShell({
       body: `
         <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{sender_name}},</p>
         <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-          Thank you for contacting {{site_name}}. This is a confirmation that your message has been received and shared with our team.
+          Thank you for contacting HTG Infotech. This is a confirmation that your message has been received and shared with our team.
         </p>
         <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
           <table role="presentation" style="width:100%;border-collapse:collapse;">
@@ -272,30 +266,6 @@ export const normalizeEmailMarkup = (value: string) =>
     .replace(/&lt;\s*\/?\s*wbr\s*&gt;/gi, '')
     .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, '')
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
-    .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])\{\{\s*asset_url\s*\}\}\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])(https?:\/\/[^'"]+)\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])(https?:\/\/[^'"]+)\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])\/public\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
-    .replace(
-      /src=(['"])\/(htginfotech-logo\.png|htgemail-logo\.png|htgsvglogo\.svg)\1/gi,
-      (_match, quote: string) => `src=${quote}{{logo_url}}${quote}`,
-    )
     .replace(
       /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
       '<a href="{{reset_link}}"$1>$2</a>',

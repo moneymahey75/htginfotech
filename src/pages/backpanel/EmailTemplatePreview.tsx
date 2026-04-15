@@ -21,7 +21,7 @@ const EmailTemplatePreview: React.FC = () => {
   const [template, setTemplate] = useState<EmailTemplateRow | null>(null);
   const templateId = searchParams.get('id');
   const baseUrl = settings.website_url || getBaseUrl();
-  const logoUrl = `${baseUrl}/htginfotech-logo.png`;
+  const logoUrl = "https://htginfotech.com/htginfotech-logo.png";
 
   const previewVariables = useMemo(() => ({
     user_name: 'Test User',

@@ -9,7 +9,7 @@ INSERT INTO public.tbl_email_templates (
 )
 VALUES (
   'sub_admin_password_reset',
-  'Reset your admin password - {{site_name}}',
+  'Reset your admin password - HTG Infotech',
   '<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +25,7 @@ VALUES (
           <tr>
             <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
               <img
-                src="{{logo_url}}"
+                src="https://htginfotech.com/htginfotech-logo.png"
                 alt="Logo"
                 width="120"
                 style="display:block;margin:0 auto 10px auto;"
@@ -39,7 +39,7 @@ VALUES (
             <td style="padding:24px;">
               <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
               <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
-                We received a request to reset the password for your sub-admin account on {{site_name}}.
+                We received a request to reset the password for your sub-admin account on HTG Infotech.
               </p>
               <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
                 <p style="margin:0;color:#374151;font-size:15px;line-height:1.7;">
@@ -56,23 +56,23 @@ VALUES (
                 <a href="{{reset_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{reset_link}}</a>
               </p>
               <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
-                If you did not request this password reset, you can safely ignore this email.<br>{{site_name}} Team
+                If you did not request this password reset, you can safely ignore this email.<br>HTG Infotech Team
               </p>
             </td>
           </tr>
           <tr>
             <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
-              <p style="margin:0 0 8px 0">{{site_name}}</p>
+              <p style="margin:0 0 8px 0">HTG Infotech</p>
               <p style="margin:0 0 8px 0">
                 <a
-                  href="{{website_url}}"
+                  href="https://htginfotech.com"
                   style="color:#4f46e5;text-decoration:none"
                   target="_blank"
                 >
                   Visit Website
                 </a>
               </p>
-              <p style="margin:0">© {{current_year}} {{site_name}}</p>
+              <p style="margin:0">© {{current_year}} HTG Infotech</p>
             </td>
           </tr>
         </table>
