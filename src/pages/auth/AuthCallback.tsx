@@ -97,8 +97,6 @@ const AuthCallback: React.FC = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
                     'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
                   },
                   body: JSON.stringify({
                     email: session.user.email,
@@ -127,8 +125,6 @@ const AuthCallback: React.FC = () => {
                   `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-registration-sms`,
                   {
                     method: 'POST',
-                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
                     headers: {
                       'Content-Type': 'application/json',
                       'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
