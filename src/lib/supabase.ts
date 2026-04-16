@@ -54,7 +54,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'mlm-platform'
+      'X-Client-Info': 'mlm-platform',
+      // Ensure Edge Function calls have an Authorization header even when no user session exists.
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
     }
   },
   db: {

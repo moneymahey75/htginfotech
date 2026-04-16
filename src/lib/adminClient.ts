@@ -1,5 +1,17 @@
 import { supabase as regularSupabase } from './supabase';
 
+const getProjectAuthHeaders = (): Record<string, string> => {
+  // Supabase Edge Functions gateway expects an Authorization header.
+  // If the user is not logged into Supabase Auth (admin panel uses its own session),
+  // send the anon key as the bearer token + apikey.
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  if (!anonKey) return {};
+  return {
+    apikey: anonKey,
+    Authorization: `Bearer ${anonKey}`,
+  };
+};
+
 const getAdminSession = () => {
   if (typeof window === 'undefined') {
     return null;
@@ -28,6 +40,7 @@ const invokeAdminFunction = async (
     const { data, error } = await regularSupabase.functions.invoke(functionName, {
       body: options?.body ?? {},
       headers: {
+        ...getProjectAuthHeaders(),
         'X-Admin-Session': adminSession,
         ...(options?.headers || {}),
       },
@@ -192,6 +205,7 @@ class AdminQueryBuilder {
       const { data, error } = await regularSupabase.functions.invoke('admin-query', {
         body: payload,
         headers: {
+          ...getProjectAuthHeaders(),
           'X-Admin-Session': adminSession,
         },
       });
