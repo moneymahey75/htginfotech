@@ -86,6 +86,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isInitialized, setIsInitialized] = useState(false);
   const notification = useNotification();
 
+  const buildFallbackUserFromSession = async (userId?: string): Promise<User | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionUser = session?.user;
+
+      if (!sessionUser || (userId && sessionUser.id !== userId)) {
+        return null;
+      }
+
+      return {
+        id: sessionUser.id,
+        email: sessionUser.email || 'unknown@example.com',
+        firstName: sessionUser.user_metadata?.first_name,
+        lastName: sessionUser.user_metadata?.last_name,
+        userType: sessionUser.user_metadata?.user_type || 'learner',
+        educationLevel: sessionUser.user_metadata?.education_level,
+        interests: Array.isArray(sessionUser.user_metadata?.interests) ? sessionUser.user_metadata.interests : [],
+        isVerified: true,
+        hasActivePlan: true,
+        mobileVerified: Boolean(sessionUser.phone_confirmed_at)
+      };
+    } catch (error) {
+      console.warn('Unable to build fallback user from session:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Initialize session from localStorage
     const initializeSession = async () => {
@@ -134,9 +161,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('❌ Failed to initialize session:', error);
-        // Clear any corrupted session data
-        sessionManager.removeSession();
-        setUser(null);
+        const fallbackUser = await buildFallbackUserFromSession();
+        if (fallbackUser) {
+          console.log('✅ Preserving session with fallback user after initialization error');
+          setUser(fallbackUser);
+        } else {
+          // Clear any truly unusable session data
+          sessionManager.removeSession();
+          setUser(null);
+        }
       } finally {
         setLoading(false);
         setIsInitialized(true);
@@ -156,11 +189,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('✅ User signed in, saving session');
           sessionManager.saveSession(session);
           await fetchUserData(session.user.id);
-        } else if (event === 'SIGNED_OUT' || !session) {
+        } else if (event === 'SIGNED_OUT') {
           console.log('👋 User signed out, clearing session');
           const currentUserId = user?.id;
           sessionManager.removeSession(currentUserId);
           setUser(null);
+        } else if (!session) {
+          console.warn('⚠️ Auth state change without session received, keeping current user state');
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
           console.log('🔄 Token refreshed, updating session');
           sessionManager.saveSession(session);
@@ -171,13 +206,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('❌ Error handling auth state change:', error);
-        sessionManager.removeSession();
-        setUser(null);
+        const fallbackUser = await buildFallbackUserFromSession(user?.id);
+        if (fallbackUser) {
+          setUser(fallbackUser);
+        } else {
+          sessionManager.removeSession();
+          setUser(null);
+        }
       }
     });
 
     return () => {
       subscription.unsubscribe();
+    };
+  }, [isInitialized, user?.id]);
+
+  useEffect(() => {
+    if (!isInitialized || !user?.id) {
+      return;
+    }
+
+    let isRefreshing = false;
+
+    const silentlyRefreshSession = async () => {
+      if (isRefreshing) {
+        return;
+      }
+
+      isRefreshing = true;
+      try {
+        const { data, error } = await supabase.auth.refreshSession();
+
+        if (error) {
+          console.warn('Silent session refresh failed, keeping current user signed in:', error);
+          return;
+        }
+
+        if (data.session?.user) {
+          sessionManager.saveSession(data.session);
+        }
+      } catch (error) {
+        console.warn('Unexpected silent session refresh error:', error);
+      } finally {
+        isRefreshing = false;
+      }
+    };
+
+    const intervalId = window.setInterval(silentlyRefreshSession, 10 * 60 * 1000);
+    const activityEvents: Array<keyof WindowEventMap> = ['click', 'keydown', 'mousemove', 'scroll', 'focus'];
+
+    let lastRefreshAt = 0;
+    const handleActivity = () => {
+      const now = Date.now();
+      if (now - lastRefreshAt < 60 * 1000) {
+        return;
+      }
+
+      lastRefreshAt = now;
+      void silentlyRefreshSession();
+    };
+
+    activityEvents.forEach(eventName => {
+      window.addEventListener(eventName, handleActivity, { passive: true });
+    });
+
+    return () => {
+      window.clearInterval(intervalId);
+      activityEvents.forEach(eventName => {
+        window.removeEventListener(eventName, handleActivity);
+      });
     };
   }, [isInitialized, user?.id]);
 
@@ -310,8 +407,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
-      // Don't throw error, just set user to null
-      setUser(null);
+      const fallbackUser = await buildFallbackUserFromSession(userId);
+      if (fallbackUser) {
+        console.log('✅ Using fallback session user after data fetch error');
+        setUser(fallbackUser);
+      } else {
+        setUser(null);
+      }
     }
   };
 
@@ -597,7 +699,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data?.error || 'Failed to send password reset email');
       }
 
-      notification.showSuccess('Reset Email Sent', 'Please check your email for password reset instructions.');
     } catch (error: any) {
       throw error;
     }
@@ -613,7 +714,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(error.message);
       }
 
-      notification.showSuccess('Password Reset', 'Your password has been updated successfully.');
     } catch (error: any) {
       throw error;
     }

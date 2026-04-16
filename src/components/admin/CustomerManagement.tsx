@@ -123,7 +123,6 @@ const CustomerManagement: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to load customers:', error);
             setError('Failed to load customers. Please try again.');
-            notification.showError('Load Failed', 'Failed to load customer data from database');
         } finally {
             setLoading(false);
         }

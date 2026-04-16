@@ -180,15 +180,10 @@ const AuthCallback: React.FC = () => {
           return;
         }
         if (type === 'signup') {
-          notification.showError(
-            'Verification Failed',
-            'The confirmation link is invalid or has expired. Please try registering again.'
-          );
           setTimeout(() => {
             navigate('/register');
           }, 3000);
         } else {
-          notification.showError('Authentication Failed', 'The reset link is invalid or has expired.');
           setTimeout(() => {
             navigate('/forgot-password');
           }, 3000);

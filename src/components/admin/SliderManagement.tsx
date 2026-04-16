@@ -62,9 +62,6 @@ const SliderManagement: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to load sliders:', error);
             setError('Failed to load sliders. Please check your database connection.');
-            if (notification) {
-                notification.showError('Load Failed', 'Failed to load slider data from database');
-            }
         } finally {
             setLoading(false);
         }

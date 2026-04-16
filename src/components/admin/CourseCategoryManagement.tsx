@@ -156,7 +156,6 @@ const CourseCategoryManagement: React.FC = () => {
     } catch (error) {
       console.error('❌ Failed to load categories:', error);
       setError('Failed to load course categories');
-      notification.showError('Load Failed', 'Failed to load course categories');
     } finally {
       setLoading(false);
       setListLoading(false);

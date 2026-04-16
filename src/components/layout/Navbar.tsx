@@ -79,11 +79,12 @@ const getTopSocialLinks = (settings: any) => ([
 ]).filter((item) => hasValue(item.href));
 
 const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const { settings } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
   const displayUser = location.pathname === '/reset-password' ? null : user;
+  const isAuthPending = location.pathname !== '/reset-password' && loading;
   const [publicSettings, setPublicSettings] = useState<any>(settings);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -270,7 +271,12 @@ const Navbar: React.FC = () => {
 
                 {/* Auth Buttons */}
                 <div className="flex items-center space-x-3 ml-6 pl-6 border-l border-gray-200">
-                  {!displayUser ? (
+                  {isAuthPending ? (
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-24 rounded-xl bg-gray-100 animate-pulse" />
+                        <div className="h-12 w-28 rounded-xl bg-gray-100 animate-pulse" />
+                      </div>
+                  ) : !displayUser ? (
                       <>
                         <Link
                             to="/login"
@@ -436,7 +442,12 @@ const Navbar: React.FC = () => {
 
                   {/* Mobile Auth Buttons */}
                   <div className="border-t border-gray-200 pt-3 mt-3">
-                    {!displayUser ? (
+                    {isAuthPending ? (
+                        <div className="space-y-2">
+                          <div className="h-12 rounded-xl bg-gray-100 animate-pulse" />
+                          <div className="h-12 rounded-xl bg-gray-100 animate-pulse" />
+                        </div>
+                    ) : !displayUser ? (
                         <div className="space-y-2">
                           <Link
                               to="/login"
