@@ -540,7 +540,19 @@ const buildFallbackAccountRecord = async (userId: string): Promise<UserAccountRe
     .single()
 
   if (insertError) {
-    throw insertError
+    console.warn('Unable to create fallback tbl_users row from client, using auth session data instead:', insertError)
+
+    return {
+      tu_id: userId,
+      tu_email: authUser.email ?? '',
+      tu_user_type,
+      tu_is_verified: false,
+      tu_email_verified: Boolean(authUser.email_confirmed_at),
+      tu_mobile_verified: Boolean(authUser.phone_confirmed_at),
+      tu_is_active: true,
+      tu_created_at: authUser.created_at ?? null,
+      tu_updated_at: authUser.updated_at ?? authUser.created_at ?? null
+    }
   }
 
   return insertedAccount as UserAccountRecord
