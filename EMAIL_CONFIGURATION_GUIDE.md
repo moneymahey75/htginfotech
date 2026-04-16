@@ -63,7 +63,7 @@ You need to customize the email confirmation template in your Supabase Dashboard
           <!-- Header with Logo -->
           <tr>
             <td align="center" style="padding: 40px 30px; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); border-radius: 8px 8px 0 0;">
-              <img src="https://htginfotech.com/htginfotech-logo.png" alt="HTG Infotech Logo" style="width: 150px; height: auto; margin-bottom: 20px;">
+              <img src="{{ .SiteURL }}/logo.png" alt="HTG Infotech Logo" style="width: 150px; height: auto; margin-bottom: 20px;">
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">Confirm Your Email</h1>
             </td>
           </tr>
@@ -102,9 +102,9 @@ You need to customize the email confirmation template in your Supabase Dashboard
                 <strong style="color: #1e293b;">The HTG Infotech Team</strong>
               </p>
               <div style="margin: 20px 0;">
-                <a href="https://htginfotech.com" style="color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px;">Visit Website</a>
+                <a href="{{ .SiteURL }}" style="color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px;">Visit Website</a>
                 <span style="color: #cbd5e1;">|</span>
-                <a href="https://htginfotech.com/contact" style="color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px;">Contact Us</a>
+                <a href="{{ .SiteURL }}/contact" style="color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px;">Contact Us</a>
               </div>
               <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px;">
                 © 2024 HTG Infotech. All rights reserved.

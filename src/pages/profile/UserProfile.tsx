@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle, Loader2, Mail, Save, Settings, Shield, User, Users } from 'lucide-react';
 import { getUserProfileDetails, updateUserProfile, UserProfileDetails, UserProfileRecord } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../components/ui/NotificationProvider';
 
 type ProfileFormState = {
   firstName: string;
@@ -91,6 +92,7 @@ const getDashboardLink = (userType?: string) => {
 
 const UserProfilePage: React.FC = () => {
   const { user, refreshUser } = useAuth();
+  const notification = useNotification();
   const [profileDetails, setProfileDetails] = useState<UserProfileDetails | null>(null);
   const [formData, setFormData] = useState<ProfileFormState>(createDefaultFormState());
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -117,6 +119,7 @@ const UserProfilePage: React.FC = () => {
         console.error('Failed to load user profile:', error);
         const message = error?.message || 'Unable to load your profile right now.';
         setPageError(message);
+        notification.showError('Profile Load Failed', message);
       } finally {
         setIsLoading(false);
       }
@@ -189,7 +192,6 @@ const UserProfilePage: React.FC = () => {
 
     if (!validateForm()) {
       setPageError('Please fix the highlighted fields and try again.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -218,7 +220,7 @@ const UserProfilePage: React.FC = () => {
       await refreshUser();
 
       setPageSuccess('Your profile has been updated successfully.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      notification.showSuccess('Profile Updated', 'Your profile changes were saved successfully.');
     } catch (error: any) {
       console.error('Failed to update profile:', error);
       const message = error?.message?.includes('unique_tup_mobile')
@@ -233,7 +235,7 @@ const UserProfilePage: React.FC = () => {
       }
 
       setPageError(message);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      notification.showError('Profile Update Failed', message);
     } finally {
       setIsSaving(false);
     }

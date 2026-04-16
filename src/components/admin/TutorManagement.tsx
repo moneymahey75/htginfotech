@@ -193,6 +193,7 @@ const TutorManagement: React.FC = () => {
     } catch (error) {
       console.error('❌ Failed to load tutors:', error);
       setError('Failed to load tutors. Please check your database connection.');
+      notification.showError('Load Failed', 'Failed to load tutor data from database');
     } finally {
       setLoading(false);
       setListLoading(false);

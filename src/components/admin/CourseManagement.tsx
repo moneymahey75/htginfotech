@@ -265,6 +265,7 @@ const CourseManagement: React.FC = () => {
         } catch (error) {
             console.error('Failed to load courses:', error);
             setError('Failed to load course data');
+            notification.showError('Load Failed', 'Failed to load course data');
         } finally {
             setLoading(false);
             setListLoading(false);

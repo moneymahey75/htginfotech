@@ -50,7 +50,6 @@ const ContactUs: React.FC = () => {
         message: data?.warning || 'Thank you for your message! We will get back to you within 24 hours.'
       });
       setFormData({ name: '', email: '', subject: '', message: '', type: 'general' });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Contact form submission failed:', error);
       const errorMessage = error instanceof Error ? error.message : null;

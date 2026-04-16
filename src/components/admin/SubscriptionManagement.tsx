@@ -69,6 +69,7 @@ const SubscriptionManagement: React.FC = () => {
     } catch (error) {
       console.error('Failed to load subscription data:', error);
       setError('Failed to load subscription data');
+      notification.showError('Load Failed', 'Failed to load subscription data');
     } finally {
       setLoading(false);
     }

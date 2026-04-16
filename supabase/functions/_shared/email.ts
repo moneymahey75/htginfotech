@@ -105,7 +105,7 @@ export const buildBrandedEmailShell = ({
         <table role="presentation" style="width:100%;max-width:720px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
             <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
-              <img src="{{logo_url}}" alt="{{site_name}} Logo" width="120" style="display:block;margin:0 auto 10px auto;"/>
+              <img src="https://htginfotech.com/htginfotech-logo.png" alt="Logo" width="120" style="display:block;margin:0 auto 10px auto;"/>
               <h2 style="margin:0;font-size:22px;color:#ffffff;font-family:Arial,sans-serif;">
                 ${title || "HTG Infotech"}
               </h2>
@@ -118,13 +118,13 @@ export const buildBrandedEmailShell = ({
           </tr>
           <tr>
             <td align="center" style="padding:15px;background:#f0f0f0;font-size:12px;color:#777777;font-family:Arial,sans-serif">
-              <p style="margin:0 0 8px 0">{{site_name}}</p>
+              <p style="margin:0 0 8px 0">HTG Infotech</p>
               <p style="margin:0 0 8px 0">
-                <a href="{{site_url}}" style="color:#4f46e5;text-decoration:none" target="_blank">
+                <a href="https://htginfotech.com" style="color:#4f46e5;text-decoration:none" target="_blank">
                   Visit Website
                 </a>
               </p>
-              <p style="margin:0">© {{current_year}} {{site_name}}</p>
+              <p style="margin:0">© {{current_year}} HTG Infotech</p>
             </td>
           </tr>
         </table>
@@ -189,7 +189,7 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
           </ul>
         </div>
         <div style="text-align:center;margin:28px 0;">
-          <a href="https://htginfotech.com/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Browse Courses</a>
+          <a href="{{site_url}}/courses" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Browse Courses</a>
         </div>
         <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">Thank you for joining us.<br>HTG Infotech Team</p>
       `,
@@ -467,6 +467,88 @@ const normalizeEmailMarkup = (value: string) =>
   value
     .replace(/<wbr\b[^>]*>/gi, "")
     .replace(/<\/wbr>/gi, "")
+    .replace(/&lt;\s*\/?\s*wbr\s*&gt;/gi, "")
+    .replace(/&#8203;|&#x200b;|&ZeroWidthSpace;/gi, "")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+    .replace(
+      /<a\b((?:(?!href=)[^>])*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      '<a href="{{reset_link}}"$1>$2</a>',
+    )
+    .replace(
+      /<a\b([^>]*?)href=(['"])\s*\2([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      '<a href="{{reset_link}}"$1$3>$4</a>',
+    )
+    .replace(
+      /(<a\b[^>]*style="[^"]*?)border-radius:\s*[^;"]+;?([^"]*"[^>]*>\s*Verify Email\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style="[^"]*?)border-radius:\s*[^;"]+;?([^"]*"[^>]*>\s*Browse Courses\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*Verify Email\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*Browse Courses\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /(<a\b[^>]*style=")(?![^"]*border-radius:)([^"]*"[^>]*>\s*(Reset Password|Reset Password Link)\s*<\/a>)/gi,
+      '$1border-radius:999px;$2',
+    )
+    .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*Verify Email\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string) => {
+        const needsSemicolon = styleValue.trim() !== "" && !styleValue.trim().endsWith(";");
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, "border-radius:999px;")
+          : `${styleValue}${needsSemicolon ? ";" : ""}border-radius:999px;`;
+        return `<a${beforeStyle}style="${withRadius}"${afterStyle}>Verify Email</a>`;
+      },
+    )
+    .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*Browse Courses\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string) => {
+        const needsSemicolon = styleValue.trim() !== "" && !styleValue.trim().endsWith(";");
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, "border-radius:999px;")
+          : `${styleValue}${needsSemicolon ? ";" : ""}border-radius:999px;`;
+        return `<a${beforeStyle}style="${withRadius}"${afterStyle}>Browse Courses</a>`;
+      },
+    )
+    .replace(
+      /<a\b([^>]*?)style="([^"]*?)"([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      (_match, beforeStyle: string, styleValue: string, afterStyle: string, label: string) => {
+        const needsSemicolon = styleValue.trim() !== "" && !styleValue.trim().endsWith(";");
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, "border-radius:999px;")
+          : `${styleValue}${needsSemicolon ? ";" : ""}border-radius:999px;`;
+        const linkMarkup = /href\s*=/i.test(`${beforeStyle}${afterStyle}`)
+          ? `<a${beforeStyle}style="${withRadius}"${afterStyle}>${label}</a>`
+          : `<a href="{{reset_link}}"${beforeStyle}style="${withRadius}"${afterStyle}>${label}</a>`;
+        return linkMarkup;
+      },
+    )
+    .replace(
+      /<a\b([^>]*?)href=(['"])\s*\2([^>]*?)style="([^"]*?)"([^>]*)>\s*(Reset Password|Reset Password Link)\s*<\/a>/gi,
+      (_match, beforeHref: string, _quote: string, afterHref: string, styleValue: string, afterStyle: string, label: string) => {
+        const needsSemicolon = styleValue.trim() !== "" && !styleValue.trim().endsWith(";");
+        const withRadius = /border-radius\s*:/i.test(styleValue)
+          ? styleValue.replace(/border-radius\s*:\s*[^;"]+;?/gi, "border-radius:999px;")
+          : `${styleValue}${needsSemicolon ? ";" : ""}border-radius:999px;`;
+        return `<a${beforeHref}href="{{reset_link}}"${afterHref}style="${withRadius}"${afterStyle}>${label}</a>`;
+      },
+    )
+    .replace(
+      /<p\b[^>]*>\s*If you did not create this account, you can safely ignore this email\.\s*<\/p>/gi,
+      '<p style="margin:0 0 10px;color:#111827;font-size:15px;font-weight:600;">If the button above is not clickable, please copy the following URL and paste it into your browser.</p><p style="margin:0 0 20px;word-break:break-word;"><a href="{{verification_link}}" style="color:#4f46e5;text-decoration:none;font-size:14px;line-height:1.7;">{{verification_link}}</a></p>',
+    )
+    .replace(
+      /<p\b[^>]*>\s*[^<]*Welcome Message\s*<\/p>/gi,
+      "",
+    )
     .replace(/>\s+</g, "><")
     .replace(/\n\s*\n+/g, "\n")
     .trim();
@@ -493,40 +575,6 @@ const TEMPLATE_NAME_ALIASES: Record<
 
 const DEFAULT_TEMPLATE_ENTRIES = Object.entries(DEFAULT_TEMPLATES) as Array<[string, EmailTemplateRecord]>;
 
-const containsEscapedHtmlShell = (value: string) =>
-  /&lt;(?:!DOCTYPE|html|body|table)\b/i.test(value);
-
-const containsSuspiciousInlineHtmlDump = (value: string) =>
-  />\s*&lt;table\b/i.test(value) || />\s*&lt;!DOCTYPE\b/i.test(value);
-
-const hasBrokenLogoMarkup = (value: string) =>
-  /<img[^>]+src=(['"])\s*\1/i.test(value);
-
-const shouldUseDefaultTemplate = (
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
-  template?: EmailTemplateRecord | null,
-) => {
-  if (!template) {
-    return true;
-  }
-
-  const html = String(template.tet_html_body || template.tet_body || "").trim();
-
-  if (!html) {
-    return true;
-  }
-
-  if (containsEscapedHtmlShell(html) || containsSuspiciousInlineHtmlDump(html) || hasBrokenLogoMarkup(html)) {
-    return true;
-  }
-
-  if (templateName === "password_reset" && !html.includes("{{reset_link}}")) {
-    return true;
-  }
-
-  return false;
-};
-
 const getDefaultTemplateForName = (templateName: string) => {
   if (DEFAULT_TEMPLATES[templateName]) {
     return DEFAULT_TEMPLATES[templateName];
@@ -546,40 +594,6 @@ const getDefaultTemplateForName = (templateName: string) => {
     key.trim().toLowerCase() === normalizedTemplateName ||
     template.tet_name.trim().toLowerCase() === normalizedTemplateName,
   )?.[1];
-};
-
-const renderDefaultEmailTemplate = ({
-  templateName,
-  variables,
-  branding,
-}: {
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset";
-  variables: Record<string, string>;
-  branding: BrandingSettings;
-}) => {
-  const template = getDefaultTemplateForName(templateName);
-
-  if (!template) {
-    throw new Error(`Default email template could not be resolved for ${templateName}.`);
-  }
-
-  const resolvedResetLink = variables.reset_link || variables.reset_password_link || "";
-  const mergedVariables = {
-    ...variables,
-    asset_url: branding.assetUrl,
-    logo_url: "https://htginfotech.com/htginfotech-logo.png",
-    site_name: branding.siteName,
-    site_url: branding.siteUrl,
-    website_url: branding.siteUrl,
-    current_year: String(new Date().getFullYear()),
-    reset_link: resolvedResetLink,
-    reset_password_link: resolvedResetLink,
-  };
-
-  return {
-    subject: replaceTemplatePlaceholders(stripWordBreakTags(template.tet_subject), mergedVariables),
-    html: replaceTemplatePlaceholders(normalizeEmailMarkup(stripWordBreakTags(template.tet_html_body || template.tet_body)), mergedVariables),
-  };
 };
 
 export const getEmailTemplate = async (
@@ -605,7 +619,7 @@ export const getEmailTemplate = async (
       .map((name) => data.find((template: any) => template.tet_name === name))
       .find(Boolean);
 
-    if (matchedTemplate && !shouldUseDefaultTemplate(templateName, matchedTemplate)) {
+    if (matchedTemplate) {
       return matchedTemplate;
     }
   }
@@ -634,7 +648,7 @@ export const renderEmailTemplate = async ({
   const mergedVariables = {
     ...variables,
     asset_url: branding.assetUrl,
-    logo_url: "https://htginfotech.com/htginfotech-logo.png",
+    logo_url: branding.logoUrl,
     site_name: branding.siteName,
     site_url: branding.siteUrl,
     website_url: branding.siteUrl,
@@ -703,7 +717,8 @@ export const buildPasswordResetEmailContent = async ({
   const resolvedFirstName = normalizeFirstName(firstName);
   const resolvedLastName = String(lastName ?? "").trim();
 
-  return renderDefaultEmailTemplate({
+  return renderEmailTemplate({
+    supabase,
     templateName: "password_reset",
     branding,
     variables: {

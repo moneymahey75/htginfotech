@@ -31,13 +31,11 @@ export const sessionUtils = {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    const expiresAt = typeof session.expires_at === 'number' ? session.expires_at : undefined;
-    const timeRemaining = typeof expiresAt === 'number' ? expiresAt - now : undefined;
-    const hasRefreshToken = !!session.refresh_token;
+    const expiresAt = session.expires_at;
+    const timeRemaining = expiresAt - now;
 
     return {
-      // Treat refreshable sessions as valid; Supabase can rotate the access token in the background.
-      isValid: hasRefreshToken,
+      isValid: timeRemaining > 0,
       expiresAt,
       timeRemaining,
       user: session.user
@@ -46,7 +44,13 @@ export const sessionUtils = {
 
   // Check if session will expire soon (within 5 minutes)
   isSessionExpiringSoon: (): boolean => {
-    return false;
+    const sessionInfo = sessionUtils.getSessionInfo();
+    if (!sessionInfo.isValid || !sessionInfo.timeRemaining) {
+      return false;
+    }
+
+    // Check if expires within 5 minutes (300 seconds)
+    return sessionInfo.timeRemaining <= 300;
   },
 
   // Format time remaining in human readable format

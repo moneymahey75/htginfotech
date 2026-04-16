@@ -443,10 +443,10 @@ const LearnerDashboard: React.FC = () => {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                       <div className="space-y-3">
-                        <button className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors" onClick={() => navigate('/courses')}>
+                        <button className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors" onClick={() => window.location.href = '/courses'}>
                           Browse New Courses
                         </button>
-                        <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors" onClick={() => navigate('/tutors')}>
+                        <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors" onClick={() => window.location.href = '/tutors'}>
                           Browse Tutors
                         </button>
                       </div>

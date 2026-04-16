@@ -193,6 +193,9 @@ const LearnerManagement: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to load learners:', error);
             setError('Failed to load learners. Please check your database connection.');
+            if (notification) {
+                notification.showError('Load Failed', 'Failed to load learner data from database');
+            }
         } finally {
             setLoading(false);
             setListLoading(false);
