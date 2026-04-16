@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Eye, EyeOff, Loader, Lock, Shield } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
-import { useNotification } from '../../components/ui/NotificationProvider';
 import { useAdmin } from '../../contexts/AdminContext';
 import PasswordPolicyChecklist from '../../components/auth/PasswordPolicyChecklist';
 import {
@@ -18,7 +17,6 @@ const ResetPassword: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const notification = useNotification();
   const hasVerifiedToken = useRef(false);
 
   const [formData, setFormData] = useState({
@@ -64,14 +62,13 @@ const ResetPassword: React.FC = () => {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'The reset link is invalid or has expired.');
-        notification.showError('Authentication Failed', 'The reset link is invalid or has expired.');
       } finally {
         setIsVerifying(false);
       }
     };
 
     verifyResetToken();
-  }, [notification, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     setPasswordValidation(validatePasswordPolicy(formData.password, settings));

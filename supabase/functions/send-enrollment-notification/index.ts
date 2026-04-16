@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
                       <tr>
                         <td align="center" style="background:#4f46e5;color:#ffffff;padding:20px">
                           <img
-                            src="${branding.logoUrl}"
+                            src="https://htginfotech.com/htginfotech-logo.png"
                             alt="Logo"
                             width="120"
                             style="display:block;margin:0 auto 10px auto;"

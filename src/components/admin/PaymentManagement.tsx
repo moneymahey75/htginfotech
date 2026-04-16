@@ -118,7 +118,6 @@ const PaymentManagement: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to load payments:', error);
             setError('Failed to load payment data');
-            notification.showError('Load Failed', 'Failed to load payment data from database');
         } finally {
             setLoading(false);
         }

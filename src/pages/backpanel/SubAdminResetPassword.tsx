@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Loader, Lock, Shield } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useNotification } from '../../components/ui/NotificationProvider';
 import { useAdmin } from '../../contexts/AdminContext';
 import PasswordPolicyChecklist from '../../components/auth/PasswordPolicyChecklist';
 import {
@@ -13,7 +12,6 @@ import {
 
 const SubAdminResetPassword: React.FC = () => {
   const navigate = useNavigate();
-  const notification = useNotification();
   const { settings } = useAdmin();
   const [searchParams] = useSearchParams();
   const token = useMemo(() => String(searchParams.get('token') || '').trim(), [searchParams]);
@@ -60,14 +58,13 @@ const SubAdminResetPassword: React.FC = () => {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'The reset link is invalid or has expired.';
         setError(message);
-        notification.showError('Reset Link Invalid', message);
       } finally {
         setIsVerifying(false);
       }
     };
 
     verifyToken();
-  }, [notification, token]);
+  }, [token]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -114,8 +111,6 @@ const SubAdminResetPassword: React.FC = () => {
       }
 
       setSuccess(true);
-      notification.showSuccess('Password Updated', 'Your sub-admin password has been updated successfully.');
-
       window.setTimeout(() => {
         navigate('/backpanel/login', {
           replace: true,
@@ -125,7 +120,6 @@ const SubAdminResetPassword: React.FC = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update password.';
       setError(message);
-      notification.showError('Reset Failed', message);
     } finally {
       setIsSubmitting(false);
     }

@@ -114,14 +114,13 @@ export const sessionManager = {
 
         const session = JSON.parse(sessionData);
 
-        // Check if session is expired
-        if (session.expires_at && new Date(session.expires_at * 1000) <= new Date()) {
-          console.log('⏰ Session expired, removing from localStorage');
+        if (!session?.refresh_token || !session?.user?.id) {
+          console.warn('⚠️ Stored session is missing required fields, clearing it');
           sessionManager.removeSession(currentUserId);
           return null;
         }
 
-        console.log('✅ Valid session found in localStorage for user:', currentUserId);
+        console.log('✅ Restorable session found in localStorage for user:', currentUserId);
         return session;
       } catch (error) {
         console.error('❌ Failed to get session from localStorage:', error);
@@ -175,7 +174,7 @@ export const sessionManager = {
   // Check if session exists and is valid
   hasValidSession: (userId?: string): boolean => {
     const session = sessionManager.getSession(userId);
-    return session !== null;
+    return !!session?.refresh_token;
   },
 
   // Restore session to Supabase client
@@ -459,24 +458,155 @@ const ensureAuthenticatedUser = async (userId: string) => {
   return data.user
 }
 
-export const getUserProfileDetails = async (userId: string): Promise<UserProfileDetails> => {
-  await ensureAuthenticatedUser(userId)
+const isMissingFunctionError = (error: any) => {
+  const message = error?.message ?? ''
+  return (
+    error?.code === 'PGRST202' ||
+    message.includes('schema cache') ||
+    message.includes('Could not find the function')
+  )
+}
 
-  const { data: account, error: accountError } = await supabase
+const buildFallbackAccountRecord = async (userId: string): Promise<UserAccountRecord> => {
+  const { data: accountData, error: accountError } = await supabase
     .from('tbl_users')
-    .select('tu_id, tu_email, tu_user_type, tu_is_verified, tu_email_verified, tu_mobile_verified, tu_is_active, tu_created_at, tu_updated_at')
+    .select(`
+      tu_id,
+      tu_email,
+      tu_user_type,
+      tu_is_verified,
+      tu_email_verified,
+      tu_mobile_verified,
+      tu_is_active,
+      tu_created_at,
+      tu_updated_at
+    `)
     .eq('tu_id', userId)
+    .maybeSingle()
+
+  if (accountError) {
+    throw accountError
+  }
+
+  if (accountData) {
+    return accountData as UserAccountRecord
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+
+  if (authError) {
+    throw authError
+  }
+
+  const authUser = authData.user
+
+  if (!authUser || authUser.id !== userId) {
+    throw new Error('Unauthorized profile access')
+  }
+
+  const rawUserType = String(authUser.user_metadata?.user_type ?? 'learner').trim().toLowerCase()
+  const tu_user_type =
+    ['learner', 'tutor', 'job_seeker', 'job_provider', 'admin'].includes(rawUserType)
+      ? rawUserType
+      : 'learner'
+
+  const insertPayload = {
+    tu_id: userId,
+    tu_email: authUser.email ?? '',
+    tu_user_type,
+    tu_is_verified: false,
+    tu_email_verified: false,
+    tu_mobile_verified: false,
+    tu_is_active: true
+  }
+
+  const { data: insertedAccount, error: insertError } = await supabase
+    .from('tbl_users')
+    .insert(insertPayload)
+    .select(`
+      tu_id,
+      tu_email,
+      tu_user_type,
+      tu_is_verified,
+      tu_email_verified,
+      tu_mobile_verified,
+      tu_is_active,
+      tu_created_at,
+      tu_updated_at
+    `)
     .single()
 
-  if (accountError) throw accountError
+  if (insertError) {
+    throw insertError
+  }
 
-  const { data: profile, error: profileError } = await supabase
+  return insertedAccount as UserAccountRecord
+}
+
+const getUserProfileDetailsFallback = async (userId: string): Promise<UserProfileDetails> => {
+  const account = await buildFallbackAccountRecord(userId)
+
+  const { data: profileData, error: profileError } = await supabase
     .from('tbl_user_profiles')
-    .select('tup_id, tup_user_id, tup_first_name, tup_middle_name, tup_last_name, tup_username, tup_mobile, tup_gender, tup_date_of_birth, tup_education_level, tup_interests, tup_learning_goals, tup_timezone, tup_created_at, tup_updated_at')
+    .select(`
+      tup_id,
+      tup_user_id,
+      tup_first_name,
+      tup_middle_name,
+      tup_last_name,
+      tup_username,
+      tup_mobile,
+      tup_gender,
+      tup_date_of_birth,
+      tup_education_level,
+      tup_interests,
+      tup_learning_goals,
+      tup_timezone,
+      tup_created_at,
+      tup_updated_at
+    `)
     .eq('tup_user_id', userId)
     .maybeSingle()
 
-  if (profileError) throw profileError
+  if (profileError) {
+    throw profileError
+  }
+
+  const profile = (profileData ?? null) as UserProfileRecord | null
+
+  return {
+    account,
+    profile: profile
+      ? {
+          ...profile,
+          tup_interests: Array.isArray(profile.tup_interests) ? profile.tup_interests : []
+        }
+      : null
+  }
+}
+
+export const getUserProfileDetails = async (userId: string): Promise<UserProfileDetails> => {
+  await ensureAuthenticatedUser(userId)
+
+  const { data, error } = await supabase.rpc('get_user_profile_details', {
+    p_user_id: userId
+  })
+
+  if (error) {
+    if (isMissingFunctionError(error)) {
+      console.warn('get_user_profile_details RPC unavailable, using client fallback:', error)
+      return getUserProfileDetailsFallback(userId)
+    }
+
+    throw error
+  }
+
+  const account = data?.account as UserAccountRecord | undefined
+  const profile = (data?.profile ?? null) as UserProfileRecord | null
+
+  if (!account) {
+    throw new Error('Unable to load your account details.')
+  }
 
   return {
     account,
@@ -494,6 +624,7 @@ export const updateUserProfile = async (
   payload: UpdateUserProfilePayload
 ): Promise<UserProfileDetails> => {
   await ensureAuthenticatedUser(userId)
+  await getUserProfileDetails(userId)
 
   const normalizedPayload = {
     tup_user_id: userId,

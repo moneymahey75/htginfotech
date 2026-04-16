@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
     const emailTemplateVariables: Record<string, string> = {
       asset_url: branding.assetUrl,
       website_url: branding.siteUrl,
-      logo_url: branding.logoUrl,
+      logo_url: "https://htginfotech.com/htginfotech-logo.png",
       site_name: branding.siteName,
       site_url: branding.siteUrl,
       current_year: String(new Date().getFullYear()),
