@@ -80,7 +80,8 @@ Deno.serve(async (req: Request) => {
       return createJsonResponse(403, { success: false, error: "Your account is not active, so you cannot change the password." });
     }
 
-    const bcrypt = await import("npm:bcryptjs@2.4.3");
+    const bcryptModule = await import("npm:bcryptjs@2.4.3");
+    const bcrypt = bcryptModule.default ?? bcryptModule;
     const hashedPassword = await bcrypt.hash(normalizedPassword, 12);
 
     const { error: updateError } = await supabase
