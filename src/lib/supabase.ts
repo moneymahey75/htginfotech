@@ -55,15 +55,42 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'X-Client-Info': 'mlm-platform',
-      // Ensure Edge Function calls have an Authorization header even when no user session exists.
       apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
     }
   },
   db: {
     schema: 'public'
   }
 })
+
+const getFunctionAuthHeaders = async () => {
+  const headers: Record<string, string> = {
+    apikey: supabaseAnonKey,
+  };
+
+  const { data } = await supabase.auth.getSession();
+  headers.Authorization = `Bearer ${data.session?.access_token || supabaseAnonKey}`;
+
+  return headers;
+};
+
+export const invokeSupabaseFunction = async (
+  functionName: string,
+  options?: {
+    body?: unknown;
+    headers?: Record<string, string>;
+  }
+) => {
+  const authHeaders = await getFunctionAuthHeaders();
+
+  return supabase.functions.invoke(functionName, {
+    body: options?.body,
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+  });
+};
 
 // Custom session storage utilities
 export const sessionManager = {
@@ -339,7 +366,7 @@ export interface OTPVerification {
 export const sendOTP = async (userId: string, contactInfo: string, otpType: 'email' | 'mobile') => {
   console.log('📤 Sending OTP via Supabase edge function:', { userId, contactInfo, otpType })
 
-  const { data, error } = await supabase.functions.invoke('send-otp', {
+  const { data, error } = await invokeSupabaseFunction('send-otp', {
     body: {
       user_id: userId,
       contact_info: contactInfo,
@@ -359,7 +386,7 @@ export const sendOTP = async (userId: string, contactInfo: string, otpType: 'ema
 export const verifyOTP = async (userId: string, otpCode: string, otpType: 'email' | 'mobile') => {
   console.log('🔍 Verifying OTP via Supabase edge function:', { userId, otpCode, otpType })
 
-  const { data, error } = await supabase.functions.invoke('verify-otp', {
+  const { data, error } = await invokeSupabaseFunction('verify-otp', {
     body: {
       user_id: userId,
       otp_code: otpCode,

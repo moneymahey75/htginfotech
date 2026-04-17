@@ -1,7 +1,7 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {useAdminAuth} from '../../contexts/AdminAuthContext';
 import type { PermissionModule, PermissionSet } from '../../contexts/AdminAuthContext';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {supabase} from '../../lib/supabase';
 import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
@@ -87,6 +87,7 @@ const AdminDashboard: React.FC = () => {
         logout
     } = useAdminAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState('overview');
     const [activeTabRefreshKey, setActiveTabRefreshKey] = useState(0);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -261,9 +262,52 @@ const AdminDashboard: React.FC = () => {
         {id: 'settings', label: 'Settings', icon: Settings, permission: 'settings' as PermissionModule}
     ];
 
-    const visibleTabs = tabs.filter(tab =>
-        !tab.permission || hasPermission(tab.permission as any, 'read')
-    );
+    const canAccessTab = useMemo(() => {
+        return (tabId: string) => {
+            if (tabId === 'overview') {
+                return true;
+            }
+
+            const tab = tabs.find((item) => item.id === tabId);
+            if (!tab?.permission) {
+                return false;
+            }
+
+            if (tab.id === 'admins' && admin?.role === 'sub_admin') {
+                return false;
+            }
+
+            return hasPermission(tab.permission, 'read');
+        };
+    }, [admin?.role, hasPermission]);
+
+    const visibleTabs = tabs.filter((tab) => {
+        if (tab.id === 'admins' && admin?.role === 'sub_admin') {
+            return false;
+        }
+
+        return !tab.permission || hasPermission(tab.permission, 'read');
+    });
+
+    useEffect(() => {
+        const requestedTab = searchParams.get('tab') || 'overview';
+        const nextTab = canAccessTab(requestedTab) ? requestedTab : 'overview';
+
+        if (activeTab !== nextTab) {
+            setActiveTab(nextTab);
+            setActiveTabRefreshKey(0);
+        }
+
+        if (requestedTab !== nextTab) {
+            const nextParams = new URLSearchParams(searchParams);
+            if (nextTab === 'overview') {
+                nextParams.delete('tab');
+            } else {
+                nextParams.set('tab', nextTab);
+            }
+            setSearchParams(nextParams, { replace: true });
+        }
+    }, [activeTab, canAccessTab, searchParams, setSearchParams]);
 
     // Settings sub-tabs
     const [settingsTab, setSettingsTab] = useState('general');
@@ -280,6 +324,23 @@ const AdminDashboard: React.FC = () => {
     ];
 
     const handleMainTabClick = (tabId: string) => {
+        if (!canAccessTab(tabId)) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('tab');
+            setSearchParams(nextParams, { replace: true });
+            setActiveTab('overview');
+            setActiveTabRefreshKey(0);
+            return;
+        }
+
+        const nextParams = new URLSearchParams(searchParams);
+        if (tabId === 'overview') {
+            nextParams.delete('tab');
+        } else {
+            nextParams.set('tab', tabId);
+        }
+        setSearchParams(nextParams, { replace: true });
+
         if (activeTab === tabId) {
             setActiveTabRefreshKey(prev => prev + 1);
             return;
@@ -469,23 +530,23 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
 
-                    {activeTab === 'enrollments' && hasPermission('enrollments', 'read') && (
+                    {activeTab === 'enrollments' && canAccessTab('enrollments') && (
                         <EnrollmentManagement key={`enrollments-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'learners' && hasPermission('learners', 'read') && (
+                    {activeTab === 'learners' && canAccessTab('learners') && (
                         <LearnerManagement key={`learners-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'tutors' && hasPermission('tutors', 'read') && (
+                    {activeTab === 'tutors' && canAccessTab('tutors') && (
                         <TutorManagement key={`tutors-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'courses' && hasPermission('courses', 'read') && (
+                    {activeTab === 'courses' && canAccessTab('courses') && (
                         <CourseManagement key={`courses-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'categories' && hasPermission('categories', 'read') && (
+                    {activeTab === 'categories' && canAccessTab('categories') && (
                         <CourseCategoryManagement key={`categories-${activeTabRefreshKey}`}/>
                     )}
 
@@ -494,19 +555,19 @@ const AdminDashboard: React.FC = () => {
                         <SubscriptionManagement key={`subscriptions-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'payments' && hasPermission('payments', 'read') && (
+                    {activeTab === 'payments' && canAccessTab('payments') && (
                         <AdminPaymentHistory key={`payments-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'admins' && hasPermission('admins', 'read') && (
+                    {activeTab === 'admins' && canAccessTab('admins') && (
                         <AdminManagement key={`admins-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'sliders' && hasPermission('sliders', 'read') && (
+                    {activeTab === 'sliders' && canAccessTab('sliders') && (
                         <SliderManagement key={`sliders-${activeTabRefreshKey}`}/>
                     )}
 
-                    {activeTab === 'settings' && hasPermission('settings', 'read') && (
+                    {activeTab === 'settings' && canAccessTab('settings') && (
                         <div key={`settings-shell-${activeTabRefreshKey}`} className="bg-white rounded-xl shadow-sm">
                             {/* Vertical Settings Navigation */}
                             <div className="flex">
@@ -549,7 +610,7 @@ const AdminDashboard: React.FC = () => {
                     )}
 
                     {/* Access Denied */}
-                    {activeTab !== 'overview' && !hasPermission(activeTab as any, 'read') && (
+                    {activeTab !== 'overview' && !canAccessTab(activeTab) && (
                         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                             <div
                                 className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">

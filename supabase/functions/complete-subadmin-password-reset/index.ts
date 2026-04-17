@@ -27,7 +27,7 @@ Deno.serve(async (req: Request) => {
     const normalizedPassword = String(password || "");
 
     if (!normalizedToken || !normalizedPassword) {
-      return createJsonResponse(400, { success: false, error: "Reset token and password are required" });
+      return createJsonResponse(400, { success: false, error: "Invalid or expired link." });
     }
 
     if (normalizedPassword.length < 8) {
@@ -58,7 +58,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!resetSession || new Date(resetSession.tas_expires_at).getTime() <= Date.now()) {
-      return createJsonResponse(400, { success: false, error: "This reset link is invalid or has expired." });
+      return createJsonResponse(400, { success: false, error: "Invalid or expired link." });
     }
 
     const { data: subAdmin, error: subAdminError } = await supabase
@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
 
     return createJsonResponse(200, {
       success: true,
-      message: "Password updated successfully",
+      message: "Password reset successfully. Please login.",
     });
   } catch (error: any) {
     return createJsonResponse(400, {

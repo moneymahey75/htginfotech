@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {supabase} from '../../lib/adminClient';
+import {useAdminAuth} from '../../contexts/AdminAuthContext';
 import {useNotification} from '../ui/NotificationProvider';
 import {
     BookOpen,
@@ -122,6 +123,7 @@ const Loader: React.FC = () => {
 };
 
 const LearnerManagement: React.FC = () => {
+    const { hasPermission } = useAdminAuth();
     const [learners, setLearners] = useState<Learner[]>([]);
     const [loading, setLoading] = useState(true);
     const [listLoading, setListLoading] = useState(false);
@@ -141,6 +143,7 @@ const LearnerManagement: React.FC = () => {
     const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
     const notification = useNotification();
+    const canWriteLearners = hasPermission('learners', 'write');
 
     // Load learners with pagination
     const loadLearners = async () => {
@@ -1060,7 +1063,7 @@ const LearnerDetails: React.FC<{
                         </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                        {activeTab === 'profile' && (
+                        {activeTab === 'profile' && canWriteLearners && (
                             <>
                                 {editMode ? (
                                     <div className="flex space-x-2">

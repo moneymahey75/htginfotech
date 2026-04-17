@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/adminClient';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNotification } from '../ui/NotificationProvider';
 import { Folder, Search, Plus, Trash2, Save, X, Eye, Palette, Hash, ArrowUp, ArrowDown, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
@@ -76,6 +77,7 @@ const Loader: React.FC = () => {
 };
 
 const CourseCategoryManagement: React.FC = () => {
+  const { hasPermission } = useAdminAuth();
   const [categories, setCategories] = useState<CourseCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
@@ -86,6 +88,8 @@ const CourseCategoryManagement: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CourseCategory | null>(null);
   const notification = useNotification();
+  const canWriteCategories = hasPermission('categories', 'write');
+  const canDeleteCategories = hasPermission('categories', 'delete');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -471,16 +475,18 @@ const CourseCategoryManagement: React.FC = () => {
                 </select>
                 <span className="text-sm text-gray-600">per page</span>
               </div>
-              <button
-                  onClick={() => {
-                    resetCategoryForm();
-                    setShowCategoryModal(true);
-                  }}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Category</span>
-              </button>
+              {canWriteCategories && (
+                <button
+                    onClick={() => {
+                      resetCategoryForm();
+                      setShowCategoryModal(true);
+                    }}
+                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Category</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -649,14 +655,16 @@ const CourseCategoryManagement: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <button
-                                onClick={() => openEditCategory(category)}
-                                className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                                title="View Category"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            {(category.course_count || 0) === 0 && (
+                            {canWriteCategories && (
+                              <button
+                                  onClick={() => openEditCategory(category)}
+                                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                                  title="Edit Category"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            )}
+                            {canDeleteCategories && (category.course_count || 0) === 0 && (
                               <button
                                   onClick={() => handleDeleteCategory(category.tcc_id, category.tcc_name)}
                                   className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
@@ -763,15 +771,17 @@ const CourseCategoryManagement: React.FC = () => {
                     : 'No course categories have been created yet'
                 }
               </p>
-              <button
-                  onClick={() => {
-                    resetCategoryForm();
-                    setShowCategoryModal(true);
-                  }}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                Create Category
-              </button>
+              {canWriteCategories && (
+                <button
+                    onClick={() => {
+                      resetCategoryForm();
+                      setShowCategoryModal(true);
+                    }}
+                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  Create Category
+                </button>
+              )}
             </div>
         )}
 

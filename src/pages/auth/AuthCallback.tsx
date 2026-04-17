@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, invokeSupabaseFunction } from '../../lib/supabase';
 import { useNotification } from '../../components/ui/NotificationProvider';
 import { Shield, Loader } from 'lucide-react';
 import { getBaseUrl } from '../../utils/baseUrl';
@@ -44,7 +44,7 @@ const AuthCallback: React.FC = () => {
             throw new Error('Failed to verify reset token');
           }
         } else if (type === 'email_verification' && token) {
-          const { data: verificationResult, error: verificationError } = await supabase.functions.invoke('verify-email', {
+          const { data: verificationResult, error: verificationError } = await invokeSupabaseFunction('verify-email', {
             body: {
               token,
               siteUrl: getBaseUrl(),

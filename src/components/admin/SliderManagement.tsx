@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/adminClient';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNotification } from '../ui/NotificationProvider';
 import { Image as ImageIcon, Search, Eye, Pencil, Trash2, Plus, ArrowLeft, Save, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, Upload, Link as LinkIcon, Text, Type, ListOrdered } from 'lucide-react';
 
@@ -22,6 +23,7 @@ interface Slider {
 }
 
 const SliderManagement: React.FC = () => {
+    const { hasPermission } = useAdminAuth();
     const [sliders, setSliders] = useState<Slider[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,8 @@ const SliderManagement: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [updatingSliderId, setUpdatingSliderId] = useState<string | null>(null);
     const notification = useNotification();
+    const canWriteSliders = hasPermission('sliders', 'write');
+    const canDeleteSliders = hasPermission('sliders', 'delete');
 
     useEffect(() => {
         loadSliders();
@@ -279,13 +283,15 @@ const SliderManagement: React.FC = () => {
                     </div>
 
                     <div>
-                        <button
-                            onClick={handleCreateSlider}
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>Add New Slider</span>
-                        </button>
+                        {canWriteSliders && (
+                            <button
+                                onClick={handleCreateSlider}
+                                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span>Add New Slider</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -407,13 +413,15 @@ const SliderManagement: React.FC = () => {
                                     >
                                         <Eye className="h-4 w-4" />
                                     </button>
-                                    <button
-                                        onClick={() => handleDeleteSlider(slider.ts_id)}
-                                        className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                                        title="Delete"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    {canDeleteSliders && (
+                                        <button
+                                            onClick={() => handleDeleteSlider(slider.ts_id)}
+                                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </td>
                         </tr>
@@ -626,7 +634,7 @@ const SliderDetails: React.FC<{
                                         </button>
                                     </div>
                                 ) : (
-                                    !isCreating && (
+                                    !isCreating && canWriteSliders && (
                                         <button
                                             onClick={() => setEditMode(true)}
                                             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"

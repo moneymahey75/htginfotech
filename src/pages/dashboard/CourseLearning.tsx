@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, invokeSupabaseFunction } from '../../lib/supabase';
 import VideoPlayer from '../../components/learner/VideoPlayer';
 import { ArrowLeft, CheckCircle, Circle, Play, Lock, Clock } from 'lucide-react';
 
@@ -165,7 +165,7 @@ export default function CourseLearning() {
 
         // Send course completion notification
         try {
-          await supabase.functions.invoke('send-course-completion-notification', {
+          await invokeSupabaseFunction('send-course-completion-notification', {
             body: {
               userId: userId,
               courseId: courseId,

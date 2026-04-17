@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
-import { supabase } from '../lib/supabase';
+import { invokeSupabaseFunction } from '../lib/supabase';
 
 const ContactUs: React.FC = () => {
   const { settings } = useAdmin();
@@ -30,7 +30,7 @@ const ContactUs: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+      const { data, error } = await invokeSupabaseFunction('send-contact-email', {
         body: {
           ...formData,
           pageUrl: window.location.href,

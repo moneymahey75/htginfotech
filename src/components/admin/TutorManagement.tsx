@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/adminClient';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNotification } from '../ui/NotificationProvider';
 import { GraduationCap, Search, Filter, Eye, CreditCard as Edit, Trash2, UserCheck, UserX, Mail, Phone, Calendar, ArrowLeft, Save, X, CheckCircle, AlertCircle, User, Settings, TrendingUp, Award, Clock, DollarSign, Star, Users, BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
 
@@ -114,6 +115,7 @@ const Loader: React.FC = () => {
 };
 
 const TutorManagement: React.FC = () => {
+  const { hasPermission } = useAdminAuth();
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
@@ -133,6 +135,7 @@ const TutorManagement: React.FC = () => {
   const [updatingTutorId, setUpdatingTutorId] = useState<string | null>(null);
 
   const notification = useNotification();
+  const canWriteTutors = hasPermission('tutors', 'write');
 
   // Load tutors with pagination
   const loadTutors = async () => {
@@ -1217,7 +1220,7 @@ const TutorDetails: React.FC<{
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              {activeTab === 'profile' && (
+              {activeTab === 'profile' && canWriteTutors && (
                   <>
                     {editMode ? (
                         <div className="flex space-x-2">

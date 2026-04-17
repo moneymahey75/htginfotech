@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {supabase} from '../../lib/adminClient';
+import {useAdminAuth} from '../../contexts/AdminAuthContext';
 import {videoStorage} from '../../lib/videoStorage';
 import {buildAssetUrl} from '../../utils/baseUrl';
 import {useNotification} from '../ui/NotificationProvider';
@@ -177,6 +178,7 @@ const truncateText = (value?: string, maxLength = 15) => {
 };
 
 const CourseManagement: React.FC = () => {
+    const { hasPermission } = useAdminAuth();
     const [courses, setCourses] = useState<Course[]>([]);
     const [categories, setCategories] = useState<CourseCategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -203,6 +205,8 @@ const CourseManagement: React.FC = () => {
     const [updatingCategoryId, setUpdatingCategoryId] = useState<string | null>(null);
 
     const notification = useNotification();
+    const canWriteCourses = hasPermission('courses', 'write');
+    const canDeleteCourses = hasPermission('courses', 'delete');
 
     const [courseFormData, setCourseFormData] = useState({
         title: '',
@@ -853,16 +857,18 @@ const CourseManagement: React.FC = () => {
                             </select>
                             <span className="text-sm text-gray-600">per page</span>
                         </div>
-                        <button
-                            onClick={() => {
-                                resetCourseForm();
-                                setShowCourseModal(true);
-                            }}
-                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                        >
-                            <Plus className="h-4 w-4"/>
-                            <span>Add Course</span>
-                        </button>
+                        {canWriteCourses && (
+                            <button
+                                onClick={() => {
+                                    resetCourseForm();
+                                    setShowCourseModal(true);
+                                }}
+                                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                            >
+                                <Plus className="h-4 w-4"/>
+                                <span>Add Course</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -1019,20 +1025,24 @@ const CourseManagement: React.FC = () => {
                                             >
                                                 <Eye className="h-4 w-4"/>
                                             </button>
-                                            <button
-                                                onClick={() => openEditCourse(course)}
-                                                className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
-                                                title="Edit Course"
-                                            >
-                                                <Pencil className="h-4 w-4"/>
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteCourse(course.tc_id)}
-                                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                                                title="Delete Course"
-                                            >
-                                                <Trash2 className="h-4 w-4"/>
-                                            </button>
+                                            {canWriteCourses && (
+                                                <button
+                                                    onClick={() => openEditCourse(course)}
+                                                    className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
+                                                    title="Edit Course"
+                                                >
+                                                    <Pencil className="h-4 w-4"/>
+                                                </button>
+                                            )}
+                                            {canDeleteCourses && (
+                                                <button
+                                                    onClick={() => handleDeleteCourse(course.tc_id)}
+                                                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                                                    title="Delete Course"
+                                                >
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -1197,15 +1207,17 @@ const CourseManagement: React.FC = () => {
                             : 'No courses have been created yet'
                         }
                     </p>
-                    <button
-                        onClick={() => {
-                            resetCourseForm();
-                            setShowCourseModal(true);
-                        }}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                        Create Course
-                    </button>
+                    {canWriteCourses && (
+                        <button
+                            onClick={() => {
+                                resetCourseForm();
+                                setShowCourseModal(true);
+                            }}
+                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                            Create Course
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -1571,6 +1583,7 @@ const CourseManagement: React.FC = () => {
                         <div className="p-6">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {/* Add/Edit Lesson Form */}
+                                {canWriteCourses ? (
                                 <div>
                                     <div className="flex items-center justify-between mb-4">
                                         <h4 className="text-lg font-semibold text-gray-900">
@@ -1814,6 +1827,14 @@ const CourseManagement: React.FC = () => {
                                         </button>
                                     </form>
                                 </div>
+                                ) : (
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Read Only</h4>
+                                    <p className="text-sm text-gray-600">
+                                        You can view lessons for this course, but you do not have permission to add or edit them.
+                                    </p>
+                                </div>
+                                )}
 
                                 {/* Lessons List */}
                                 <div>
@@ -1864,20 +1885,24 @@ const CourseManagement: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
-                                                        <button
-                                                            onClick={() => openEditLesson(lesson)}
-                                                            className="text-blue-600 hover:text-blue-800 p-1"
-                                                            title="Edit Lesson"
-                                                        >
-                                                            <Pencil className="h-4 w-4"/>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteLesson(lesson.tcc_id)}
-                                                            className="text-red-600 hover:text-red-800 p-1"
-                                                            title="Delete Lesson"
-                                                        >
-                                                            <Trash2 className="h-4 w-4"/>
-                                                        </button>
+                                                        {canWriteCourses && (
+                                                            <button
+                                                                onClick={() => openEditLesson(lesson)}
+                                                                className="text-blue-600 hover:text-blue-800 p-1"
+                                                                title="Edit Lesson"
+                                                            >
+                                                                <Pencil className="h-4 w-4"/>
+                                                            </button>
+                                                        )}
+                                                        {canDeleteCourses && (
+                                                            <button
+                                                                onClick={() => handleDeleteLesson(lesson.tcc_id)}
+                                                                className="text-red-600 hover:text-red-800 p-1"
+                                                                title="Delete Lesson"
+                                                            >
+                                                                <Trash2 className="h-4 w-4"/>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

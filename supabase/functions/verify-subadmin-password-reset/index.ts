@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
     const normalizedToken = String(token || "").trim();
 
     if (!normalizedToken) {
-      return createJsonResponse(400, { success: false, error: "Reset token is required" });
+      return createJsonResponse(400, { success: false, error: "Invalid or expired link." });
     }
 
     const supabase = createClient(
@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!resetSession || new Date(resetSession.tas_expires_at).getTime() <= Date.now()) {
-      return createJsonResponse(400, { success: false, error: "This reset link is invalid or has expired." });
+      return createJsonResponse(400, { success: false, error: "Invalid or expired link." });
     }
 
     const { data: subAdmin, error: subAdminError } = await supabase

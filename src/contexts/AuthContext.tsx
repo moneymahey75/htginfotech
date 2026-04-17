@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserActivity } from '../lib/supabase';
+import { supabase, sendOTP, verifyOTP as verifyOTPAPI, sessionManager, logUserActivity, invokeSupabaseFunction } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 import { sessionUtils } from '../utils/sessionUtils';
 import { buildAbsoluteUrl, getBaseUrl } from '../utils/baseUrl';
@@ -547,7 +547,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionManager.removeSession();
       await supabase.auth.signOut();
 
-      const { data: registerResult, error: registerError } = await supabase.functions.invoke('register-user', {
+      const { data: registerResult, error: registerError } = await invokeSupabaseFunction('register-user', {
         body: {
           email: userData.email,
           password: userData.password,
@@ -600,7 +600,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email is required');
       }
 
-      const { data, error } = await supabase.functions.invoke('resend-verification-email', {
+      const { data, error } = await invokeSupabaseFunction('resend-verification-email', {
         body: {
           email: normalizedEmail,
           siteUrl: getBaseUrl(),

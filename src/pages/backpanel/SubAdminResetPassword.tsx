@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Loader, Lock, Shield } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, invokeSupabaseFunction } from '../../lib/supabase';
 import { useAdmin } from '../../contexts/AdminContext';
 import PasswordPolicyChecklist from '../../components/auth/PasswordPolicyChecklist';
 import {
@@ -18,7 +18,8 @@ const SubAdminResetPassword: React.FC = () => {
 
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [tokenError, setTokenError] = useState('');
+  const [formError, setFormError] = useState('');
   const [success, setSuccess] = useState(false);
   const [subAdminName, setSubAdminName] = useState('');
   const [formData, setFormData] = useState({
@@ -36,13 +37,14 @@ const SubAdminResetPassword: React.FC = () => {
   useEffect(() => {
     const verifyToken = async () => {
       if (!token) {
-        setError('The reset link is invalid or missing.');
+        setTokenError('Invalid or expired link.');
         setIsVerifying(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke('verify-subadmin-password-reset', {
+        setTokenError('');
+        const { data, error } = await invokeSupabaseFunction('verify-subadmin-password-reset', {
           body: { token },
         });
 
@@ -56,8 +58,8 @@ const SubAdminResetPassword: React.FC = () => {
 
         setSubAdminName(String(data.fullName || '').trim());
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'The reset link is invalid or has expired.';
-        setError(message);
+        const message = err instanceof Error ? err.message : 'Invalid or expired link.';
+        setTokenError(message);
       } finally {
         setIsVerifying(false);
       }
@@ -73,29 +75,29 @@ const SubAdminResetPassword: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError('');
+    setFormError('');
     setIsSubmitting(true);
 
     if (!token) {
-      setError('The reset link is invalid or missing.');
+      setTokenError('Invalid or expired link.');
       setIsSubmitting(false);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
+      setFormError('Passwords do not match.');
       setIsSubmitting(false);
       return;
     }
 
     if (!passwordValidation.isValid) {
-      setError(passwordValidation.errors[0] || 'Please follow the password policy.');
+      setFormError(passwordValidation.errors[0] || 'Please follow the password policy.');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('complete-subadmin-password-reset', {
+      const { data, error } = await invokeSupabaseFunction('complete-subadmin-password-reset', {
         body: {
           token,
           password: formData.password,
@@ -114,12 +116,16 @@ const SubAdminResetPassword: React.FC = () => {
       window.setTimeout(() => {
         navigate('/backpanel/login', {
           replace: true,
-          state: { success: 'Password updated successfully. Please login with your new password.' },
+          state: { success: 'Password reset successfully. Please login.' },
         });
       }, 2000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update password.';
-      setError(message);
+      if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('expired')) {
+        setTokenError(message);
+      } else {
+        setFormError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -133,7 +139,7 @@ const SubAdminResetPassword: React.FC = () => {
             <Shield className="h-8 w-8 text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-3">Password Updated</h2>
-          <p className="text-gray-300">Your password has been changed successfully. Redirecting to admin login...</p>
+          <p className="text-gray-300">Password reset successfully. Please login.</p>
         </div>
       </div>
     );
@@ -166,14 +172,20 @@ const SubAdminResetPassword: React.FC = () => {
           </p>
         </div>
 
-        {error ? (
+        {tokenError ? (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-            <p className="text-red-300 text-sm">{error}</p>
+            <p className="text-red-300 text-sm">{tokenError}</p>
           </div>
         ) : null}
 
-        {!error && (
+        {!tokenError && (
           <form onSubmit={handleSubmit} className="space-y-6">
+            {formError ? (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <p className="text-red-300 text-sm">{formError}</p>
+              </div>
+            ) : null}
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                 New Password

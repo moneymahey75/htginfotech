@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, invokeSupabaseFunction } from '../../lib/supabase';
 import { CreditCard, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 interface StripeCheckoutProps {
@@ -90,7 +90,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
                 return;
             }
 
-            const { data, error: functionError } = await supabase.functions.invoke('create-payment-intent', {
+            const { data, error: functionError } = await invokeSupabaseFunction('create-payment-intent', {
                 body: {
                     courseId,
                     userId,
@@ -147,7 +147,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
                 status: confirmedPaymentIntent?.status
             });
 
-            const { data, error: confirmError } = await supabase.functions.invoke('confirm-payment', {
+            const { data, error: confirmError } = await invokeSupabaseFunction('confirm-payment', {
                 body: {
                     paymentIntentId: finalPaymentIntentId,
                     userId,
