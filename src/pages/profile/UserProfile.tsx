@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle, Loader2, Mail, Save, Settings, Shield, User, Users } from 'lucide-react';
 import { getUserProfileDetails, updateUserProfile, UserProfileDetails, UserProfileRecord } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { withTimeout } from '../../utils/loadingRecovery';
 
 type ProfileFormState = {
   firstName: string;
@@ -89,6 +90,43 @@ const getDashboardLink = (userType?: string) => {
   }
 };
 
+const createFallbackProfileDetails = (currentUser: ReturnType<typeof useAuth>['user']): UserProfileDetails | null => {
+  if (!currentUser) {
+    return null;
+  }
+
+  return {
+    account: {
+      tu_id: currentUser.id,
+      tu_email: currentUser.email,
+      tu_user_type: currentUser.userType,
+      tu_is_verified: currentUser.isVerified,
+      tu_email_verified: currentUser.isVerified,
+      tu_mobile_verified: currentUser.mobileVerified,
+      tu_is_active: true,
+      tu_created_at: null,
+      tu_updated_at: null
+    },
+    profile: {
+      tup_id: null,
+      tup_user_id: currentUser.id,
+      tup_first_name: currentUser.firstName || '',
+      tup_middle_name: '',
+      tup_last_name: currentUser.lastName || '',
+      tup_username: null,
+      tup_mobile: null,
+      tup_gender: null,
+      tup_date_of_birth: null,
+      tup_education_level: currentUser.educationLevel || null,
+      tup_interests: Array.isArray(currentUser.interests) ? currentUser.interests : [],
+      tup_learning_goals: null,
+      tup_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      tup_created_at: null,
+      tup_updated_at: null
+    }
+  };
+};
+
 const UserProfilePage: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const [profileDetails, setProfileDetails] = useState<UserProfileDetails | null>(null);
@@ -110,13 +148,25 @@ const UserProfilePage: React.FC = () => {
       setPageError('');
 
       try {
-        const details = await getUserProfileDetails(user.id);
+        const details = await withTimeout(
+          getUserProfileDetails(user.id),
+          10000,
+          'Loading your profile timed out.'
+        );
         setProfileDetails(details);
         setFormData(mapProfileToFormState(details.profile));
       } catch (error: any) {
         console.error('Failed to load user profile:', error);
-        const message = error?.message || 'Unable to load your profile right now.';
-        setPageError(message);
+        const fallbackDetails = createFallbackProfileDetails(user);
+
+        if (fallbackDetails) {
+          setProfileDetails(fallbackDetails);
+          setFormData(mapProfileToFormState(fallbackDetails.profile));
+          setPageError('We could not load your saved profile completely, so some fields may be blank. You can still update the form below.');
+        } else {
+          const message = error?.message || 'Unable to load your profile right now.';
+          setPageError(message);
+        }
       } finally {
         setIsLoading(false);
       }
