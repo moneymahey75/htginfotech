@@ -1,5 +1,7 @@
 import { supabase as regularSupabase } from './supabase';
 
+const ADMIN_SESSION_PATTERN = /^admin-session-(.+)-(\d+)$/;
+
 const getProjectAuthHeaders = (): Record<string, string> => {
   // Supabase Edge Functions gateway expects an Authorization header.
   // If the user is not logged into Supabase Auth (admin panel uses its own session),
@@ -12,12 +14,97 @@ const getProjectAuthHeaders = (): Record<string, string> => {
   };
 };
 
-const getAdminSession = () => {
+export const normalizeAdminSessionToken = (rawSession: string | null): string | null => {
+  if (!rawSession) {
+    return null;
+  }
+
+  const trimmedSession = rawSession.trim();
+  if (!trimmedSession || trimmedSession === 'null' || trimmedSession === 'undefined') {
+    return null;
+  }
+
+  if (ADMIN_SESSION_PATTERN.test(trimmedSession)) {
+    return trimmedSession;
+  }
+
+  try {
+    const parsedSession = JSON.parse(trimmedSession);
+
+    if (typeof parsedSession === 'string' && ADMIN_SESSION_PATTERN.test(parsedSession)) {
+      return parsedSession;
+    }
+
+    if (!parsedSession || typeof parsedSession !== 'object') {
+      return null;
+    }
+
+    const candidateToken = [
+      parsedSession.sessionToken,
+      parsedSession.token,
+      parsedSession.admin_session_token,
+      parsedSession.value,
+    ].find((value) => typeof value === 'string' && ADMIN_SESSION_PATTERN.test(value));
+
+    if (candidateToken) {
+      return candidateToken;
+    }
+
+    const candidateAdminId = [
+      parsedSession.adminId,
+      parsedSession.admin_id,
+      parsedSession.id,
+      parsedSession.tau_id,
+      parsedSession.userId,
+    ].find((value) => typeof value === 'string' && value.trim().length > 0);
+
+    const candidateTimestamp = [
+      parsedSession.timestamp,
+      parsedSession.createdAt,
+      parsedSession.created_at,
+      parsedSession.sessionTimestamp,
+    ].find((value) => {
+      if (typeof value === 'number') return Number.isFinite(value);
+      if (typeof value === 'string') return /^\d+$/.test(value.trim());
+      return false;
+    });
+
+    if (candidateAdminId && candidateTimestamp !== undefined) {
+      return `admin-session-${candidateAdminId}-${String(candidateTimestamp).trim()}`;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
+export const getAdminSession = () => {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  return localStorage.getItem('admin_session_token');
+  const rawSession = localStorage.getItem('admin_session_token');
+  const normalizedSession = normalizeAdminSessionToken(rawSession);
+
+  if (!normalizedSession) {
+    return null;
+  }
+
+  if (normalizedSession !== rawSession) {
+    localStorage.setItem('admin_session_token', normalizedSession);
+  }
+
+  return normalizedSession;
+};
+
+export const getAdminIdFromSessionToken = (sessionToken: string | null): string | null => {
+  if (!sessionToken) {
+    return null;
+  }
+
+  const sessionMatch = sessionToken.match(ADMIN_SESSION_PATTERN);
+  return sessionMatch ? sessionMatch[1] : null;
 };
 
 const invokeAdminFunction = async (

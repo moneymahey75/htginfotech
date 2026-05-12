@@ -27,45 +27,12 @@ serve(async (req) => {
 
     console.log('🔍 Admin login attempt for:', email)
 
-    // Check for default admin credentials first
-    if (email === 'admin@mlmplatform.com' && password === 'Admin@123456') {
-      console.log('✅ Default admin credentials verified')
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          admin: {
-            id: 'admin-default',
-            email: 'admin@mlmplatform.com',
-            fullName: 'Super Administrator',
-            role: 'super_admin',
-            permissions: {
-              users: { read: true, write: true, delete: true },
-              companies: { read: true, write: true, delete: true },
-              subscriptions: { read: true, write: true, delete: true },
-              payments: { read: true, write: true, delete: true },
-              settings: { read: true, write: true, delete: true },
-              admins: { read: true, write: true, delete: true },
-              reports: { read: true, write: true, delete: true }
-            },
-            isActive: true,
-            lastLogin: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-          }
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      )
-    }
-
     // Try to get admin user from database
     const { data: user, error } = await supabase
       .from('tbl_admin_users')
       .select('*')
       .eq('tau_email', email.trim())
-      .single()
+      .maybeSingle()
 
     if (error || !user) {
       console.log('❌ Admin user not found:', error?.message)
@@ -96,13 +63,35 @@ serve(async (req) => {
 
     console.log('🔐 Verifying password...')
 
-    // Handle password verification (simplified for demo)
+    const isDefaultCredentialPair =
+      email.trim().toLowerCase() === 'admin@mlmplatform.com' &&
+      password === 'Admin@123456';
+
     let passwordMatch = false;
 
-    // For demo purposes, accept the default password or any password for existing admins
-    if (password === 'Admin@123456' || user.tau_password_hash) {
+    if (isDefaultCredentialPair) {
+      // Support the seeded default admin account, but always return the real DB-backed admin id.
       passwordMatch = true;
-      console.log('✅ Password verification successful')
+      console.log('✅ Default admin credentials verified against seeded admin account')
+    } else {
+      try {
+        const bcryptModule = await import('npm:bcryptjs@2.4.3')
+        const bcrypt = bcryptModule.default ?? bcryptModule
+        passwordMatch = await bcrypt.compare(password, user.tau_password_hash)
+        console.log('✅ Password verification successful')
+      } catch (bcryptError) {
+        console.error('❌ bcrypt verification failed:', bcryptError)
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Authentication failed'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500
+          }
+        )
+      }
     }
 
     if (!passwordMatch) {

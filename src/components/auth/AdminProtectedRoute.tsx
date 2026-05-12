@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { getAdminSession } from '../../lib/adminClient';
 import { useLoadingRecovery } from '../../utils/loadingRecovery';
 
 interface AdminProtectedRouteProps {
@@ -22,7 +23,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   });
 
   // Check if admin session exists in localStorage
-  const adminSessionToken = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') : null;
+  const adminSessionToken = typeof window !== 'undefined' ? getAdminSession() : null;
 
   // Only redirect if we're sure there's no valid session
   if (!loading && !admin && (!adminSessionToken || adminSessionToken === 'null' || adminSessionToken === 'undefined')) {

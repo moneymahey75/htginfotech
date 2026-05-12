@@ -24,7 +24,7 @@ const createJsonResponse = (status: number, payload: Record<string, unknown>) =>
   });
 
 const getAdminIdFromSession = (sessionToken: string) => {
-  const match = sessionToken.match(/^admin-session-([a-f0-9-]+)-(\d+)$/);
+  const match = sessionToken.match(/^admin-session-(.+)-(\d+)$/);
   return match?.[1] || "";
 };
 

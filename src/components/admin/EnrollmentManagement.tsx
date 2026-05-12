@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {supabase} from '../../lib/adminClient';
+import {getAdminIdFromSessionToken, getAdminSession, supabase} from '../../lib/adminClient';
 import {useAdminAuth} from '../../contexts/AdminAuthContext';
 import {
     Users,
@@ -129,22 +129,12 @@ export default function EnrollmentManagement() {
             return admin.tau_id || admin.id || admin.admin_id || admin.userId || null;
         }
 
-        const adminSession = localStorage.getItem('admin_session_token');
-        if (adminSession && adminSession !== 'null') {
-            try {
-                const sessionData = JSON.parse(adminSession);
-                return sessionData.tau_id || sessionData.id || sessionData.admin_id || null;
-            } catch (e) {
-                console.error('Failed to parse admin session:', e);
-            }
-        }
-
-        return null;
+        return getAdminIdFromSessionToken(getAdminSession());
     };
 
     // Reload when filters or pagination change
     useEffect(() => {
-        if (admin || localStorage.getItem('admin_session_token')) {
+        if (admin || getAdminSession()) {
             fetchEnrollments();
             fetchTutors();
         }

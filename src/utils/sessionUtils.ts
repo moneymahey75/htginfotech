@@ -1,5 +1,6 @@
 // Session utility functions for enhanced session management
 import { sessionManager } from '../lib/supabase';
+import { getAdminSession } from '../lib/adminClient';
 
 export interface SessionInfo {
   isValid: boolean;
@@ -155,8 +156,7 @@ export const sessionUtils = {
 
   // Check if admin is authenticated
   isAdminAuthenticated: (): boolean => {
-    const adminToken = localStorage.getItem('admin_session_token');
-    return !!(adminToken && adminToken !== 'null' && adminToken !== 'undefined');
+    return !!getAdminSession();
   }
 };
 

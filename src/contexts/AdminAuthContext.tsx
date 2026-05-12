@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase as adminSupabase } from '../lib/adminClient';
-import { supabase as publicSupabase } from '../lib/supabase';
+import {
+  getAdminIdFromSessionToken,
+  getAdminSession,
+  supabase as adminSupabase,
+} from '../lib/adminClient';
+import { invokeSupabaseFunction } from '../lib/supabase';
 import { useNotification } from '../components/ui/NotificationProvider';
 import { withTimeout } from '../utils/loadingRecovery';
 
@@ -147,8 +151,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     // Check for existing admin session in localStorage (persists across tabs)
-    const sessionToken = localStorage.getItem('admin_session_token');
-    if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+    const sessionToken = getAdminSession();
+    if (sessionToken) {
       validateSession(sessionToken);
     } else {
       setLoading(false);
@@ -157,15 +161,17 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const validateSession = async (sessionToken: string) => {
     try {
+      const normalizedSessionToken = getAdminSession() ?? sessionToken;
+
       // Check if session token is valid format and not expired
-      if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
+      if (!normalizedSessionToken) {
         localStorage.removeItem('admin_session_token');
         setLoading(false);
         return;
       }
 
       // Extract admin ID from session token - match format: "admin-session-{id}-{timestamp}"
-      const match = sessionToken.match(/^admin-session-(.+)-(\d+)$/);
+      const match = normalizedSessionToken.match(/^admin-session-(.+)-(\d+)$/);
 
       if (!match) {
         localStorage.removeItem('admin_session_token');
@@ -173,7 +179,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
 
-      const adminId = match[1];
+      const adminId = getAdminIdFromSessionToken(normalizedSessionToken) ?? match[1];
       const timestamp = match[2];
 
       // Check if session is expired (8-hour expiration for better security)
@@ -238,116 +244,37 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       console.log('🔍 Starting admin login process for:', email);
 
-      let user: any = null;
-      let error: any = null;
+      const { data, error } = await invokeSupabaseFunction('admin-login', {
+        body: {
+          email: email.trim(),
+          password,
+        },
+      });
 
-      // Try to get admin user from database using service role to bypass RLS
-      const result = await publicSupabase
-          .from('tbl_admin_users')
-          .select('*')
-          .eq('tau_email', email.trim())
-          .single();
-
-      user = result.data;
-      error = result.error;
-
-      if (error || !user) {
-        console.error('❌ Admin user not found in database:', error);
-
-        // If RLS is blocking, try with service role
-        if (error?.code === '42501' || error?.message?.includes('RLS') || error?.message?.includes('policy')) {
-          console.log('🔄 RLS detected, attempting service role query...');
-
-          // Create a service role client for admin operations
-          const { createClient } = await import('@supabase/supabase-js');
-          const serviceClient = createClient(
-              import.meta.env.VITE_SUPABASE_URL,
-              import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY,
-              {
-                auth: {
-                  autoRefreshToken: false,
-                  persistSession: false
-                }
-              }
-          );
-
-          const { data: serviceUser, error: serviceError } = await serviceClient
-              .from('tbl_admin_users')
-              .select('*')
-              .eq('tau_email', email.trim())
-              .single();
-
-          if (serviceError || !serviceUser) {
-            console.error('❌ Service role query also failed:', serviceError);
-            throw new Error('Invalid email or password');
-          }
-
-          user = serviceUser;
-          console.log('✅ Service role query successful');
-        } else {
-          throw new Error('Invalid email or password');
-        }
-      } else {
-        console.log('✅ Regular query successful');
+      if (error) {
+        throw new Error(error.message || 'Invalid email or password');
       }
 
-      if (!user) {
-        throw new Error('Invalid email or password');
+      if (!data?.success || !data?.admin) {
+        throw new Error(data?.error || 'Invalid email or password');
       }
 
-      if (!user.tau_is_active) {
-        throw new Error('Account is inactive. Please contact the administrator.');
-      }
-
-      console.log('🔐 Verifying password...');
-
-      // Handle default admin credentials and bcrypt verification
-      let passwordMatch = false;
-
-      // Try bcrypt verification for other accounts
-      try {
-        const bcrypt = await import('bcryptjs');
-        passwordMatch = await bcrypt.compare(password, user.tau_password_hash);
-        console.log('✅ Using bcrypt for password verification');
-      } catch (bcryptError) {
-        console.log('⚠️ bcrypt not available, using fallback verification', bcryptError);
-        // Fallback: direct comparison (not secure for production)
-        passwordMatch = password === user.tau_password_hash;
-      }
-
-      if (!passwordMatch) {
-        console.log('❌ Password verification failed');
-        throw new Error('Invalid email or password');
-      }
-
-      console.log('✅ Password verified successfully');
-
-      // All checks passed — login success
-      const sessionToken = `admin-session-${user.tau_id}-${Date.now()}`;
+      const adminRecord = data.admin;
+      const sessionToken = `admin-session-${adminRecord.id}-${Date.now()}`;
       localStorage.setItem('admin_session_token', sessionToken);
 
       const adminUser: AdminUser = {
-        id: user.tau_id,
-        email: user.tau_email,
-        fullName: user.tau_full_name,
-        role: user.tau_role,
-        permissions: normalizePermissions(user.tau_permissions),
-        isActive: user.tau_is_active,
-        lastLogin: user.tau_last_login || '',
-        createdAt: user.tau_created_at || ''
+        id: adminRecord.id,
+        email: adminRecord.email,
+        fullName: adminRecord.fullName,
+        role: adminRecord.role,
+        permissions: normalizePermissions(adminRecord.permissions),
+        isActive: adminRecord.isActive,
+        lastLogin: adminRecord.lastLogin || '',
+        createdAt: adminRecord.createdAt || ''
       };
 
       setAdmin(adminUser);
-
-      // Update last login
-      try {
-        await adminSupabase
-            .from('tbl_admin_users')
-            .update({ tau_last_login: new Date().toISOString() })
-            .eq('tau_id', user.tau_id);
-      } catch (updateError) {
-        console.warn('Failed to update last login time:', updateError);
-      }
 
       notification.showSuccess('Welcome Back!', 'You have successfully logged in.');
     } catch (error: any) {

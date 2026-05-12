@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
       return buildResponse(401, { success: false, error: "Admin session required" });
     }
 
-    const sessionMatch = adminSession.match(/^admin-session-([a-f0-9-]+)-(\d+)$/);
+    const sessionMatch = adminSession.match(/^admin-session-(.+)-(\d+)$/);
     if (!sessionMatch) {
       return buildResponse(401, { success: false, error: "Invalid session format" });
     }

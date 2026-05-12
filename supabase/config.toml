@@ -66,6 +66,16 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-subadmin-password-reset-email/index.ts"
 
+[functions.verify-subadmin-password-reset]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/verify-subadmin-password-reset/index.ts"
+
+[functions.complete-subadmin-password-reset]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/complete-subadmin-password-reset/index.ts"
+
 [functions.admin-login]
 enabled = true
 verify_jwt = false

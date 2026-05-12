@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
 
     // Validate admin session
     // Session format: admin-session-{adminId}-{timestamp}
-    const sessionMatch = adminSession.match(/^admin-session-([a-f0-9-]+)-(\d+)$/);
+    const sessionMatch = adminSession.match(/^admin-session-(.+)-(\d+)$/);
 
     if (!sessionMatch) {
       return new Response(
