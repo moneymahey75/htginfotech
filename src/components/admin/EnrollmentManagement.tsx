@@ -12,7 +12,8 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    MoreHorizontal
+    MoreHorizontal,
+    Search
 } from 'lucide-react';
 
 interface Enrollment {
@@ -28,6 +29,7 @@ interface Enrollment {
         tbl_user_profiles: {
             tup_first_name: string;
             tup_last_name: string;
+            tup_username: string | null;
         }[];
     };
     course: {
@@ -115,6 +117,9 @@ export default function EnrollmentManagement() {
     const [selectedTutor, setSelectedTutor] = useState<string>('');
     const [assignmentNotes, setAssignmentNotes] = useState('');
     const [filter, setFilter] = useState<'all' | 'unassigned' | 'assigned'>('unassigned');
+    const [learnerSearch, setLearnerSearch] = useState('');
+    const [courseSearch, setCourseSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAssigning, setIsAssigning] = useState(false);
@@ -138,17 +143,19 @@ export default function EnrollmentManagement() {
             fetchEnrollments();
             fetchTutors();
         }
-    }, [filter, currentPage, itemsPerPage, admin]);
+    }, [filter, learnerSearch, courseSearch, statusFilter, currentPage, itemsPerPage, admin]);
 
     // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [filter]);
+    }, [filter, learnerSearch, courseSearch, statusFilter]);
 
     const fetchEnrollments = async () => {
         try {
             setLoading(true);
             setListLoading(true);
+            const learnerSearchTerm = learnerSearch.trim();
+            const courseSearchTerm = courseSearch.trim();
 
             // Build the base query with count
             let query = supabase
@@ -165,7 +172,8 @@ export default function EnrollmentManagement() {
             tu_email,
             tbl_user_profiles (
               tup_first_name,
-              tup_last_name
+              tup_last_name,
+              tup_username
             )
           ),
           course:tbl_courses!tbl_course_enrollments_tce_course_id_fkey (
@@ -182,6 +190,78 @@ export default function EnrollmentManagement() {
                 query = query.eq('tce_tutor_assigned', false);
             } else if (filter === 'assigned') {
                 query = query.eq('tce_tutor_assigned', true);
+            }
+
+            if (statusFilter !== 'all') {
+                query = query.eq('tce_payment_status', statusFilter);
+            }
+
+            if (learnerSearchTerm) {
+                const normalizedLearnerSearch = learnerSearchTerm.toLowerCase();
+                const [emailMatches, usernameMatches] = await Promise.all([
+                    supabase
+                        .from('tbl_users')
+                        .select('tu_id, tu_email')
+                        .eq('tu_user_type', 'learner'),
+                    supabase
+                        .from('tbl_user_profiles')
+                        .select('tup_user_id, tup_username')
+                ]);
+
+                if (emailMatches.error) throw emailMatches.error;
+                if (usernameMatches.error) throw usernameMatches.error;
+
+                const learnerIds = Array.from(new Set([
+                    ...(emailMatches.data || [])
+                        .filter((learner: any) => (learner.tu_email || '').toLowerCase().includes(normalizedLearnerSearch))
+                        .map((learner: any) => learner.tu_id),
+                    ...(usernameMatches.data || [])
+                        .filter((profile: any) => (profile.tup_username || '').toLowerCase().includes(normalizedLearnerSearch))
+                        .map((profile: any) => profile.tup_user_id)
+                ]));
+
+                if (learnerIds.length > 0) {
+                    const {data: activeLearners, error: activeLearnersError} = await supabase
+                        .from('tbl_users')
+                        .select('tu_id')
+                        .eq('tu_user_type', 'learner')
+                        .in('tu_id', learnerIds);
+
+                    if (activeLearnersError) throw activeLearnersError;
+                    const activeLearnerIds = (activeLearners || []).map((learner: any) => learner.tu_id);
+
+                    if (activeLearnerIds.length === 0) {
+                        setEnrollments([]);
+                        setTotalCount(0);
+                        return;
+                    }
+
+                    query = query.in('tce_user_id', activeLearnerIds);
+                } else {
+                    setEnrollments([]);
+                    setTotalCount(0);
+                    return;
+                }
+            }
+
+            if (courseSearchTerm) {
+                const normalizedCourseSearch = courseSearchTerm.toLowerCase();
+                const {data: matchingCourses, error: courseError} = await supabase
+                    .from('tbl_courses')
+                    .select('tc_id, tc_title');
+
+                if (courseError) throw courseError;
+
+                const courseIds = (matchingCourses || [])
+                    .filter((course: any) => (course.tc_title || '').toLowerCase().includes(normalizedCourseSearch))
+                    .map((course: any) => course.tc_id);
+                if (courseIds.length === 0) {
+                    setEnrollments([]);
+                    setTotalCount(0);
+                    return;
+                }
+
+                query = query.in('tce_course_id', courseIds);
             }
 
             // Apply pagination
@@ -497,6 +577,10 @@ export default function EnrollmentManagement() {
         }
     };
 
+    const hasSearchFilters = Boolean(learnerSearch.trim() || courseSearch.trim() || statusFilter !== 'all');
+    const visibleStart = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const visibleEnd = Math.min(currentPage * itemsPerPage, totalCount);
+
     if (loading && enrollments.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
@@ -571,9 +655,64 @@ export default function EnrollmentManagement() {
 
             <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                    <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{' '}
+                    Showing <span className="font-medium">{visibleStart}</span> to{' '}
+                    <span className="font-medium">{visibleEnd}</span> of{' '}
                     <span className="font-medium">{totalCount}</span> enrollments
+                </div>
+            </div>
+
+            <div className="bg-white shadow-md rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Learner
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-5 w-5 text-gray-400"/>
+                            </div>
+                            <input
+                                type="text"
+                                value={learnerSearch}
+                                onChange={(e) => setLearnerSearch(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Search username or email"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Course
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-5 w-5 text-gray-400"/>
+                            </div>
+                            <input
+                                type="text"
+                                value={courseSearch}
+                                onChange={(e) => setCourseSearch(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Search course name"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Status
+                        </label>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'completed')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -723,7 +862,7 @@ export default function EnrollmentManagement() {
                         <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4"/>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No enrollments found</h3>
                         <p className="text-gray-600">
-                            {filter !== 'all' ? 'Try adjusting your filter' : 'No enrollments in the system'}
+                            {filter !== 'all' || hasSearchFilters ? 'Try adjusting your filters' : 'No enrollments in the system'}
                         </p>
                     </div>
                 )}
@@ -732,9 +871,9 @@ export default function EnrollmentManagement() {
                 {totalCount > 0 && (
                     <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                         <div className="text-sm text-gray-700">
-                            Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                            Showing <span className="font-medium">{visibleStart}</span> to{' '}
                             <span
-                                className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{' '}
+                                className="font-medium">{visibleEnd}</span> of{' '}
                             <span className="font-medium">{totalCount}</span> enrollments
                         </div>
 

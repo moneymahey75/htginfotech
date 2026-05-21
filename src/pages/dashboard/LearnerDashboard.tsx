@@ -17,7 +17,8 @@ import {
   CheckCircle,
   Star,
   Receipt,
-  Video
+  Video,
+  Download
 } from 'lucide-react';
 
 interface Enrollment {
@@ -25,6 +26,7 @@ interface Enrollment {
   tce_course_id: string;
   tce_progress_percentage: number;
   tce_enrollment_date: string;
+  tce_completion_date?: string | null;
   tce_access_expires_at?: string;
   tbl_courses: {
     tc_id: string;
@@ -305,7 +307,8 @@ const LearnerDashboard: React.FC = () => {
     };
   };
 
-  const completedCourses = enrollments.filter(e => e.tce_progress_percentage === 100).length;
+  const certificateEnrollments = enrollments.filter(e => e.tce_progress_percentage === 100);
+  const completedCourses = certificateEnrollments.length;
   const totalHours = enrollments.reduce((total, e) => total + (e.tbl_courses?.tc_duration_hours || 0), 0);
   const timeSpentHours = Math.round(enrollments.reduce((sum, e) =>
     sum + ((e.tbl_courses?.tc_duration_hours || 0) * (e.tce_progress_percentage / 100)), 0));
@@ -316,30 +319,44 @@ const LearnerDashboard: React.FC = () => {
       value: enrollments.length,
       icon: BookOpen,
       color: 'bg-blue-500',
-      change: totalHours > 0 ? `${totalHours} total hours` : 'No courses yet'
+      change: totalHours > 0 ? `${totalHours} total hours` : 'No courses yet',
+      tabId: 'courses'
     },
     {
       title: 'Completed Courses',
       value: completedCourses,
       icon: CheckCircle,
       color: 'bg-green-500',
-      change: enrollments.length > 0 && completedCourses > 0 ? `${Math.round((completedCourses / enrollments.length) * 100)}% completion rate` : 'No courses completed'
+      change: enrollments.length > 0 && completedCourses > 0 ? `${Math.round((completedCourses / enrollments.length) * 100)}% completion rate` : 'No courses completed',
+      tabId: 'courses'
     },
     {
       title: 'Learning Hours',
       value: timeSpentHours,
       icon: Clock,
       color: 'bg-purple-500',
-      change: enrollments.length > 0 && totalHours > 0 ? `${Math.round((timeSpentHours / totalHours) * 100)}% of total` : 'Start learning'
+      change: enrollments.length > 0 && totalHours > 0 ? `${Math.round((timeSpentHours / totalHours) * 100)}% of total` : 'Start learning',
+      tabId: 'progress'
     },
     {
       title: 'Certificates',
       value: completedCourses,
       icon: Award,
       color: 'bg-yellow-500',
-      change: completedCourses > 0 ? 'Download available' : 'Complete courses to earn'
+      change: completedCourses > 0 ? 'Download available' : 'Complete courses to earn',
+      tabId: 'certificates'
     }
   ];
+
+  const openDashboardTab = (tabId: string) => {
+    setActiveTab(tabId);
+    window.setTimeout(() => {
+      document.getElementById('learner-dashboard-tabs')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 0);
+  };
 
   const getDifficultyColor = (level: string) => {
     switch (level) {
@@ -348,6 +365,218 @@ const LearnerDashboard: React.FC = () => {
       case 'advanced': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getLearnerFullName = () => {
+    const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+    return fullName || user?.email || 'Learner';
+  };
+
+  const formatCertificateDate = (date?: string | null) => {
+    const value = date ? new Date(date) : new Date();
+    return value.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const sanitizeFileName = (value: string) => (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80) || 'certificate'
+  );
+
+  const loadCertificateLogo = async () => {
+    const logo = new Image();
+    logo.src = '/htginfotech-logo.png';
+    await new Promise<void>((resolve, reject) => {
+      logo.onload = () => resolve();
+      logo.onerror = () => reject(new Error('Certificate logo could not be loaded'));
+    });
+    return logo;
+  };
+
+  const drawCenteredText = (
+    context: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number
+  ) => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let line = '';
+
+    words.forEach((word) => {
+      const testLine = line ? `${line} ${word}` : word;
+      if (context.measureText(testLine).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = testLine;
+      }
+    });
+
+    if (line) {
+      lines.push(line);
+    }
+
+    lines.forEach((lineText, index) => {
+      context.fillText(lineText, x, y + (index * lineHeight));
+    });
+
+    return y + ((lines.length - 1) * lineHeight);
+  };
+
+  const createImagePdf = (imageDataUrl: string, width: number, height: number) => {
+    const base64 = imageDataUrl.split(',')[1];
+    const binary = atob(base64);
+    const imageBytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i += 1) {
+      imageBytes[i] = binary.charCodeAt(i);
+    }
+
+    const encoder = new TextEncoder();
+    const chunks: (Uint8Array | string)[] = [];
+    const offsets = [0];
+    let byteLength = 0;
+
+    const append = (chunk: Uint8Array | string) => {
+      chunks.push(chunk);
+      byteLength += typeof chunk === 'string' ? encoder.encode(chunk).length : chunk.length;
+    };
+
+    const appendObject = (content: (Uint8Array | string)[]) => {
+      offsets.push(byteLength);
+      content.forEach(append);
+    };
+
+    append('%PDF-1.4\n');
+    appendObject(['1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n']);
+    appendObject(['2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n']);
+    appendObject(['3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >> endobj\n']);
+
+    const stream = 'q 842 0 0 595 0 0 cm /Im0 Do Q\n';
+    appendObject([`4 0 obj << /Length ${stream.length} >> stream\n${stream}endstream endobj\n`]);
+    appendObject([
+      `5 0 obj << /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >> stream\n`,
+      imageBytes,
+      '\nendstream endobj\n'
+    ]);
+
+    const xrefOffset = byteLength;
+    append(`xref\n0 ${offsets.length}\n`);
+    append('0000000000 65535 f \n');
+    offsets.slice(1).forEach((offset) => {
+      append(`${String(offset).padStart(10, '0')} 00000 n \n`);
+    });
+    append(`trailer << /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+    return new Blob(chunks, {type: 'application/pdf'});
+  };
+
+  const createCertificatePdf = async (enrollment: Enrollment) => {
+    const userName = getLearnerFullName();
+    const courseName = enrollment.tbl_courses?.tc_title || 'Course';
+    const completionDate = formatCertificateDate(enrollment.tce_completion_date || enrollment.tce_enrollment_date);
+    const certificateId = `HTG-${enrollment.tce_id.slice(0, 8).toUpperCase()}`;
+    const message = `This is to certify that ${userName} has successfully completed the course ${courseName} on ${completionDate}.`;
+
+    const width = 1600;
+    const height = 1131;
+    const centerX = width / 2;
+    const logoBlue = '#204a9a';
+    const logoGold = '#f4b321';
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Certificate canvas could not be created');
+    }
+
+    context.fillStyle = '#f8fbff';
+    context.fillRect(0, 0, width, height);
+
+    context.strokeStyle = logoBlue;
+    context.lineWidth = 18;
+    context.strokeRect(54, 54, width - 108, height - 108);
+    context.strokeStyle = logoGold;
+    context.lineWidth = 7;
+    context.strokeRect(83, 83, width - 166, height - 166);
+
+    context.textAlign = 'right';
+    context.fillStyle = logoBlue;
+    context.font = 'bold 22px Arial, sans-serif';
+    context.fillText(`Certificate ID: ${certificateId}`, width - 135, 150);
+
+    const logo = await loadCertificateLogo();
+    const logoWidth = 360;
+    const logoHeight = (logo.height / logo.width) * logoWidth;
+    context.drawImage(logo, centerX - (logoWidth / 2), 118, logoWidth, logoHeight);
+
+    context.textAlign = 'center';
+    context.fillStyle = '#111827';
+    context.font = 'bold 76px Georgia, serif';
+    context.fillText('Certificate of Completion', centerX, 405);
+
+    context.fillStyle = '#4b5563';
+    context.font = '30px Arial, sans-serif';
+    context.fillText('This certificate is proudly presented to', centerX, 485);
+
+    context.fillStyle = logoBlue;
+    context.font = 'bold 64px Georgia, serif';
+    context.fillText(userName, centerX, 575);
+
+    context.strokeStyle = logoGold;
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(470, 607);
+    context.lineTo(1130, 607);
+    context.stroke();
+
+    context.fillStyle = '#374151';
+    context.font = '31px Arial, sans-serif';
+    drawCenteredText(context, message, centerX, 690, 1120, 44);
+
+    context.fillStyle = logoBlue;
+    context.font = 'bold 24px Arial, sans-serif';
+    context.fillText('COURSE', centerX, 810);
+    context.fillStyle = '#111827';
+    context.font = 'bold 34px Arial, sans-serif';
+    drawCenteredText(context, courseName, centerX, 855, 1080, 42);
+
+    context.fillStyle = logoBlue;
+    context.font = 'bold 23px Arial, sans-serif';
+    context.fillText('COMPLETION DATE', centerX, 955);
+    context.fillStyle = '#111827';
+    context.font = '28px Arial, sans-serif';
+    context.fillText(completionDate, centerX, 997);
+
+    return createImagePdf(canvas.toDataURL('image/jpeg', 0.94), width, height);
+  };
+
+  const downloadCertificate = async (enrollment: Enrollment) => {
+    if (enrollment.tce_progress_percentage !== 100) {
+      return;
+    }
+
+    const pdf = await createCertificatePdf(enrollment);
+    const url = URL.createObjectURL(pdf);
+    const link = document.createElement('a');
+    const courseName = enrollment.tbl_courses?.tc_title || 'course';
+    link.href = url;
+    link.download = `${sanitizeFileName(courseName)}-certificate.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -366,7 +595,13 @@ const LearnerDashboard: React.FC = () => {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
-                <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <button
+                    key={index}
+                    type="button"
+                    onClick={() => openDashboardTab(stat.tabId)}
+                    className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    aria-label={`Open ${stat.title}`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">{stat.title}</p>
@@ -377,14 +612,14 @@ const LearnerDashboard: React.FC = () => {
                       <stat.icon className="h-6 w-6 text-white" />
                     </div>
                   </div>
-                </div>
+                </button>
             ))}
           </div>
 
           {/* Navigation Tabs */}
-          <div className="bg-white rounded-xl shadow-sm mb-8">
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6">
+          <div id="learner-dashboard-tabs" className="bg-white rounded-xl shadow-sm mb-8 scroll-mt-6">
+            <div className="border-b border-gray-200 overflow-x-auto">
+              <nav className="flex min-w-max space-x-8 px-6">
                 {[
                   { id: 'overview', label: 'Overview', icon: BarChart3 },
                   { id: 'courses', label: 'My Courses', icon: BookOpen },
@@ -392,7 +627,8 @@ const LearnerDashboard: React.FC = () => {
                   { id: 'progress', label: 'Progress', icon: TrendingUp },
                   { id: 'payments', label: 'Payment History', icon: Receipt },
                   { id: 'schedule', label: 'Schedule', icon: Calendar },
-                  { id: 'tutor', label: 'My Tutor', icon: User }
+                  { id: 'tutor', label: 'My Tutor', icon: User },
+                  { id: 'certificates', label: 'My Certificates', icon: Award }
                 ].map((tab) => (
                     <button
                         key={tab.id}
@@ -726,6 +962,73 @@ const LearnerDashboard: React.FC = () => {
                                             ${tutorData.hourlyRate}/hour
                                           </div>
                                       )}
+                                    </div>
+                                  </div>
+                                </div>
+                            );
+                          })}
+                        </div>
+                    )}
+                  </div>
+              )}
+
+              {activeTab === 'certificates' && (
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">My Certificates</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Download certificates for courses you have completed.
+                        </p>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {certificateEnrollments.length} certificate{certificateEnrollments.length !== 1 ? 's' : ''} available
+                      </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {[...Array(2)].map((_, index) => (
+                              <div key={index} className="bg-gray-100 rounded-xl h-44 animate-pulse"></div>
+                          ))}
+                        </div>
+                    ) : certificateEnrollments.length === 0 ? (
+                        <div className="bg-gray-50 rounded-lg p-12 text-center">
+                          <Award className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <h4 className="text-lg font-semibold text-gray-900 mb-2">No Certificates Available</h4>
+                          <p className="text-gray-600">
+                            Complete a course to unlock your downloadable certificate.
+                          </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {certificateEnrollments.map((enrollment) => {
+                            const courseName = enrollment.tbl_courses?.tc_title || 'Course';
+                            const completionDate = formatCertificateDate(
+                                enrollment.tce_completion_date || enrollment.tce_enrollment_date
+                            );
+
+                            return (
+                                <div key={enrollment.tce_id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                                  <div className="flex items-start gap-4">
+                                    <div className="bg-yellow-100 p-3 rounded-lg flex-shrink-0">
+                                      <Award className="h-6 w-6 text-yellow-700" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                                        {courseName}
+                                      </h4>
+                                      <div className="mt-3 flex flex-col gap-1 text-sm text-gray-600">
+                                        <span>Received: {completionDate}</span>
+                                        <span>Issued to: {getLearnerFullName()}</span>
+                                      </div>
+                                      <button
+                                          onClick={() => downloadCertificate(enrollment)}
+                                          className="mt-5 inline-flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                                      >
+                                        <Download className="h-4 w-4" />
+                                        Download Certificate
+                                      </button>
                                     </div>
                                   </div>
                                 </div>
