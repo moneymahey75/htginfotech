@@ -51,18 +51,38 @@ Deno.serve(async (req: Request) => {
         console.log("Retrieving payment intent from Stripe:", paymentIntentId);
         const paymentIntent = await stripe.paymentIntents.retrieve(
             paymentIntentId,
+            {
+                expand: ["latest_charge", "latest_charge.balance_transaction"],
+            },
         );
 
         console.log("Payment intent status:", paymentIntent.status);
 
         if (paymentIntent.status === "succeeded") {
+            const latestCharge = typeof paymentIntent.latest_charge === "object"
+                ? paymentIntent.latest_charge
+                : null;
+            const latestBalanceTransaction = latestCharge &&
+                typeof (latestCharge as any).balance_transaction === "object"
+                ? (latestCharge as any).balance_transaction
+                : null;
+            const sourceTransferCurrency = String(
+                latestBalanceTransaction?.currency ||
+                latestCharge?.currency ||
+                paymentIntent.currency ||
+                "aud",
+            ).toLowerCase();
+            const transferGroup = paymentIntent.transfer_group ||
+                `course-payment-${paymentIntentId}`;
+
             // Update payment record
             const { data: paymentArray, error: paymentUpdateError } = await supabase
                 .from("tbl_payments")
                 .update({
                     tp_payment_status: "completed",
-                    tp_stripe_charge_id: paymentIntent.charges?.data[0]?.id || null,
-                    tp_receipt_url: paymentIntent.charges?.data[0]?.receipt_url || null,
+                    tp_currency: sourceTransferCurrency,
+                    tp_stripe_charge_id: latestCharge?.id || null,
+                    tp_receipt_url: latestCharge?.receipt_url || null,
                 })
                 .eq("tp_stripe_payment_intent_id", paymentIntentId)
                 .select();
@@ -77,12 +97,162 @@ Deno.serve(async (req: Request) => {
             }
 
             const payment = paymentArray[0];
+            const existingMetadata = payment.tp_metadata && typeof payment.tp_metadata === "object"
+                ? payment.tp_metadata
+                : {};
 
-            // Update payment splits
-            await supabase
+            const { data: splitTransactions } = await supabase
                 .from("tbl_payment_split_transactions")
-                .update({ tpst_status: "completed" })
+                .select(`
+                    tpst_id,
+                    tpst_split_amount,
+                    tpst_split_percentage,
+                    tpst_status,
+                    tpst_stripe_transfer_id,
+                    tbl_stripe_connect_accounts (
+                        tsca_stripe_account_id
+                    )
+                `)
                 .eq("tpst_payment_id", payment.tp_id);
+
+            const transferFailures: Array<{ splitId: string; reason: string }> = [];
+
+            if (latestCharge?.id && Array.isArray(splitTransactions) && splitTransactions.length > 0) {
+                for (const splitTransaction of splitTransactions) {
+                    const relatedAccount = Array.isArray((splitTransaction as any).tbl_stripe_connect_accounts)
+                        ? (splitTransaction as any).tbl_stripe_connect_accounts[0]
+                        : (splitTransaction as any).tbl_stripe_connect_accounts;
+                    const stripeAccountId = relatedAccount?.tsca_stripe_account_id;
+                    const splitAmount = Math.round(Number(splitTransaction.tpst_split_amount || 0) * 100);
+
+                    if (splitTransaction.tpst_stripe_transfer_id) {
+                        continue;
+                    }
+
+                    if (!stripeAccountId || splitAmount <= 0) {
+                        const reason = !stripeAccountId
+                            ? "Missing connected Stripe account ID for split transfer."
+                            : "Invalid split amount.";
+                        transferFailures.push({
+                            splitId: splitTransaction.tpst_id,
+                            reason,
+                        });
+
+                        await supabase
+                            .from("tbl_payment_split_transactions")
+                            .update({ tpst_status: "failed" })
+                            .eq("tpst_id", splitTransaction.tpst_id);
+                        continue;
+                    }
+
+                    try {
+                        const connectedAccount = await stripe.accounts.retrieve(stripeAccountId);
+                        const transfersCapability = connectedAccount.capabilities?.transfers;
+
+                        if (transfersCapability && transfersCapability !== "active") {
+                            throw new Error(
+                                `Stripe account ${stripeAccountId} cannot receive transfers yet (transfers capability: ${transfersCapability}).`,
+                            );
+                        }
+
+                        const transfer = await stripe.transfers.create({
+                            amount: splitAmount,
+                            currency: sourceTransferCurrency,
+                            destination: stripeAccountId,
+                            source_transaction: latestCharge.id,
+                            transfer_group: transferGroup,
+                            metadata: {
+                                payment_id: payment.tp_id,
+                                payment_intent_id: paymentIntentId,
+                                course_id: courseId,
+                                user_id: userId,
+                                split_percentage: String(splitTransaction.tpst_split_percentage ?? ""),
+                                source_transfer_currency: sourceTransferCurrency,
+                            },
+                        }, {
+                            idempotencyKey: `payment-transfer-${payment.tp_id}-${splitTransaction.tpst_id}`,
+                        });
+
+                        await supabase
+                            .from("tbl_payment_split_transactions")
+                            .update({
+                                tpst_status: "completed",
+                                tpst_stripe_transfer_id: transfer.id,
+                            })
+                            .eq("tpst_id", splitTransaction.tpst_id);
+                    } catch (transferError) {
+                        console.error("Error creating Stripe transfer:", transferError);
+                        transferFailures.push({
+                            splitId: splitTransaction.tpst_id,
+                            reason: transferError instanceof Error ? transferError.message : String(transferError),
+                        });
+
+                        await supabase
+                            .from("tbl_payment_split_transactions")
+                            .update({ tpst_status: "failed" })
+                            .eq("tpst_id", splitTransaction.tpst_id);
+                    }
+                }
+            } else {
+                await supabase
+                    .from("tbl_payment_split_transactions")
+                    .update({ tpst_status: "completed" })
+                    .eq("tpst_payment_id", payment.tp_id);
+            }
+
+            if (transferFailures.length > 0) {
+                const primaryFailureReason = transferFailures[0]?.reason;
+                const detailedFailureMessage = primaryFailureReason
+                    ? `Payment was captured, but one or more Stripe split transfers failed. ${primaryFailureReason}`
+                    : "Payment was captured, but one or more Stripe split transfers failed.";
+                const transferFailureMetadata = {
+                    ...existingMetadata,
+                    splitTransferStatus: "failed",
+                    splitTransferFailures: transferFailures,
+                    sourceTransferCurrency,
+                };
+
+                const { error: transferFailedStatusError } = await supabase
+                    .from("tbl_payments")
+                    .update({
+                        tp_payment_status: "transfer_failed",
+                        tp_metadata: transferFailureMetadata,
+                    })
+                    .eq("tp_id", payment.tp_id);
+
+                if (transferFailedStatusError) {
+                    console.error("Error updating payment status to transfer_failed:", transferFailedStatusError);
+
+                    const { error: fallbackStatusError } = await supabase
+                        .from("tbl_payments")
+                        .update({
+                            tp_payment_status: "failed",
+                            tp_metadata: transferFailureMetadata,
+                        })
+                        .eq("tp_id", payment.tp_id);
+
+                    if (fallbackStatusError) {
+                        console.error("Error updating payment status fallback to failed:", fallbackStatusError);
+                    }
+                }
+
+                return new Response(
+                    JSON.stringify({
+                        success: false,
+                        message: detailedFailureMessage,
+                        payment: payment,
+                        transferFailures,
+                        sourceTransferCurrency,
+                    }),
+                    {
+                        status: 400,
+                        headers: {
+                            ...corsHeaders,
+                            "Content-Type": "application/json",
+                        },
+                    },
+                );
+            }
 
             // Check for existing enrollment
             const { data: existingEnrollmentArray } = await supabase
@@ -100,7 +270,7 @@ Deno.serve(async (req: Request) => {
                 // Get course details for expiry calculation
                 const { data: courseArray } = await supabase
                     .from("tbl_courses")
-                    .select("tc_pricing_type, tc_access_days")
+                    .select("tc_title, tc_pricing_type, tc_access_days, tc_duration_hours")
                     .eq("tc_id", courseId)
                     .limit(1);
 
@@ -152,11 +322,7 @@ Deno.serve(async (req: Request) => {
                     .eq("tu_id", userId)
                     .single();
 
-                const { data: courseDetails } = await supabase
-                    .from("tbl_courses")
-                    .select("tc_title")
-                    .eq("tc_id", courseId)
-                    .single();
+                const courseDetails = course;
 
                 // Send enrollment notification to admins
                 if (newEnrollment && learner && courseDetails) {
@@ -203,6 +369,17 @@ Deno.serve(async (req: Request) => {
                     success: true,
                     message: "Payment confirmed and enrollment created",
                     payment: payment,
+                    transferFailures,
+                    purchase: {
+                        courseId,
+                        courseTitle: payment.tp_metadata?.courseTitle || paymentIntent.metadata?.courseName || "Course",
+                        amount: payment.tp_amount,
+                        currency: payment.tp_currency,
+                        paymentDate: payment.tp_payment_date,
+                        receiptUrl: payment.tp_receipt_url,
+                        paymentIntentId,
+                        chargeId: payment.tp_stripe_charge_id,
+                    },
                 }),
                 {
                     headers: {

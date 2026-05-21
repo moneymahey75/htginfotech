@@ -17,6 +17,13 @@ interface CourseCategory {
   course_count?: number;
 }
 
+interface CategoryConfirmationState {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  action: () => Promise<void> | void;
+}
+
 // Skeleton Loader for Table Rows
 const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
   return (
@@ -96,6 +103,7 @@ const CourseCategoryManagement: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [updatingCategoryId, setUpdatingCategoryId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<CategoryConfirmationState | null>(null);
 
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
@@ -254,20 +262,18 @@ const CourseCategoryManagement: React.FC = () => {
   };
 
   const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
-    if (confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
-      try {
-        const { error } = await supabase
-            .from('tbl_course_categories')
-            .delete()
-            .eq('tcc_id', categoryId);
+    try {
+      const { error } = await supabase
+          .from('tbl_course_categories')
+          .delete()
+          .eq('tcc_id', categoryId);
 
-        if (error) throw error;
-        notification.showSuccess('Category Deleted', 'Course category has been deleted successfully');
-        loadCategories();
-      } catch (error) {
-        console.error('Failed to delete category:', error);
-        notification.showError('Delete Failed', 'Failed to delete course category. It may have associated courses.');
-      }
+      if (error) throw error;
+      notification.showSuccess('Category Deleted', 'Course category has been deleted successfully');
+      loadCategories();
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      notification.showError('Delete Failed', 'Failed to delete course category. It may have associated courses.');
     }
   };
 
@@ -297,6 +303,34 @@ const CourseCategoryManagement: React.FC = () => {
     } finally {
       setUpdatingCategoryId(null);
     }
+  };
+
+  const requestCategoryStatusChange = (category: CourseCategory) => {
+    setConfirmation({
+      title: category.tcc_is_active ? 'Deactivate Category?' : 'Activate Category?',
+      description: `Are you sure you want to ${category.tcc_is_active ? 'deactivate' : 'activate'} "${category.tcc_name}"?`,
+      confirmLabel: category.tcc_is_active ? 'Deactivate' : 'Activate',
+      action: () => handleToggleStatus(category.tcc_id, category.tcc_is_active)
+    });
+  };
+
+  const requestCategoryDelete = (category: CourseCategory) => {
+    setConfirmation({
+      title: 'Delete Category?',
+      description: `Are you sure you want to delete "${category.tcc_name}"? This action cannot be undone.`,
+      confirmLabel: 'Delete Category',
+      action: () => handleDeleteCategory(category.tcc_id, category.tcc_name)
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmation) {
+      return;
+    }
+
+    const action = confirmation.action;
+    setConfirmation(null);
+    await action();
   };
 
   const handleReorderCategory = async (categoryId: string, direction: 'up' | 'down') => {
@@ -629,7 +663,7 @@ const CourseCategoryManagement: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                       <button
                           type="button"
-                          onClick={() => handleToggleStatus(category.tcc_id, category.tcc_is_active)}
+                          onClick={() => requestCategoryStatusChange(category)}
                           disabled={updatingCategoryId === category.tcc_id}
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                               category.tcc_is_active
@@ -666,7 +700,7 @@ const CourseCategoryManagement: React.FC = () => {
                             )}
                             {canDeleteCategories && (category.course_count || 0) === 0 && (
                               <button
-                                  onClick={() => handleDeleteCategory(category.tcc_id, category.tcc_name)}
+                                  onClick={() => requestCategoryDelete(category)}
                                   className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                                   title="Delete Category"
                               >
@@ -782,6 +816,40 @@ const CourseCategoryManagement: React.FC = () => {
                   Create Category
                 </button>
               )}
+            </div>
+        )}
+
+        {confirmation && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+              <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                <div className="border-b border-gray-200 px-6 py-5">
+                  <div className="flex items-start space-x-3">
+                    <div className="rounded-full bg-amber-100 p-2">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900">{confirmation.title}</h4>
+                      <p className="mt-1 text-sm text-gray-600">{confirmation.description}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end space-x-3 px-6 py-4">
+                  <button
+                      type="button"
+                      onClick={() => setConfirmation(null)}
+                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                      type="button"
+                      onClick={handleConfirmAction}
+                      className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-700"
+                  >
+                    {confirmation.confirmLabel}
+                  </button>
+                </div>
+              </div>
             </div>
         )}
 

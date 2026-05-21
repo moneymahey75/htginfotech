@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getCourseCategories, getCourses } from '../lib/supabase';
-import { buildAssetUrl } from '../utils/baseUrl';
+import { useAuth } from '../contexts/AuthContext';
+import { getCourseCategories, getCourses, supabase } from '../lib/supabase';
+import CourseImage from '../components/ui/CourseImage';
 import { 
   Search, 
   Filter, 
@@ -51,7 +52,6 @@ interface CourseCategory {
 }
 
 const COURSE_VIEW_MODE_STORAGE_KEY = 'courses-view-mode';
-const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
 
 const getInitialViewMode = (): 'grid' | 'list' => {
   if (typeof window === 'undefined') {
@@ -63,6 +63,7 @@ const getInitialViewMode = (): 'grid' | 'list' => {
 };
 
 const Courses: React.FC = () => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<CourseCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +76,7 @@ const Courses: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -88,11 +89,30 @@ const Courses: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [coursesData, categoriesData] = await Promise.all([
+      const [coursesData, categoriesData, enrollmentsResult] = await Promise.all([
         getCourses(),
-        getCourseCategories()
+        getCourseCategories(),
+        user?.id
+          ? supabase
+              .from('tbl_course_enrollments')
+              .select('tce_course_id')
+              .eq('tce_user_id', user.id)
+          : Promise.resolve({ data: [], error: null })
       ]);
-      setCourses(coursesData || []);
+
+      if (enrollmentsResult.error) {
+        throw enrollmentsResult.error;
+      }
+
+      const purchasedCourseIds = new Set(
+        (enrollmentsResult.data || []).map((enrollment) => enrollment.tce_course_id)
+      );
+
+      const visibleCourses = (coursesData || []).filter(
+        (course) => !purchasedCourseIds.has(course.tc_id)
+      );
+
+      setCourses(visibleCourses);
       setCategories(categoriesData || []);
     } catch (error) {
       console.error('Failed to load courses:', error);
@@ -398,18 +418,6 @@ const Courses: React.FC = () => {
 const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ course, viewMode }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const image = event.currentTarget;
-    if (image.src.endsWith(COURSE_FALLBACK_IMAGE)) {
-      return;
-    }
-
-    image.src = COURSE_FALLBACK_IMAGE;
-    image.classList.remove('object-cover');
-    image.classList.add('object-contain', 'opacity-20', 'p-6');
-    image.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-50');
-  };
-
   const getDifficultyColor = (level: string) => {
     switch (level) {
       case 'beginner': return 'bg-green-100 text-green-800';
@@ -451,11 +459,12 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100">
         <div className="flex min-h-[220px]">
           <div className="w-64 min-h-[220px] flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden relative">
-            <img
+            <CourseImage
                 src={course.tc_thumbnail_url}
                 alt={course.tc_title}
-                className="w-full h-full min-h-full object-cover"
-                onError={handleImageError}
+                className="w-full h-full min-h-full"
+                imageClassName="object-cover"
+                fallbackClassName="object-contain opacity-20 p-6 bg-gray-50"
             />
             <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
               <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getDifficultyColor(course.tc_difficulty_level)}`}>
@@ -532,11 +541,12 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group h-full flex flex-col">
       <div className="relative overflow-hidden rounded-t-xl">
-        <img
+        <CourseImage
           src={course.tc_thumbnail_url}
           alt={course.tc_title}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={handleImageError}
+          className="w-full h-48 transition-transform duration-300"
+          imageClassName="object-cover group-hover:scale-105"
+          fallbackClassName="object-contain opacity-20 p-6 bg-gray-50"
         />
         <div className="absolute top-4 left-4">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(course.tc_difficulty_level)}`}>

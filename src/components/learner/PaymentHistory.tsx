@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import CourseImage from '../ui/CourseImage';
 import { Receipt, Download, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface Payment {
@@ -122,10 +123,12 @@ const PaymentHistory: React.FC = () => {
           <div key={payment.tp_id} className="p-6 hover:bg-gray-50 transition-colors">
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-4 flex-1">
-                <img
+                <CourseImage
                   src={payment.tbl_courses.tc_thumbnail_url}
                   alt={payment.tbl_courses.tc_title}
-                  className="w-20 h-20 object-cover rounded-lg"
+                  className="w-20 h-20 rounded-lg"
+                  imageClassName="object-cover"
+                  fallbackClassName="object-contain opacity-20 p-4 bg-gray-50"
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 mb-1">

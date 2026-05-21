@@ -21,6 +21,7 @@ import {
     Clock,
     Star,
     ArrowLeft,
+    AlertCircle,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
@@ -115,6 +116,13 @@ interface Lesson {
     tcc_is_active: boolean;
 }
 
+interface CourseConfirmationState {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    action: () => Promise<void> | void;
+}
+
 // Skeleton Loader for Table Rows
 const TableSkeleton: React.FC<{ rows?: number }> = ({rows = 5}) => {
     return (
@@ -203,6 +211,7 @@ const CourseManagement: React.FC = () => {
     const [totalCount, setTotalCount] = useState(0);
     const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
     const [updatingCategoryId, setUpdatingCategoryId] = useState<string | null>(null);
+    const [confirmation, setConfirmation] = useState<CourseConfirmationState | null>(null);
 
     const notification = useNotification();
     const canWriteCourses = hasPermission('courses', 'write');
@@ -489,20 +498,18 @@ const CourseManagement: React.FC = () => {
     };
 
     const handleDeleteCourse = async (courseId: string) => {
-        if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-            try {
-                const {error} = await supabase
-                    .from('tbl_courses')
-                    .delete()
-                    .eq('tc_id', courseId);
+        try {
+            const {error} = await supabase
+                .from('tbl_courses')
+                .delete()
+                .eq('tc_id', courseId);
 
-                if (error) throw error;
-                notification.showSuccess('Course Deleted', 'Course has been deleted successfully');
-                loadCourses();
-            } catch (error) {
-                console.error('Failed to delete course:', error);
-                notification.showError('Delete Failed', 'Failed to delete course');
-            }
+            if (error) throw error;
+            notification.showSuccess('Course Deleted', 'Course has been deleted successfully');
+            loadCourses();
+        } catch (error) {
+            console.error('Failed to delete course:', error);
+            notification.showError('Delete Failed', 'Failed to delete course');
         }
     };
 
@@ -534,26 +541,61 @@ const CourseManagement: React.FC = () => {
         }
     };
 
-    const handleDeleteLesson = async (lessonId: string) => {
-        if (confirm('Are you sure you want to delete this lesson? This will also delete the video file from storage if it exists.')) {
-            try {
-                await videoStorage.deleteVideo(lessonId);
+    const requestCourseStatusChange = (course: Course) => {
+        setConfirmation({
+            title: course.tc_is_active ? 'Deactivate Course?' : 'Activate Course?',
+            description: `Are you sure you want to ${course.tc_is_active ? 'deactivate' : 'activate'} "${course.tc_title}"?`,
+            confirmLabel: course.tc_is_active ? 'Deactivate' : 'Activate',
+            action: () => handleToggleCourseStatus(course.tc_id, course.tc_is_active)
+        });
+    };
 
-                const {error} = await supabase
-                    .from('tbl_course_content')
-                    .delete()
-                    .eq('tcc_id', lessonId);
+    const requestCourseDelete = (course: Course) => {
+        setConfirmation({
+            title: 'Delete Course?',
+            description: `Are you sure you want to delete "${course.tc_title}"? This action cannot be undone.`,
+            confirmLabel: 'Delete Course',
+            action: () => handleDeleteCourse(course.tc_id)
+        });
+    };
 
-                if (error) throw error;
-                notification.showSuccess('Lesson Deleted', 'Lesson and associated video file have been deleted successfully');
-                if (selectedCourse) {
-                    loadLessons(selectedCourse.tc_id);
-                }
-            } catch (error) {
-                console.error('Failed to delete lesson:', error);
-                notification.showError('Delete Failed', 'Failed to delete lesson');
-            }
+    const handleConfirmAction = async () => {
+        if (!confirmation) {
+            return;
         }
+
+        const action = confirmation.action;
+        setConfirmation(null);
+        await action();
+    };
+
+    const handleDeleteLesson = async (lessonId: string) => {
+        try {
+            await videoStorage.deleteVideo(lessonId);
+
+            const {error} = await supabase
+                .from('tbl_course_content')
+                .delete()
+                .eq('tcc_id', lessonId);
+
+            if (error) throw error;
+            notification.showSuccess('Lesson Deleted', 'Lesson and associated video file have been deleted successfully');
+            if (selectedCourse) {
+                loadLessons(selectedCourse.tc_id);
+            }
+        } catch (error) {
+            console.error('Failed to delete lesson:', error);
+            notification.showError('Delete Failed', 'Failed to delete lesson');
+        }
+    };
+
+    const requestLessonDelete = (lesson: Lesson) => {
+        setConfirmation({
+            title: 'Delete Lesson?',
+            description: `Are you sure you want to delete "${lesson.tcc_title}"? This will also delete the video file from storage if it exists.`,
+            confirmLabel: 'Delete Lesson',
+            action: () => handleDeleteLesson(lesson.tcc_id)
+        });
     };
 
     const resetCourseForm = () => {
@@ -999,7 +1041,7 @@ const CourseManagement: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
                           type="button"
-                          onClick={() => handleToggleCourseStatus(course.tc_id, course.tc_is_active)}
+                          onClick={() => requestCourseStatusChange(course)}
                           disabled={updatingCourseId === course.tc_id}
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                               course.tc_is_active
@@ -1036,7 +1078,7 @@ const CourseManagement: React.FC = () => {
                                             )}
                                             {canDeleteCourses && (
                                                 <button
-                                                    onClick={() => handleDeleteCourse(course.tc_id)}
+                                                    onClick={() => requestCourseDelete(course)}
                                                     className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                                                     title="Delete Course"
                                                 >
@@ -1193,6 +1235,40 @@ const CourseManagement: React.FC = () => {
                         >
                             <ChevronsRight className="h-4 w-4"/>
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {confirmation && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                        <div className="border-b border-gray-200 px-6 py-5">
+                            <div className="flex items-start space-x-3">
+                                <div className="rounded-full bg-amber-100 p-2">
+                                    <AlertCircle className="h-5 w-5 text-amber-600"/>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-semibold text-gray-900">{confirmation.title}</h4>
+                                    <p className="mt-1 text-sm text-gray-600">{confirmation.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end space-x-3 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmation(null)}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmAction}
+                                className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+                            >
+                                {confirmation.confirmLabel}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1896,7 +1972,7 @@ const CourseManagement: React.FC = () => {
                                                         )}
                                                         {canDeleteCourses && (
                                                             <button
-                                                                onClick={() => handleDeleteLesson(lesson.tcc_id)}
+                                                                onClick={() => requestLessonDelete(lesson)}
                                                                 className="text-red-600 hover:text-red-800 p-1"
                                                                 title="Delete Lesson"
                                                             >

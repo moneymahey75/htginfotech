@@ -73,6 +73,19 @@ export interface PasswordResetEmailPayload {
   branding: BrandingSettings;
 }
 
+export interface PaymentSuccessEmailPayload {
+  firstName: string;
+  lastName?: string;
+  courseTitle: string;
+  courseDuration: string;
+  amount: string;
+  currency: string;
+  paymentId: string;
+  receiptUrl?: string;
+  dashboardUrl: string;
+  branding: BrandingSettings;
+}
+
 export const escapeHtml = (value: string) =>
   value
     .replaceAll("&", "&amp;")
@@ -229,6 +242,40 @@ const DEFAULT_TEMPLATES: Record<string, EmailTemplateRecord> = {
     }),
     tet_template_type: "password_reset",
     tet_variables: ["user_name", "first_name", "reset_link", "reset_password_link", "asset_url", "logo_url", "site_name", "site_url", "current_year"],
+  },
+  payment_success: {
+    tet_name: "payment_success",
+    tet_subject: "Payment successful - {{course_title}}",
+    tet_body: buildBrandedEmailShell({
+      eyebrow: "",
+      title: "Payment Successful",
+      body: `
+        <p style="margin:0 0 16px;color:#111827;font-size:18px;line-height:1.7;">Hello {{first_name}},</p>
+        <p style="margin:0 0 16px;color:#374151;font-size:16px;line-height:1.7;">
+          Your payment was completed successfully and your enrollment is now active.
+        </p>
+        <div style="margin:24px 0;padding:18px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+          <h3 style="margin:0 0 12px;color:#111827;font-size:18px;">Purchase Details</h3>
+          <table role="presentation" style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Course</td><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{course_title}}</td></tr>
+            <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Duration</td><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;color:#374151;">{{course_duration}}</td></tr>
+            <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;width:180px;font-weight:600;color:#111827;vertical-align:top;">Amount Paid</td><td style="padding:10px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:700;">{{amount_paid}}</td></tr>
+            <tr><td style="padding:10px 0;width:180px;font-weight:600;color:#111827;vertical-align:top;">Payment Reference</td><td style="padding:10px 0;color:#374151;">{{payment_id}}</td></tr>
+          </table>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{{dashboard_url}}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:700;">Open My Dashboard</a>
+        </div>
+        <p style="margin:0 0 12px;color:#374151;font-size:15px;line-height:1.7;">
+          You can now access your course and start learning right away.
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;">
+          If you need help, reply to this email and our team will assist you.<br>HTG Infotech Team
+        </p>
+      `,
+    }),
+    tet_template_type: "payment_success",
+    tet_variables: ["user_name", "first_name", "course_title", "course_duration", "amount_paid", "payment_id", "dashboard_url", "receipt_url", "asset_url", "logo_url", "site_name", "site_url", "current_year"],
   },
   sub_admin_password_reset: {
     tet_name: "sub_admin_password_reset",
@@ -411,6 +458,54 @@ const getTransportConfig = (settings?: SystemSettingsMap) => {
   };
 };
 
+export const buildTransportConfigFromInput = (input: {
+  host?: string;
+  port?: number | string;
+  username?: string;
+  password?: string;
+  encryption?: string;
+}) => {
+  const host = String(input.host || "").trim();
+  const rawPort = String(input.port || "587").trim();
+  const port = Number(rawPort || "587");
+  const user = String(input.username || "").trim();
+  const pass = String(input.password || "").trim();
+  const secureMode = String(input.encryption || "").trim().toUpperCase();
+
+  if (!host || !port || !user || !pass) {
+    throw new Error("SMTP configuration is incomplete");
+  }
+
+  const secure = secureMode === "SSL" || port === 465;
+  const requireTLS = secureMode === "TLS" || secureMode === "STARTTLS";
+
+  return {
+    host,
+    port,
+    secure,
+    requireTLS,
+    auth: {
+      user,
+      pass,
+    },
+  };
+};
+
+export const verifySmtpConnection = async (transportConfig: {
+  host: string;
+  port: number;
+  secure: boolean;
+  requireTLS: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}) => {
+  const { default: nodemailer } = await import("npm:nodemailer@6.10.1");
+  const transporter = nodemailer.createTransport(transportConfig);
+  await transporter.verify();
+};
+
 export const sendSmtpEmail = async ({
   to,
   subject,
@@ -428,8 +523,8 @@ export const sendSmtpEmail = async ({
   replyTo?: string;
   settings?: SystemSettingsMap;
 }) => {
-  const { default: nodemailer } = await import("npm:nodemailer@6.10.1");
   const transportConfig = getTransportConfig(settings);
+  const { default: nodemailer } = await import("npm:nodemailer@6.10.1");
   const transporter = nodemailer.createTransport(transportConfig);
   const normalizedSubject = normalizeEmailMarkup(subject);
   const normalizedHtml = normalizeEmailMarkup(html);
@@ -480,7 +575,7 @@ export const renderEmailMarkup = (
 ) => replaceTemplatePlaceholders(stripWordBreakTags(html), variables);
 
 const TEMPLATE_NAME_ALIASES: Record<
-  "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
+  "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "payment_success" | "sub_admin_password_reset",
   string[]
 > = {
   verification_email: ["verification_email", "VERIFICATION_EMAIL", "Verification Email"],
@@ -488,6 +583,7 @@ const TEMPLATE_NAME_ALIASES: Record<
   contact_admin_email: ["contact_admin_email", "CONTACT_ADMIN_EMAIL", "Contact Admin Email"],
   contact_confirmation_email: ["contact_confirmation_email", "CONTACT_CONFIRMATION_EMAIL", "Contact Confirmation Email"],
   password_reset: ["password_reset", "PASSWORD_RESET", "Password Reset"],
+  payment_success: ["payment_success", "PAYMENT_SUCCESS", "Payment Success"],
   sub_admin_password_reset: ["sub_admin_password_reset", "SUB_ADMIN_PASSWORD_RESET", "Sub Admin Password Reset"],
 };
 
@@ -503,7 +599,7 @@ const hasBrokenLogoMarkup = (value: string) =>
   /<img[^>]+src=(['"])\s*\1/i.test(value);
 
 const shouldUseDefaultTemplate = (
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "payment_success" | "sub_admin_password_reset",
   template?: EmailTemplateRecord | null,
 ) => {
   if (!template) {
@@ -553,7 +649,7 @@ const renderDefaultEmailTemplate = ({
   variables,
   branding,
 }: {
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset";
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "payment_success" | "sub_admin_password_reset";
   variables: Record<string, string>;
   branding: BrandingSettings;
 }) => {
@@ -584,7 +680,7 @@ const renderDefaultEmailTemplate = ({
 
 export const getEmailTemplate = async (
   supabase: any,
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset",
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "payment_success" | "sub_admin_password_reset",
 ) => {
   const selectColumns = "tet_name, tet_subject, tet_body, tet_html_body, tet_template_type, tet_variables";
   const candidateNames = TEMPLATE_NAME_ALIASES[templateName];
@@ -620,7 +716,7 @@ export const renderEmailTemplate = async ({
   branding,
 }: {
   supabase: any;
-  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "sub_admin_password_reset";
+  templateName: "verification_email" | "welcome_email" | "contact_admin_email" | "contact_confirmation_email" | "password_reset" | "payment_success" | "sub_admin_password_reset";
   variables: Record<string, string>;
   branding: BrandingSettings;
 }) => {
@@ -715,6 +811,40 @@ export const buildPasswordResetEmailContent = async ({
       user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
       first_name: resolvedFirstName,
       reset_password_link: resetPasswordLink,
+    },
+  });
+};
+
+export const buildPaymentSuccessEmailContent = async ({
+  supabase,
+  firstName,
+  lastName,
+  courseTitle,
+  courseDuration,
+  amount,
+  currency,
+  paymentId,
+  receiptUrl,
+  dashboardUrl,
+  branding,
+}: PaymentSuccessEmailPayload & { supabase: any }) => {
+  const resolvedFirstName = normalizeFirstName(firstName);
+  const resolvedLastName = String(lastName ?? "").trim();
+  const normalizedCurrency = String(currency || "usd").trim().toUpperCase();
+  const formattedAmount = `${normalizedCurrency} ${Number(amount || 0).toFixed(2)}`;
+
+  return renderDefaultEmailTemplate({
+    templateName: "payment_success",
+    branding,
+    variables: {
+      user_name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
+      first_name: resolvedFirstName,
+      course_title: courseTitle,
+      course_duration: courseDuration,
+      amount_paid: formattedAmount,
+      payment_id: paymentId,
+      receipt_url: receiptUrl || "",
+      dashboard_url: dashboardUrl,
     },
   });
 };

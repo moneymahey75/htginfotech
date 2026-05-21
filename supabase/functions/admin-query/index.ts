@@ -150,6 +150,9 @@ Deno.serve(async (req: Request) => {
             if (key.endsWith('_neq')) {
               const column = key.replace('_neq', '');
               query = query.neq(column, value);
+            } else if (key.endsWith('_is')) {
+              const column = key.replace('_is', '');
+              query = query.is(column, value);
             } else if (key.endsWith('_in')) {
               const column = key.replace('_in', '');
               query = query.in(column, value);
@@ -192,7 +195,18 @@ Deno.serve(async (req: Request) => {
         // Apply filters for update
         if (filters) {
           for (const [key, value] of Object.entries(filters)) {
-            query = query.eq(key, value);
+            if (key.endsWith('_neq')) {
+              const column = key.replace('_neq', '');
+              query = query.neq(column, value);
+            } else if (key.endsWith('_is')) {
+              const column = key.replace('_is', '');
+              query = query.is(column, value);
+            } else if (key.endsWith('_in')) {
+              const column = key.replace('_in', '');
+              query = query.in(column, value);
+            } else {
+              query = query.eq(key, value);
+            }
           }
         }
 
@@ -207,7 +221,18 @@ Deno.serve(async (req: Request) => {
         // Apply filters for delete
         if (filters) {
           for (const [key, value] of Object.entries(filters)) {
-            query = query.eq(key, value);
+            if (key.endsWith('_neq')) {
+              const column = key.replace('_neq', '');
+              query = query.neq(column, value);
+            } else if (key.endsWith('_is')) {
+              const column = key.replace('_is', '');
+              query = query.is(column, value);
+            } else if (key.endsWith('_in')) {
+              const column = key.replace('_in', '');
+              query = query.in(column, value);
+            } else {
+              query = query.eq(key, value);
+            }
           }
         }
         break;

@@ -22,6 +22,13 @@ interface Slider {
     ts_updated_by?: string | null;
 }
 
+interface SliderConfirmationState {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    action: () => Promise<void> | void;
+}
+
 const SliderManagement: React.FC = () => {
     const { hasPermission } = useAdminAuth();
     const [sliders, setSliders] = useState<Slider[]>([]);
@@ -35,6 +42,7 @@ const SliderManagement: React.FC = () => {
     const [activeTab, setActiveTab] = useState('details');
     const [isCreating, setIsCreating] = useState(false);
     const [updatingSliderId, setUpdatingSliderId] = useState<string | null>(null);
+    const [confirmation, setConfirmation] = useState<SliderConfirmationState | null>(null);
     const notification = useNotification();
     const canWriteSliders = hasPermission('sliders', 'write');
     const canDeleteSliders = hasPermission('sliders', 'delete');
@@ -102,7 +110,8 @@ const SliderManagement: React.FC = () => {
     };
 
     const handleDeleteSlider = async (sliderId: string) => {
-        if (!confirm('Are you sure you want to delete this slider? This action cannot be undone.')) {
+        if (!canDeleteSliders) {
+            notification?.showError('Access Denied', 'You do not have permission to delete sliders');
             return;
         }
 
@@ -157,6 +166,34 @@ const SliderManagement: React.FC = () => {
         } finally {
             setUpdatingSliderId(null);
         }
+    };
+
+    const requestSliderStatusChange = (slider: Slider) => {
+        setConfirmation({
+            title: slider.ts_is_active ? 'Deactivate Slider?' : 'Activate Slider?',
+            description: `Are you sure you want to ${slider.ts_is_active ? 'deactivate' : 'activate'} "${slider.ts_title}"?`,
+            confirmLabel: slider.ts_is_active ? 'Deactivate' : 'Activate',
+            action: () => handleToggleStatus(slider, slider.ts_is_active)
+        });
+    };
+
+    const requestSliderDelete = (slider: Slider) => {
+        setConfirmation({
+            title: 'Delete Slider?',
+            description: `Are you sure you want to delete "${slider.ts_title}"? This action cannot be undone.`,
+            confirmLabel: 'Delete Slider',
+            action: () => handleDeleteSlider(slider.ts_id)
+        });
+    };
+
+    const handleConfirmAction = async () => {
+        if (!confirmation) {
+            return;
+        }
+
+        const action = confirmation.action;
+        setConfirmation(null);
+        await action();
     };
 
     const handleUpdateSortOrder = async (sliderId: string, newSortOrder: number) => {
@@ -231,6 +268,7 @@ const SliderManagement: React.FC = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 isCreating={isCreating}
+                canWriteSliders={canWriteSliders}
             />
         );
     }
@@ -380,7 +418,7 @@ const SliderManagement: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                   <button
                       type="button"
-                      onClick={() => handleToggleStatus(slider, slider.ts_is_active)}
+                      onClick={() => requestSliderStatusChange(slider)}
                       disabled={updatingSliderId === slider.ts_id}
                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                           slider.ts_is_active
@@ -415,7 +453,7 @@ const SliderManagement: React.FC = () => {
                                     </button>
                                     {canDeleteSliders && (
                                         <button
-                                            onClick={() => handleDeleteSlider(slider.ts_id)}
+                                            onClick={() => requestSliderDelete(slider)}
                                             className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                                             title="Delete"
                                         >
@@ -442,6 +480,40 @@ const SliderManagement: React.FC = () => {
                     </p>
                 </div>
             )}
+
+            {confirmation && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                        <div className="border-b border-gray-200 px-6 py-5">
+                            <div className="flex items-start space-x-3">
+                                <div className="rounded-full bg-amber-100 p-2">
+                                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-semibold text-gray-900">{confirmation.title}</h4>
+                                    <p className="mt-1 text-sm text-gray-600">{confirmation.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end space-x-3 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmation(null)}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmAction}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                            >
+                                {confirmation.confirmLabel}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -456,7 +528,8 @@ const SliderDetails: React.FC<{
     activeTab: string;
     setActiveTab: (tab: string) => void;
     isCreating: boolean;
-}> = ({ slider, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, isCreating }) => {
+    canWriteSliders: boolean;
+}> = ({ slider, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, isCreating, canWriteSliders }) => {
     const [loading, setLoading] = useState(false);
     const [editData, setEditData] = useState({
         ts_title: '',
@@ -504,6 +577,11 @@ const SliderDetails: React.FC<{
     }, [slider, isCreating]);
 
     const handleSave = async () => {
+        if (!canWriteSliders) {
+            notification.showError('Access Denied', 'You do not have permission to update sliders');
+            return;
+        }
+
         // Validate required fields
         if (!editData.ts_title.trim()) {
             notification.showError('Validation Error', 'Title is required');
@@ -613,7 +691,7 @@ const SliderDetails: React.FC<{
                         </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                        {activeTab === 'details' && (
+                        {activeTab === 'details' && canWriteSliders && (
                             <>
                                 {editMode ? (
                                     <div className="flex space-x-2">

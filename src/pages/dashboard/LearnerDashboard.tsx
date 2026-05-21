@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getUserEnrollments, supabase } from '../../lib/supabase';
 import PaymentHistory from '../../components/learner/PaymentHistory';
 import VideoLibrary from '../../components/learner/VideoLibrary';
+import CourseImage from '../../components/ui/CourseImage';
 import {
   BookOpen,
   TrendingUp,
@@ -492,10 +493,12 @@ const LearnerDashboard: React.FC = () => {
                           {enrollments.map((enrollment) => (
                               <div key={enrollment.tce_id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100">
                                 <div className="relative">
-                                  <img
+                                  <CourseImage
                                       src={enrollment.tbl_courses?.tc_thumbnail_url}
                                       alt={enrollment.tbl_courses?.tc_title}
-                                      className="w-full h-48 object-cover rounded-t-xl"
+                                      className="w-full h-48 rounded-t-xl"
+                                      imageClassName="object-cover"
+                                      fallbackClassName="object-contain opacity-20 p-6 bg-gray-50"
                                   />
                                   <div className="absolute top-4 left-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(enrollment.tbl_courses?.tc_difficulty_level)}`}>
@@ -594,10 +597,12 @@ const LearnerDashboard: React.FC = () => {
                       {enrollments.map((enrollment) => (
                           <div key={enrollment.tce_id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
                             <div className="flex items-center space-x-4">
-                              <img
+                              <CourseImage
                                   src={enrollment.tbl_courses?.tc_thumbnail_url}
                                   alt={enrollment.tbl_courses?.tc_title}
-                                  className="w-16 h-16 rounded-lg object-cover"
+                                  className="w-16 h-16 rounded-lg"
+                                  imageClassName="object-cover"
+                                  fallbackClassName="object-contain opacity-20 p-3 bg-gray-50"
                               />
                               <div className="flex-1">
                                 <h4 className="font-semibold text-gray-900">{enrollment.tbl_courses?.tc_title}</h4>

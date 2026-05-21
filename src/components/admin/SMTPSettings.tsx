@@ -82,23 +82,34 @@ const SMTPSettings: React.FC = () => {
     setResult(null);
 
     try {
-      // Simulate SMTP test - in production, this would test via Supabase
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock test result
-      const isValid = formData.host && formData.port && formData.username && formData.password && formData.encryption;
-      
-      if (isValid) {
-        setResult({
-          success: true,
-          message: 'SMTP configuration looks valid.'
-        });
-      } else {
-        setResult({
-          success: false,
-          message: 'SMTP configuration incomplete. Please fill all required fields.'
-        });
+      const normalizedFormData = {
+        host: formData.host.trim(),
+        port: Number(formData.port) || 587,
+        username: formData.username.trim(),
+        password: formData.password.trim(),
+        encryption: formData.encryption.trim().toUpperCase()
+      };
+
+      if (!normalizedFormData.host || !normalizedFormData.username || !normalizedFormData.password || !normalizedFormData.encryption) {
+        throw new Error('SMTP configuration incomplete. Please fill all required fields.');
       }
+
+      const { data, error } = await supabase.functions.invoke('test-smtp-connection', {
+        body: normalizedFormData
+      });
+
+      if (error) {
+        throw new Error(error.message || 'SMTP test failed.');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'SMTP test failed.');
+      }
+
+      setResult({
+        success: true,
+        message: data?.message || 'SMTP authentication succeeded.'
+      });
     } catch (error: any) {
       setResult({
         success: false,

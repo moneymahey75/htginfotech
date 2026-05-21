@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, getCourseById, enrollInCourse } from '../lib/supabase';
-import { buildAssetUrl, getBaseUrl } from '../utils/baseUrl';
+import { getBaseUrl } from '../utils/baseUrl';
+import CourseImage from '../components/ui/CourseImage';
 import { 
   Clock, 
   Users, 
@@ -51,8 +52,6 @@ interface Course {
   tbl_course_content: CourseContent[];
 }
 
-const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
-
 const CourseDetails: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const { user } = useAuth();
@@ -100,19 +99,6 @@ const CourseDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCourseImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const image = event.currentTarget;
-
-    if (image.src.endsWith(COURSE_FALLBACK_IMAGE)) {
-      return;
-    }
-
-    image.src = COURSE_FALLBACK_IMAGE;
-    image.classList.remove('object-cover');
-    image.classList.add('object-contain', 'opacity-20', 'p-6');
-    image.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-50');
   };
 
   const handleEnroll = async () => {
@@ -402,11 +388,12 @@ const CourseDetails: React.FC = () => {
 
             {/* Course Image */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-              <img
+              <CourseImage
                 src={course.tc_thumbnail_url}
                 alt={course.tc_title}
-                className="w-full h-64 object-cover"
-                onError={handleCourseImageError}
+                className="w-full h-64"
+                imageClassName="object-cover"
+                fallbackClassName="object-contain opacity-20 p-6 bg-gray-50"
               />
             </div>
 
@@ -604,11 +591,12 @@ const CourseDetails: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
               {/* Course Preview */}
               <div className="relative mb-6">
-                <img
+                <CourseImage
                   src={course.tc_thumbnail_url}
                   alt={course.tc_title}
-                  className="w-full h-48 object-cover rounded-lg"
-                  onError={handleCourseImageError}
+                  className="w-full h-48 rounded-lg"
+                  imageClassName="object-cover"
+                  fallbackClassName="object-contain opacity-20 p-6 bg-gray-50 rounded-lg"
                 />
                 <button className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg hover:bg-opacity-60 transition-colors">
                   <div className="bg-white rounded-full p-3">

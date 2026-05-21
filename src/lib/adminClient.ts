@@ -187,6 +187,11 @@ class AdminQueryBuilder {
     return this;
   }
 
+  is(column: string, value: any) {
+    this.filters[`${column}_is`] = value;
+    return this;
+  }
+
   order(column: string, options?: { ascending?: boolean }) {
     this.orderConfig = { column, ascending: options?.ascending ?? true };
     return this;

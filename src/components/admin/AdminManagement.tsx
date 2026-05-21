@@ -11,7 +11,8 @@ import {
   UserCheck,
   UserX,
   Key,
-  Save
+  Save,
+  AlertCircle
 } from 'lucide-react';
 
 interface SubAdmin {
@@ -23,6 +24,13 @@ interface SubAdmin {
   createdBy: string;
   lastLogin?: string;
   createdAt: string;
+}
+
+interface AdminConfirmationState {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  action: () => Promise<void> | void;
 }
 
 const permissionModuleLabels: Record<Exclude<PermissionModule, 'admins'>, string> = {
@@ -81,6 +89,7 @@ const AdminManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<AdminConfirmationState | null>(null);
 
   const [newSubAdmin, setNewSubAdmin] = useState(createDefaultSubAdminForm);
 
@@ -176,24 +185,57 @@ const AdminManagement: React.FC = () => {
   };
 
   const handleResetPassword = async (subAdminId: string) => {
-    if (confirm('Are you sure you want to reset this sub-admin\'s password?')) {
-      try {
-        await resetSubAdminPassword(subAdminId);
-      } catch (error) {
-        console.error('Failed to reset password:', error);
-      }
+    try {
+      await resetSubAdminPassword(subAdminId);
+    } catch (error) {
+      console.error('Failed to reset password:', error);
     }
   };
 
   const handleDeleteSubAdmin = async (subAdminId: string) => {
-    if (confirm('Are you sure you want to delete this sub-admin? This action cannot be undone.')) {
-      try {
-        await deleteSubAdmin(subAdminId);
-        loadSubAdmins();
-      } catch (error) {
-        console.error('Failed to delete sub-admin:', error);
-      }
+    try {
+      await deleteSubAdmin(subAdminId);
+      loadSubAdmins();
+    } catch (error) {
+      console.error('Failed to delete sub-admin:', error);
     }
+  };
+
+  const requestSubAdminStatusChange = (subAdmin: SubAdmin) => {
+    setConfirmation({
+      title: subAdmin.isActive ? 'Deactivate Sub-Admin?' : 'Activate Sub-Admin?',
+      description: `Are you sure you want to ${subAdmin.isActive ? 'deactivate' : 'activate'} ${subAdmin.fullName}?`,
+      confirmLabel: subAdmin.isActive ? 'Deactivate' : 'Activate',
+      action: () => handleToggleStatus(subAdmin.id, subAdmin.isActive)
+    });
+  };
+
+  const requestResetPassword = (subAdmin: SubAdmin) => {
+    setConfirmation({
+      title: 'Reset Password?',
+      description: `Are you sure you want to reset the password for ${subAdmin.fullName}?`,
+      confirmLabel: 'Reset Password',
+      action: () => handleResetPassword(subAdmin.id)
+    });
+  };
+
+  const requestDeleteSubAdmin = (subAdmin: SubAdmin) => {
+    setConfirmation({
+      title: 'Delete Sub-Admin?',
+      description: `Are you sure you want to delete ${subAdmin.fullName}? This action cannot be undone.`,
+      confirmLabel: 'Delete Sub-Admin',
+      action: () => handleDeleteSubAdmin(subAdmin.id)
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmation) {
+      return;
+    }
+
+    const action = confirmation.action;
+    setConfirmation(null);
+    await action();
   };
 
   const handleOpenEditModal = (subAdmin: SubAdmin) => {
@@ -490,7 +532,7 @@ const AdminManagement: React.FC = () => {
                         aria-checked={subAdmin.isActive}
                         aria-label={subAdmin.isActive ? 'Deactivate sub-admin' : 'Activate sub-admin'}
                         disabled={statusUpdatingId === subAdmin.id}
-                        onClick={() => handleToggleStatus(subAdmin.id, subAdmin.isActive)}
+                        onClick={() => requestSubAdminStatusChange(subAdmin)}
                         className={`inline-flex items-center gap-3 rounded-full border px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                             subAdmin.isActive
                                 ? 'border-green-200 bg-green-50 text-green-800 hover:bg-green-100'
@@ -550,7 +592,7 @@ const AdminManagement: React.FC = () => {
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                                onClick={() => handleResetPassword(subAdmin.id)}
+                                onClick={() => requestResetPassword(subAdmin)}
                                 className="text-yellow-600 hover:text-yellow-800"
                                 title="Reset Password"
                             >
@@ -560,7 +602,7 @@ const AdminManagement: React.FC = () => {
                       )}
                       {hasPermission('admins', 'delete') && (
                           <button
-                              onClick={() => handleDeleteSubAdmin(subAdmin.id)}
+                              onClick={() => requestDeleteSubAdmin(subAdmin)}
                               className="text-red-600 hover:text-red-800"
                               title="Delete Sub-Admin"
                           >
@@ -593,6 +635,40 @@ const AdminManagement: React.FC = () => {
                     Create Sub-Admin
                   </button>
               )}
+            </div>
+        )}
+
+        {confirmation && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+              <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                <div className="border-b border-gray-200 px-6 py-5">
+                  <div className="flex items-start space-x-3">
+                    <div className="rounded-full bg-amber-100 p-2">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900">{confirmation.title}</h4>
+                      <p className="mt-1 text-sm text-gray-600">{confirmation.description}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end space-x-3 px-6 py-4">
+                  <button
+                      type="button"
+                      onClick={() => setConfirmation(null)}
+                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                      type="button"
+                      onClick={handleConfirmAction}
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                  >
+                    {confirmation.confirmLabel}
+                  </button>
+                </div>
+              </div>
             </div>
         )}
 

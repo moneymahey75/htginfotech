@@ -54,6 +54,13 @@ interface Assignment {
   };
 }
 
+interface TutorConfirmationState {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  action: () => Promise<void> | void;
+}
+
 // Skeleton Loader for Table Rows
 const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
   return (
@@ -133,6 +140,7 @@ const TutorManagement: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [updatingTutorId, setUpdatingTutorId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<TutorConfirmationState | null>(null);
 
   const notification = useNotification();
   const canWriteTutors = hasPermission('tutors', 'write');
@@ -315,6 +323,7 @@ const TutorManagement: React.FC = () => {
 
   const handleToggleStatus = async (tutor: Tutor, currentStatus: boolean) => {
     try {
+      const profile = getProfile(tutor);
       setUpdatingTutorId(tutor.tu_id);
       const { error } = await supabase
           .from('tbl_users')
@@ -323,7 +332,6 @@ const TutorManagement: React.FC = () => {
 
       if (error) throw error;
 
-      const profile = getProfile(tutor);
       notification.showSuccess(
           'Status Updated',
           `Tutor ${profile?.tup_first_name || 'account'} has been ${!currentStatus ? 'activated' : 'deactivated'}`
@@ -365,6 +373,42 @@ const TutorManagement: React.FC = () => {
     } finally {
       setUpdatingTutorId(null);
     }
+  };
+
+  const requestTutorStatusChange = (tutor: Tutor) => {
+    const profile = getProfile(tutor);
+    const tutorName = profile?.tup_first_name || tutor.tu_email;
+
+    setConfirmation({
+      title: tutor.tu_is_active ? 'Deactivate Tutor?' : 'Activate Tutor?',
+      description: `Are you sure you want to ${tutor.tu_is_active ? 'deactivate' : 'activate'} ${tutorName}?`,
+      confirmLabel: tutor.tu_is_active ? 'Deactivate' : 'Activate',
+      action: () => handleToggleStatus(tutor, tutor.tu_is_active)
+    });
+  };
+
+  const requestTutorVerificationChange = (tutor: Tutor) => {
+    const profile = getProfile(tutor);
+    const tutorInfo = getTutorInfo(tutor);
+    const tutorName = profile?.tup_first_name || tutor.tu_email;
+    const nextVerified = !Boolean(tutorInfo?.tt_is_verified);
+
+    setConfirmation({
+      title: nextVerified ? 'Verify Tutor?' : 'Remove Tutor Verification?',
+      description: `Are you sure you want to ${nextVerified ? 'verify' : 'remove verification for'} ${tutorName}?`,
+      confirmLabel: nextVerified ? 'Verify Tutor' : 'Remove Verification',
+      action: () => handleVerifyTutor(tutor)
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmation) {
+      return;
+    }
+
+    const action = confirmation.action;
+    setConfirmation(null);
+    await action();
   };
 
   const refreshSelectedTutor = async (tutorId: string) => {
@@ -528,6 +572,7 @@ const TutorManagement: React.FC = () => {
             setActiveTab={setActiveTab}
             getProfile={getProfile}
             getTutorInfo={getTutorInfo}
+            canWriteTutors={canWriteTutors}
         />
     );
   }
@@ -721,7 +766,7 @@ const TutorManagement: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                         <button
                             type="button"
-                            onClick={() => handleVerifyTutor(tutor)}
+                            onClick={() => requestTutorVerificationChange(tutor)}
                             disabled={isUpdating}
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                             tutorInfo?.tt_is_verified
@@ -744,7 +789,7 @@ const TutorManagement: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                         <button
                             type="button"
-                            onClick={() => handleToggleStatus(tutor, tutor.tu_is_active)}
+                            onClick={() => requestTutorStatusChange(tutor)}
                             disabled={isUpdating}
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                             tutor.tu_is_active
@@ -868,6 +913,40 @@ const TutorManagement: React.FC = () => {
             </div>
         )}
 
+        {confirmation && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+              <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                <div className="border-b border-gray-200 px-6 py-5">
+                  <div className="flex items-start space-x-3">
+                    <div className="rounded-full bg-amber-100 p-2">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900">{confirmation.title}</h4>
+                      <p className="mt-1 text-sm text-gray-600">{confirmation.description}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end space-x-3 px-6 py-4">
+                  <button
+                      type="button"
+                      onClick={() => setConfirmation(null)}
+                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                      type="button"
+                      onClick={handleConfirmAction}
+                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+                  >
+                    {confirmation.confirmLabel}
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+
         {filteredTutors.length === 0 && !listLoading && (
             <div className="text-center py-12">
               <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -895,7 +974,19 @@ const TutorDetails: React.FC<{
   setActiveTab: (tab: string) => void;
   getProfile: (tutor: Tutor) => any;
   getTutorInfo: (tutor: Tutor) => any;
-}> = ({ tutor, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, getProfile, getTutorInfo }) => {
+  canWriteTutors: boolean;
+}> = ({
+  tutor,
+  onBack,
+  onUpdate,
+  editMode,
+  setEditMode,
+  activeTab,
+  setActiveTab,
+  getProfile,
+  getTutorInfo,
+  canWriteTutors
+}) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentTutor, setCurrentTutor] = useState<Tutor>(tutor);
@@ -1033,6 +1124,11 @@ const TutorDetails: React.FC<{
   };
 
   const handleSaveEdit = async () => {
+    if (!canWriteTutors) {
+      notification.showError('Access Denied', 'You do not have permission to update tutors');
+      return;
+    }
+
     try {
       // Update tbl_users table
       const { error: userError } = await supabase

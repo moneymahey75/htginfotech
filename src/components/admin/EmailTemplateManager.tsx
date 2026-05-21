@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import {
   AlertCircle,
   CheckCircle2,
   Eye,
   FileText,
   Loader2,
-  Mail,
-  Pencil,
   Plus,
   RefreshCw,
   X,
@@ -69,9 +66,6 @@ interface ToastMessage {
   type: 'success' | 'error';
   message: string;
 }
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const modalBackdropClassName = 'fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 py-6';
 const modalPanelClassName = 'flex w-full max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5';
@@ -159,20 +153,6 @@ const buildInsertPayload = (template: typeof emailTemplateDefaults[number]) => (
   tet_metadata: {},
 });
 
-const getFunctionClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return null;
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-  });
-};
-
 const ModalShell = ({
   title,
   description,
@@ -258,17 +238,12 @@ const EmailTemplateManager: React.FC = () => {
   const [templates, setTemplates] = useState<EmailTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [sendingTest, setSendingTest] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplateRow | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplateRow | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [formState, setFormState] = useState<EmailTemplateFormState>(createEmptyFormState);
-  const [testTemplate, setTestTemplate] = useState<EmailTemplateRow | null>(null);
-  const [testEmail, setTestEmail] = useState('');
-
-  const functionClient = useMemo(() => getFunctionClient(), []);
 
   const supportedPlaceholders = useMemo(() => {
     const values = new Set(FALLBACK_PLACEHOLDERS);
@@ -308,7 +283,6 @@ const EmailTemplateManager: React.FC = () => {
     );
     setPreviewTemplate((current) => (current?.tet_id === template.tet_id ? template : current));
     setEditingTemplate((current) => (current?.tet_id === template.tet_id ? template : current));
-    setTestTemplate((current) => (current?.tet_id === template.tet_id ? template : current));
   };
 
   const loadTemplates = async () => {
@@ -408,11 +382,6 @@ const EmailTemplateManager: React.FC = () => {
 
       if (previewTemplate?.tet_id === template.tet_id) {
         setPreviewTemplate(null);
-      }
-
-      if (testTemplate?.tet_id === template.tet_id) {
-        setTestTemplate(null);
-        setTestEmail('');
       }
 
       if (editingTemplate?.tet_id === template.tet_id) {
@@ -566,54 +535,6 @@ const EmailTemplateManager: React.FC = () => {
     }
   };
 
-  const handleSendTestEmail = async () => {
-    if (!functionClient || !testTemplate) {
-      return;
-    }
-
-    const normalizedEmail = testEmail.trim();
-    if (!emailPattern.test(normalizedEmail)) {
-      setError('Please enter a valid test email address.');
-      return;
-    }
-
-    setSendingTest(true);
-    setError(null);
-
-    try {
-      const adminSession =
-        typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') || '' : '';
-
-      const { data, error: invokeError } = await functionClient.functions.invoke('send-template-test-email', {
-        body: {
-          templateName: testTemplate.tet_name,
-          email: normalizedEmail,
-        },
-        headers: {
-          'X-Admin-Session': adminSession,
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'apikey': supabaseAnonKey,
-        },
-      });
-
-      if (invokeError) {
-        throw invokeError;
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Failed to send test email.');
-      }
-
-      pushToast('success', `Test email sent to ${normalizedEmail}.`);
-      setTestEmail('');
-      setTestTemplate(null);
-    } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : 'Failed to send test email.');
-    } finally {
-      setSendingTest(false);
-    }
-  };
-
   return (
     <div className="mt-8 border-t border-gray-200 pt-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -721,29 +642,6 @@ const EmailTemplateManager: React.FC = () => {
                       >
                         <Eye className="h-4 w-4" />
                         <span className="sr-only">View</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(template)}
-                        title="Edit template"
-                        aria-label={`Edit ${formatTemplateName(template.tet_name)}`}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-amber-300 text-amber-700 transition hover:bg-amber-50"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTestTemplate(template);
-                          setTestEmail('');
-                        }}
-                        title="Send test email"
-                        aria-label={`Send test email for ${formatTemplateName(template.tet_name)}`}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-indigo-300 text-indigo-700 transition hover:bg-indigo-50"
-                      >
-                        <Mail className="h-4 w-4" />
-                        <span className="sr-only">Send Test Email</span>
                       </button>
                     </div>
                   </td>
@@ -875,53 +773,6 @@ const EmailTemplateManager: React.FC = () => {
                 sandbox="allow-popups allow-popups-to-escape-sandbox"
               />
             </div>
-          </div>
-        </ModalShell>
-      ) : null}
-
-      {testTemplate ? (
-        <ModalShell
-          title="Send Test Email"
-          description={`Send a test copy of ${formatTemplateName(testTemplate.tet_name)} to any email address.`}
-          onClose={() => {
-            if (!sendingTest) {
-              setTestTemplate(null);
-              setTestEmail('');
-            }
-          }}
-          maxWidth="max-w-md"
-        >
-          <div className="space-y-5 px-6 py-5">
-            <Field label="Email Address" required>
-              <input
-                type="email"
-                value={testEmail}
-                onChange={(event) => setTestEmail(event.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                placeholder="test@example.com"
-              />
-            </Field>
-          </div>
-          <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => {
-                setTestTemplate(null);
-                setTestEmail('');
-              }}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSendTestEmail}
-              disabled={sendingTest}
-              className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {sendingTest ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-              {sendingTest ? 'Sending...' : 'Send Test Email'}
-            </button>
           </div>
         </ModalShell>
       ) : null}

@@ -1,23 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/adminClient';
-import { AlertCircle, CheckCircle, CreditCard, Save, Settings2 } from 'lucide-react';
-
-type ChargeType = 'direct_charges' | 'destination_charges';
+import { AlertCircle, CheckCircle, ChevronDown, CreditCard, Save, Settings2 } from 'lucide-react';
 type ControllerLossesPayments = 'stripe' | 'application';
 type ControllerFeesPayer = 'account' | 'application';
 type ControllerRequirementCollection = 'stripe' | 'application';
 type StripeDashboardType = 'full' | 'express' | 'none';
 type AccountRole = 'primary_recipient' | 'secondary_recipient';
+type SupportedCurrency = 'aud' | 'usd' | 'inr';
 
 interface StripeConfig {
     tsc_id?: string;
     tsc_publishable_key: string;
     tsc_secret_key: string;
-    tsc_webhook_secret: string;
-    tsc_platform_fee_percentage: number;
     tsc_is_live_mode: boolean;
-    tsc_connect_charge_type: ChargeType;
-    tsc_default_currency: string;
+    tsc_default_currency: SupportedCurrency;
     tsc_split_primary_percentage: number;
     tsc_split_secondary_percentage: number;
     tsc_split_is_fixed: boolean;
@@ -41,11 +37,8 @@ interface StripeConnectAccount {
 const defaultConfig: StripeConfig = {
     tsc_publishable_key: '',
     tsc_secret_key: '',
-    tsc_webhook_secret: '',
-    tsc_platform_fee_percentage: 0,
     tsc_is_live_mode: false,
-    tsc_connect_charge_type: 'direct_charges',
-    tsc_default_currency: 'usd',
+    tsc_default_currency: 'aud',
     tsc_split_primary_percentage: 70,
     tsc_split_secondary_percentage: 30,
     tsc_split_is_fixed: true,
@@ -93,17 +86,74 @@ const StripeConnectSettings: React.FC = () => {
         [config.tsc_split_primary_percentage, config.tsc_split_secondary_percentage]
     );
 
+    const normalizeSplitPercentage = (value: number) => {
+        if (!Number.isFinite(value)) {
+            return 0;
+        }
+
+        return Math.min(100, Math.max(0, Number(value.toFixed(2))));
+    };
+
+    const normalizeCurrency = (value: unknown): SupportedCurrency => {
+        const normalized = String(value || '')
+            .trim()
+            .toLowerCase();
+
+        if (normalized === 'aud' || normalized === 'usd' || normalized === 'inr') {
+            return normalized;
+        }
+
+        return 'aud';
+    };
+
+    const parseSystemSettingValue = (value: unknown) => {
+        if (typeof value !== 'string') {
+            return value;
+        }
+
+        try {
+            return JSON.parse(value);
+        } catch {
+            return value;
+        }
+    };
+
+    const isMissingColumnError = (error: any) => {
+        const message = String(error?.message || error || '');
+        return (
+            /column .* does not exist/i.test(message) ||
+            /could not find the '.*' column of '.*' in the schema cache/i.test(message)
+        );
+    };
+
     const loadData = async () => {
         try {
             setLoading(true);
             setError('');
 
-            const [configResponse, accountsResponse] = await Promise.all([
+            const [configResponse, accountsResponse, connectEnabledSettingResponse, accountSelectionSettingsResponse, currencySettingResponse] = await Promise.all([
                 supabase.from('tbl_stripe_config').select('*').maybeSingle(),
                 supabase
                     .from('tbl_stripe_connect_accounts')
                     .select('*')
                     .order('tsca_created_at', { ascending: true }),
+                supabase
+                    .from('tbl_system_settings')
+                    .select('tss_setting_value')
+                    .eq('tss_setting_key', 'stripe_connect_enabled')
+                    .maybeSingle(),
+                supabase
+                    .from('tbl_system_settings')
+                    .select('tss_setting_key, tss_setting_value')
+                    .in('tss_setting_key', [
+                        'stripe_primary_connect_account_id',
+                        'stripe_secondary_connect_account_id',
+                    ]),
+                supabase
+                    .from('tbl_system_settings')
+                    .select('tss_setting_value')
+                    .eq('tss_setting_key', 'stripe_default_currency')
+                    .maybeSingle(),
             ]);
 
             if (configResponse.error) {
@@ -114,51 +164,89 @@ const StripeConnectSettings: React.FC = () => {
                 throw accountsResponse.error;
             }
 
+            if (
+                connectEnabledSettingResponse.error &&
+                !isMissingColumnError(connectEnabledSettingResponse.error)
+            ) {
+                throw connectEnabledSettingResponse.error;
+            }
+
+            if (
+                accountSelectionSettingsResponse.error &&
+                !isMissingColumnError(accountSelectionSettingsResponse.error)
+            ) {
+                throw accountSelectionSettingsResponse.error;
+            }
+
+            if (
+                currencySettingResponse.error &&
+                !isMissingColumnError(currencySettingResponse.error)
+            ) {
+                throw currencySettingResponse.error;
+            }
+
             const configData = configResponse.data;
             const accounts = accountsResponse.data || [];
-            const primary =
-                accounts.find((account) => account.tsca_account_role === 'primary_recipient') ||
-                accounts[0];
+            const accountSelectionSettings = (accountSelectionSettingsResponse.data || []).reduce<Record<string, string>>(
+                (acc, row: any) => {
+                    acc[row.tss_setting_key] = String(parseSystemSettingValue(row.tss_setting_value) || '');
+                    return acc;
+                },
+                {}
+            );
+            const fallbackConnectEnabled = (() => {
+                const rawValue = parseSystemSettingValue(connectEnabledSettingResponse.data?.tss_setting_value);
+
+                if (typeof rawValue === 'boolean') {
+                    return rawValue;
+                }
+
+                if (typeof rawValue === 'string') {
+                    try {
+                        return Boolean(JSON.parse(rawValue));
+                    } catch {
+                        return rawValue === 'true';
+                    }
+                }
+
+                return false;
+            })();
+            const fallbackCurrency = normalizeCurrency(
+                parseSystemSettingValue(currencySettingResponse.data?.tss_setting_value)
+            );
+            const configuredSecondaryId = accountSelectionSettings.stripe_secondary_connect_account_id;
             const secondary =
+                accounts.find((account) => account.tsca_id === configuredSecondaryId) ||
                 accounts.find((account) => account.tsca_account_role === 'secondary_recipient') ||
-                accounts.find((account) => account.tsca_id !== primary?.tsca_id) ||
-                accounts[1];
+                accounts[accounts.length - 1] ||
+                accounts[0];
 
             if (configData) {
                 setConfig({
                     tsc_id: configData.tsc_id,
                     tsc_publishable_key: configData.tsc_publishable_key || '',
                     tsc_secret_key: configData.tsc_secret_key || '',
-                    tsc_webhook_secret: configData.tsc_webhook_secret || '',
-                    tsc_platform_fee_percentage: Number(configData.tsc_platform_fee_percentage || 0),
                     tsc_is_live_mode: Boolean(configData.tsc_is_live_mode),
-                    tsc_connect_charge_type: configData.tsc_connect_charge_type || 'direct_charges',
-                    tsc_default_currency: configData.tsc_default_currency || 'usd',
+                    tsc_default_currency: normalizeCurrency(configData.tsc_default_currency ?? fallbackCurrency),
                     tsc_split_primary_percentage: Number(configData.tsc_split_primary_percentage ?? 70),
                     tsc_split_secondary_percentage: Number(configData.tsc_split_secondary_percentage ?? 30),
                     tsc_split_is_fixed: configData.tsc_split_is_fixed ?? true,
-                    tsc_connect_enabled: configData.tsc_connect_enabled ?? false,
+                    tsc_connect_enabled: configData.tsc_connect_enabled ?? fallbackConnectEnabled,
                 });
             } else {
-                setConfig(defaultConfig);
+                setConfig({
+                    ...defaultConfig,
+                    tsc_default_currency: fallbackCurrency,
+                    tsc_connect_enabled: fallbackConnectEnabled,
+                });
             }
 
             setPrimaryAccount(
-                primary
-                    ? {
-                          ...createDefaultAccount(
-                              'primary_recipient',
-                              primary.tsca_account_name || 'Primary Recipient',
-                              Number(primary.tsca_default_split_percentage || 70)
-                          ),
-                          ...primary,
-                          tsca_account_role: 'primary_recipient',
-                      }
-                    : createDefaultAccount(
-                          'primary_recipient',
-                          'Primary Recipient',
-                          Number(configData?.tsc_split_primary_percentage ?? 70)
-                      )
+                createDefaultAccount(
+                    'primary_recipient',
+                    'Platform Account',
+                    Number(configData?.tsc_split_primary_percentage ?? 70)
+                )
             );
 
             setSecondaryAccount(
@@ -208,16 +296,8 @@ const StripeConnectSettings: React.FC = () => {
             return 'Secret key is required.';
         }
 
-        if (!primaryAccount.tsca_account_name.trim() || !primaryAccount.tsca_stripe_account_id.trim()) {
-            return 'Primary recipient account name and Stripe account ID are required.';
-        }
-
         if (!secondaryAccount.tsca_account_name.trim() || !secondaryAccount.tsca_stripe_account_id.trim()) {
             return 'Secondary recipient account name and Stripe account ID are required.';
-        }
-
-        if (primaryAccount.tsca_stripe_account_id.trim() === secondaryAccount.tsca_stripe_account_id.trim()) {
-            return 'Primary and secondary recipient accounts must be different Stripe accounts.';
         }
 
         if (totalSplit !== 100) {
@@ -241,16 +321,31 @@ const StripeConnectSettings: React.FC = () => {
             tsca_capabilities_transfers_requested: account.tsca_capabilities_transfers_requested,
         };
 
-        const query = account.tsca_id
-            ? supabase
-                  .from('tbl_stripe_connect_accounts')
-                  .update(payload)
-                  .eq('tsca_id', account.tsca_id)
-                  .select()
-                  .single()
-            : supabase.from('tbl_stripe_connect_accounts').insert(payload).select().single();
+        const legacyPayload = {
+            tsca_account_name: account.tsca_account_name.trim(),
+            tsca_stripe_account_id: account.tsca_stripe_account_id.trim(),
+            tsca_is_active: account.tsca_is_active,
+            tsca_default_split_percentage: splitPercentage,
+        };
 
-        const { data, error: upsertError } = await query;
+        const executeQuery = async (queryPayload: typeof payload | typeof legacyPayload) => {
+            const query = account.tsca_id
+                ? supabase
+                      .from('tbl_stripe_connect_accounts')
+                      .update(queryPayload)
+                      .eq('tsca_id', account.tsca_id)
+                      .select()
+                      .single()
+                : supabase.from('tbl_stripe_connect_accounts').insert(queryPayload).select().single();
+
+            return query;
+        };
+
+        let { data, error: upsertError } = await executeQuery(payload);
+
+        if (upsertError && isMissingColumnError(upsertError)) {
+            ({ data, error: upsertError } = await executeQuery(legacyPayload));
+        }
 
         if (upsertError) {
             throw upsertError;
@@ -259,7 +354,7 @@ const StripeConnectSettings: React.FC = () => {
         return data;
     };
 
-    const syncGlobalSplits = async (primaryId: string, secondaryId: string) => {
+    const syncGlobalSplits = async (secondaryId: string) => {
         const { error: deleteError } = await supabase
             .from('tbl_payment_splits')
             .delete()
@@ -269,24 +364,69 @@ const StripeConnectSettings: React.FC = () => {
             throw deleteError;
         }
 
-        const { error: insertError } = await supabase.from('tbl_payment_splits').insert([
-            {
-                tps_course_id: null,
-                tps_stripe_account_id: primaryId,
-                tps_split_percentage: config.tsc_split_primary_percentage,
-                tps_is_active: primaryAccount.tsca_is_active,
-            },
+        const { error: insertError } = await supabase.from('tbl_payment_splits').insert(
             {
                 tps_course_id: null,
                 tps_stripe_account_id: secondaryId,
                 tps_split_percentage: config.tsc_split_secondary_percentage,
                 tps_is_active: secondaryAccount.tsca_is_active,
-            },
-        ]);
+            }
+        );
 
         if (insertError) {
             throw insertError;
         }
+    };
+
+    const saveSystemSetting = async (
+        key: string,
+        value: string,
+        description: string
+    ) => {
+        const existingSettingResponse = await supabase
+            .from('tbl_system_settings')
+            .select('tss_setting_key')
+            .eq('tss_setting_key', key)
+            .limit(1)
+            .maybeSingle();
+
+        if (existingSettingResponse.error) {
+            throw existingSettingResponse.error;
+        }
+
+        if (existingSettingResponse.data?.tss_setting_key) {
+            const { error } = await supabase
+                .from('tbl_system_settings')
+                .update({
+                    tss_setting_value: value,
+                    tss_description: description,
+                })
+                .eq('tss_setting_key', key);
+
+            if (error) {
+                throw error;
+            }
+
+            return;
+        }
+
+        const { error } = await supabase.from('tbl_system_settings').insert({
+            tss_setting_key: key,
+            tss_setting_value: value,
+            tss_description: description,
+        });
+
+        if (error) {
+            throw error;
+        }
+    };
+
+    const syncAccountSelectionSettings = async (secondaryId: string) => {
+        await saveSystemSetting(
+            'stripe_secondary_connect_account_id',
+            JSON.stringify(secondaryId),
+            'Secondary Stripe Connect recipient account ID'
+        );
     };
 
     const handleSave = async () => {
@@ -305,10 +445,7 @@ const StripeConnectSettings: React.FC = () => {
             const configPayload = {
                 tsc_publishable_key: config.tsc_publishable_key.trim(),
                 tsc_secret_key: config.tsc_secret_key.trim(),
-                tsc_webhook_secret: config.tsc_webhook_secret.trim(),
-                tsc_platform_fee_percentage: Number(config.tsc_platform_fee_percentage || 0),
                 tsc_is_live_mode: config.tsc_is_live_mode,
-                tsc_connect_charge_type: config.tsc_connect_charge_type,
                 tsc_default_currency: config.tsc_default_currency.trim().toLowerCase(),
                 tsc_split_primary_percentage: Number(config.tsc_split_primary_percentage || 0),
                 tsc_split_secondary_percentage: Number(config.tsc_split_secondary_percentage || 0),
@@ -316,27 +453,79 @@ const StripeConnectSettings: React.FC = () => {
                 tsc_connect_enabled: config.tsc_connect_enabled,
             };
 
-            const configQuery = config.tsc_id
-                ? supabase.from('tbl_stripe_config').update(configPayload).eq('tsc_id', config.tsc_id)
-                : supabase.from('tbl_stripe_config').insert(configPayload);
+            const legacyConfigPayload = {
+                tsc_publishable_key: config.tsc_publishable_key.trim(),
+                tsc_secret_key: config.tsc_secret_key.trim(),
+                tsc_is_live_mode: config.tsc_is_live_mode,
+            };
 
-            const { error: configError } = await configQuery;
-            if (configError) {
-                throw configError;
+            const executeConfigQuery = async (queryPayload: typeof configPayload | typeof legacyConfigPayload) => {
+                const configQuery = config.tsc_id
+                    ? supabase.from('tbl_stripe_config').update(queryPayload).eq('tsc_id', config.tsc_id)
+                    : supabase.from('tbl_stripe_config').insert(queryPayload);
+
+                return configQuery;
+            };
+
+            let { error: configError } = await executeConfigQuery(configPayload);
+            let usedLegacyFallback = false;
+
+            if (configError && isMissingColumnError(configError)) {
+                usedLegacyFallback = true;
+                ({ error: configError } = await executeConfigQuery(legacyConfigPayload));
             }
 
-            const savedPrimary = await upsertRecipientAccount(
-                primaryAccount,
-                Number(config.tsc_split_primary_percentage || 0)
-            );
-            const savedSecondary = await upsertRecipientAccount(
-                secondaryAccount,
-                Number(config.tsc_split_secondary_percentage || 0)
-            );
+            if (configError) {
+                throw new Error(`Stripe config save failed: ${configError.message || configError}`);
+            }
 
-            await syncGlobalSplits(savedPrimary.tsca_id, savedSecondary.tsca_id);
+            try {
+                await saveSystemSetting(
+                    'stripe_connect_enabled',
+                    JSON.stringify(config.tsc_connect_enabled),
+                    'Enable or disable Stripe Connect split payment configuration'
+                );
+            } catch (settingError: any) {
+                throw new Error(`Stripe connect toggle save failed: ${settingError?.message || settingError}`);
+            }
 
-            setSuccess('Stripe Connect configuration saved successfully.');
+            try {
+                await saveSystemSetting(
+                    'stripe_default_currency',
+                    JSON.stringify(normalizeCurrency(config.tsc_default_currency)),
+                    'Default Stripe payment currency'
+                );
+            } catch (currencySettingError: any) {
+                throw new Error(`Stripe currency save failed: ${currencySettingError?.message || currencySettingError}`);
+            }
+
+            let savedSecondary;
+            try {
+                savedSecondary = await upsertRecipientAccount(
+                    secondaryAccount,
+                    Number(config.tsc_split_secondary_percentage || 0)
+                );
+            } catch (secondaryError: any) {
+                throw new Error(`Secondary recipient account save failed: ${secondaryError?.message || secondaryError}`);
+            }
+
+            try {
+                await syncGlobalSplits(savedSecondary.tsca_id);
+            } catch (splitSyncError: any) {
+                throw new Error(`Global split sync failed: ${splitSyncError?.message || splitSyncError}`);
+            }
+
+            try {
+                await syncAccountSelectionSettings(savedSecondary.tsca_id);
+            } catch (accountSelectionError: any) {
+                console.warn('Primary/secondary account selection save skipped:', accountSelectionError);
+            }
+
+            setSuccess(
+                usedLegacyFallback
+                    ? 'Stripe Connect settings saved successfully using legacy database fields.'
+                    : 'Stripe Connect configuration saved successfully.'
+            );
             await loadData();
         } catch (saveError: any) {
             console.error('Failed to save Stripe Connect settings:', saveError);
@@ -386,77 +575,6 @@ const StripeConnectSettings: React.FC = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="acct_..."
                     />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Losses / Payments</label>
-                    <select
-                        value={account.tsca_controller_losses_payments}
-                        onChange={(e) =>
-                            updateAccount(
-                                role,
-                                'tsca_controller_losses_payments',
-                                e.target.value as ControllerLossesPayments
-                            )
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                        <option value="stripe">Stripe</option>
-                        <option value="application">Application</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fees Payer</label>
-                    <select
-                        value={account.tsca_controller_fees_payer}
-                        onChange={(e) =>
-                            updateAccount(role, 'tsca_controller_fees_payer', e.target.value as ControllerFeesPayer)
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                        <option value="account">Account</option>
-                        <option value="application">Application</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Requirement Collection</label>
-                    <select
-                        value={account.tsca_controller_requirement_collection}
-                        onChange={(e) =>
-                            updateAccount(
-                                role,
-                                'tsca_controller_requirement_collection',
-                                e.target.value as ControllerRequirementCollection
-                            )
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                        <option value="stripe">Stripe</option>
-                        <option value="application">Application</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Stripe Dashboard</label>
-                    <select
-                        value={account.tsca_controller_stripe_dashboard_type}
-                        onChange={(e) =>
-                            updateAccount(
-                                role,
-                                'tsca_controller_stripe_dashboard_type',
-                                e.target.value as StripeDashboardType
-                            )
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                        <option value="full">Full</option>
-                        <option value="express">Express</option>
-                        <option value="none">None</option>
-                    </select>
                 </div>
             </div>
 
@@ -514,7 +632,7 @@ const StripeConnectSettings: React.FC = () => {
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">Stripe Connect Configuration</h2>
                         <p className="text-gray-600 mt-1">
-                            Configure Stripe Connect for two fixed recipient accounts with a 70% / 30% split.
+                            Configure Stripe Connect for separate charges and transfers with two fixed recipient accounts.
                         </p>
                     </div>
                 </div>
@@ -525,14 +643,14 @@ const StripeConnectSettings: React.FC = () => {
                     <Settings2 className="h-5 w-5 text-blue-700 mt-0.5" />
                     <div className="space-y-2 text-sm text-blue-900">
                         <p>
-                            Stripe recommended <strong>Direct Charges</strong> for this fixed split use case. The
-                            admin form below stores both the charge strategy and the connected account controller
-                            settings Stripe asked for.
+                            This setup now uses <strong>separate charges and transfers</strong>. The customer payment is
+                            collected on your platform first, your configured primary share stays on the platform,
+                            and Stripe transfers only the secondary share to the connected account.
                         </p>
                         <p>
-                            Required connected account defaults from Stripe are prefilled: losses/payments = `stripe`,
-                            fees payer = `account`, requirement collection = `stripe`, dashboard = `full`, and
-                            transfers capability requested = `true`.
+                            Use this feature when you need one course payment to be split between your platform and one
+                            connected recipient. Enter the secondary connected account ID, keep the percentages at 100%
+                            total, and Stripe will transfer only the secondary percentage after the platform charge succeeds.
                         </p>
                     </div>
                 </div>
@@ -564,61 +682,27 @@ const StripeConnectSettings: React.FC = () => {
                                 placeholder="sk_test_..."
                             />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Webhook Secret</label>
-                            <input
-                                type="password"
-                                value={config.tsc_webhook_secret}
-                                onChange={(e) => updateConfig('tsc_webhook_secret', e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="whsec_..."
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
-                            <input
-                                type="text"
-                                value={config.tsc_default_currency}
-                                onChange={(e) => updateConfig('tsc_default_currency', e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="usd"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Platform Fee %</label>
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                value={config.tsc_platform_fee_percentage}
-                                onChange={(e) =>
-                                    updateConfig('tsc_platform_fee_percentage', Number(e.target.value || 0))
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Charge Strategy</label>
-                            <select
-                                value={config.tsc_connect_charge_type}
-                                onChange={(e) =>
-                                    updateConfig('tsc_connect_charge_type', e.target.value as ChargeType)
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="direct_charges">Direct Charges (recommended)</option>
-                                <option value="destination_charges">Destination Charges</option>
-                            </select>
-                        </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-6 mt-6">
-                        <label className="flex items-center space-x-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_auto] gap-4 mt-6 items-end">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
+                            <div className="relative">
+                                <select
+                                    value={config.tsc_default_currency}
+                                    onChange={(e) =>
+                                        updateConfig('tsc_default_currency', normalizeCurrency(e.target.value))
+                                    }
+                                    className="w-full appearance-none bg-white px-4 py-3 pr-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="aud">AUD</option>
+                                    <option value="usd">USD</option>
+                                    <option value="inr">INR</option>
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                            </div>
+                        </div>
+                        <label className="flex items-center space-x-3 h-[52px] px-4 border border-gray-300 rounded-lg">
                             <input
                                 type="checkbox"
                                 checked={config.tsc_connect_enabled}
@@ -628,7 +712,7 @@ const StripeConnectSettings: React.FC = () => {
                             <span className="text-sm text-gray-700">Enable Stripe Connect configuration</span>
                         </label>
 
-                        <label className="flex items-center space-x-3">
+                        <label className="flex items-center space-x-3 h-[52px] px-4 border border-gray-300 rounded-lg">
                             <input
                                 type="checkbox"
                                 checked={config.tsc_is_live_mode}
@@ -653,9 +737,9 @@ const StripeConnectSettings: React.FC = () => {
                                 step="0.01"
                                 value={config.tsc_split_primary_percentage}
                                 onChange={(e) => {
-                                    const nextValue = Number(e.target.value || 0);
+                                    const nextValue = normalizeSplitPercentage(Number(e.target.value || 0));
                                     updateConfig('tsc_split_primary_percentage', nextValue);
-                                    updateConfig('tsc_split_secondary_percentage', Number((100 - nextValue).toFixed(2)));
+                                    updateConfig('tsc_split_secondary_percentage', normalizeSplitPercentage(100 - nextValue));
                                 }}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
@@ -670,9 +754,9 @@ const StripeConnectSettings: React.FC = () => {
                                 step="0.01"
                                 value={config.tsc_split_secondary_percentage}
                                 onChange={(e) => {
-                                    const nextValue = Number(e.target.value || 0);
+                                    const nextValue = normalizeSplitPercentage(Number(e.target.value || 0));
                                     updateConfig('tsc_split_secondary_percentage', nextValue);
-                                    updateConfig('tsc_split_primary_percentage', Number((100 - nextValue).toFixed(2)));
+                                    updateConfig('tsc_split_primary_percentage', normalizeSplitPercentage(100 - nextValue));
                                 }}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
@@ -689,17 +773,24 @@ const StripeConnectSettings: React.FC = () => {
                 </div>
             </div>
 
-            {renderAccountCard(
-                'Primary Recipient Account',
-                'Main recipient for the direct charge flow. Stripe says this account typically receives the 70% share.',
-                'primary_recipient',
-                primaryAccount,
-                config.tsc_split_primary_percentage
-            )}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Platform Retained Share</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                            This percentage remains in your platform Stripe account after payment. No connected-account transfer is created for this portion.
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm text-gray-500">Platform keeps</div>
+                        <div className="text-2xl font-bold text-blue-700">{config.tsc_split_primary_percentage}%</div>
+                    </div>
+                </div>
+            </div>
 
             {renderAccountCard(
-                'Secondary Recipient Account',
-                'Second connected account for the fixed split. Stripe says this account receives the remaining 30% transfer.',
+                'Secondary Connected Account',
+                'Connected Stripe account that receives its configured share from the platform charge after payment succeeds.',
                 'secondary_recipient',
                 secondaryAccount,
                 config.tsc_split_secondary_percentage

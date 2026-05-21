@@ -68,6 +68,12 @@ interface Enrollment {
     };
 }
 
+interface PendingLearnerAction {
+    learner: Learner;
+    type: 'email_verification' | 'mobile_verification' | 'status';
+    nextValue: boolean;
+}
+
 // Skeleton Loader for Table Rows
 const TableSkeleton: React.FC<{ rows?: number }> = ({rows = 5}) => {
     return (
@@ -141,6 +147,7 @@ const LearnerManagement: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
     const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+    const [pendingAction, setPendingAction] = useState<PendingLearnerAction | null>(null);
 
     const notification = useNotification();
     const canWriteLearners = hasPermission('learners', 'write');
@@ -358,6 +365,81 @@ const LearnerManagement: React.FC = () => {
         }
     };
 
+    const requestVerificationToggle = (
+        learner: Learner,
+        field: 'tu_email_verified' | 'tu_mobile_verified'
+    ) => {
+        setPendingAction({
+            learner,
+            type: field === 'tu_email_verified' ? 'email_verification' : 'mobile_verification',
+            nextValue: !learner[field]
+        });
+    };
+
+    const requestStatusToggle = (learner: Learner) => {
+        setPendingAction({
+            learner,
+            type: 'status',
+            nextValue: !learner.tu_is_active
+        });
+    };
+
+    const handleConfirmPendingAction = async () => {
+        if (!pendingAction) {
+            return;
+        }
+
+        const action = pendingAction;
+        setPendingAction(null);
+
+        if (action.type === 'email_verification') {
+            await handleToggleVerification(action.learner, 'tu_email_verified');
+            return;
+        }
+
+        if (action.type === 'mobile_verification') {
+            await handleToggleVerification(action.learner, 'tu_mobile_verified');
+            return;
+        }
+
+        await handleToggleStatus(action.learner, action.learner.tu_is_active);
+    };
+
+    const pendingActionContent = useMemo(() => {
+        if (!pendingAction) {
+            return null;
+        }
+
+        const profile = getProfile(pendingAction.learner);
+        const learnerName = [
+            profile?.tup_first_name,
+            profile?.tup_middle_name,
+            profile?.tup_last_name,
+        ].filter(Boolean).join(' ') || pendingAction.learner.tu_email;
+
+        if (pendingAction.type === 'email_verification') {
+            return {
+                title: pendingAction.nextValue ? 'Verify Email?' : 'Remove Email Verification?',
+                description: `Are you sure you want to ${pendingAction.nextValue ? 'mark the email as verified' : 'mark the email as unverified'} for ${learnerName}?`,
+                confirmLabel: pendingAction.nextValue ? 'Verify Email' : 'Remove Verification'
+            };
+        }
+
+        if (pendingAction.type === 'mobile_verification') {
+            return {
+                title: pendingAction.nextValue ? 'Verify Mobile?' : 'Remove Mobile Verification?',
+                description: `Are you sure you want to ${pendingAction.nextValue ? 'mark the mobile as verified' : 'mark the mobile as unverified'} for ${learnerName}?`,
+                confirmLabel: pendingAction.nextValue ? 'Verify Mobile' : 'Remove Verification'
+            };
+        }
+
+        return {
+            title: pendingAction.nextValue ? 'Activate Learner?' : 'Deactivate Learner?',
+            description: `Are you sure you want to ${pendingAction.nextValue ? 'activate' : 'deactivate'} ${learnerName}?`,
+            confirmLabel: pendingAction.nextValue ? 'Activate' : 'Deactivate'
+        };
+    }, [pendingAction, learners]);
+
     const refreshSelectedLearner = async (learnerId: string) => {
         try {
             const {data, error} = await supabase
@@ -509,6 +591,7 @@ const LearnerManagement: React.FC = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 getProfile={getProfile}
+                canWriteLearners={canWriteLearners}
             />
         );
     }
@@ -660,7 +743,7 @@ const LearnerManagement: React.FC = () => {
                                             <div className="flex space-x-2">
                           <button
                               type="button"
-                              onClick={() => handleToggleVerification(learner, 'tu_email_verified')}
+                              onClick={() => requestVerificationToggle(learner, 'tu_email_verified')}
                               disabled={isUpdating}
                               title={learner.tu_email_verified ? 'Mark email as unverified' : 'Mark email as verified'}
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -673,7 +756,7 @@ const LearnerManagement: React.FC = () => {
                           </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleToggleVerification(learner, 'tu_mobile_verified')}
+                                                    onClick={() => requestVerificationToggle(learner, 'tu_mobile_verified')}
                                                     disabled={isUpdating}
                                                     title={learner.tu_mobile_verified ? 'Mark mobile as unverified' : 'Mark mobile as verified'}
                                                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -689,7 +772,7 @@ const LearnerManagement: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                         <button
                             type="button"
-                            onClick={() => handleToggleStatus(learner, learner.tu_is_active)}
+                            onClick={() => requestStatusToggle(learner)}
                             disabled={isUpdating}
                             title={learner.tu_is_active ? 'Deactivate learner' : 'Activate learner'}
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -827,6 +910,40 @@ const LearnerManagement: React.FC = () => {
                     </p>
                 </div>
             )}
+
+            {pendingAction && pendingActionContent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                        <div className="border-b border-gray-200 px-6 py-5">
+                            <div className="flex items-start space-x-3">
+                                <div className="rounded-full bg-amber-100 p-2">
+                                    <AlertCircle className="h-5 w-5 text-amber-600"/>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-semibold text-gray-900">{pendingActionContent.title}</h4>
+                                    <p className="mt-1 text-sm text-gray-600">{pendingActionContent.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end space-x-3 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setPendingAction(null)}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmPendingAction}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                            >
+                                {pendingActionContent.confirmLabel}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -841,7 +958,18 @@ const LearnerDetails: React.FC<{
     activeTab: string;
     setActiveTab: (tab: string) => void;
     getProfile: (learner: Learner) => any;
-}> = ({learner, onBack, onUpdate, editMode, setEditMode, activeTab, setActiveTab, getProfile}) => {
+    canWriteLearners: boolean;
+}> = ({
+    learner,
+    onBack,
+    onUpdate,
+    editMode,
+    setEditMode,
+    activeTab,
+    setActiveTab,
+    getProfile,
+    canWriteLearners
+}) => {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentLearner, setCurrentLearner] = useState<Learner>(learner);
@@ -919,6 +1047,11 @@ const LearnerDetails: React.FC<{
     };
 
     const handleSaveEdit = async () => {
+        if (!canWriteLearners) {
+            notification?.showError('Access Denied', 'You do not have permission to update learners');
+            return;
+        }
+
         try {
             // Update tbl_users table
             const {error: userError} = await supabase
