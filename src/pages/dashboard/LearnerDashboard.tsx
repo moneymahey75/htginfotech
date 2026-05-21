@@ -45,7 +45,7 @@ interface AssignedTutor {
   tta_id: string;
   tta_assigned_at: string;
   tta_notes?: string;
-  tta_status: string;
+  tta_status?: string;
   tutor?: {
     tu_id: string;
     tu_email: string;
@@ -72,6 +72,17 @@ interface AssignedTutor {
     tc_thumbnail_url?: string;
     tc_price?: number;
     tc_difficulty_level?: string;
+  };
+  enrollment?: {
+    tce_user_id: string;
+    course?: {
+      tc_id: string;
+      tc_title: string;
+      tc_description?: string;
+      tc_thumbnail_url?: string;
+      tc_price?: number;
+      tc_difficulty_level?: string;
+    };
   };
 }
 
@@ -237,6 +248,49 @@ const LearnerDashboard: React.FC = () => {
   const loadAssignedTutors = async () => {
     try {
       setTutorsLoading(true);
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_my_assigned_tutors');
+
+      if (!rpcError && rpcData) {
+        setAssignedTutors(rpcData.map((assignment: any) => ({
+          tta_id: assignment.tta_id,
+          tta_assigned_at: assignment.tta_assigned_at,
+          tta_notes: assignment.tta_notes,
+          tta_status: assignment.tta_status,
+          tutor: {
+            tu_id: assignment.tutor_id,
+            tu_email: assignment.tutor_email,
+            profile: [{
+              tup_first_name: assignment.tutor_first_name,
+              tup_last_name: assignment.tutor_last_name,
+              tup_middle_name: assignment.tutor_middle_name,
+              tup_mobile: assignment.tutor_mobile
+            }],
+            tutor_profile: [{
+              tt_id: assignment.tutor_id,
+              tt_bio: assignment.tutor_bio,
+              tt_experience_years: assignment.tutor_experience_years,
+              tt_hourly_rate: assignment.tutor_hourly_rate,
+              tt_rating: assignment.tutor_rating,
+              tt_total_students: assignment.tutor_total_students,
+              tt_specializations: assignment.tutor_specializations || []
+            }]
+          },
+          course: {
+            tc_id: assignment.course_id,
+            tc_title: assignment.course_title,
+            tc_description: assignment.course_description,
+            tc_thumbnail_url: assignment.course_thumbnail_url,
+            tc_price: assignment.course_price,
+            tc_difficulty_level: assignment.course_difficulty_level
+          }
+        })));
+        return;
+      }
+
+      if (rpcError) {
+        console.warn('Assigned tutors RPC unavailable, falling back to direct query:', rpcError.message);
+      }
+
       const { data, error } = await supabase
           .from('tbl_tutor_assignments')
           .select(`
@@ -270,17 +324,29 @@ const LearnerDashboard: React.FC = () => {
             tc_thumbnail_url,
             tc_price,
             tc_difficulty_level
+          ),
+          enrollment:tbl_course_enrollments!tta_enrollment_id(
+            tce_user_id,
+            course:tbl_courses!tbl_course_enrollments_tce_course_id_fkey(
+              tc_id,
+              tc_title,
+              tc_description,
+              tc_thumbnail_url,
+              tc_price,
+              tc_difficulty_level
+            )
           )
         `)
           .eq('tta_learner_id', user!.id)
-          .eq('tta_status', 'active')
           .eq('tta_is_active', true);
 
       if (error) {
         throw error;
       }
 
-      setAssignedTutors(data || []);
+      setAssignedTutors((data || []).filter((assignment: any) => (
+          !assignment.tta_status || assignment.tta_status === 'active'
+      )));
     } catch (error) {
       console.error('Failed to load assigned tutors:', error);
     } finally {
@@ -903,7 +969,8 @@ const LearnerDashboard: React.FC = () => {
                         <div className="space-y-4">
                           {assignedTutors.map((assignment) => {
                             const tutorData = getTutorData(assignment);
-                            const courseTitle = assignment.course?.tc_title || 'Unknown Course';
+                            const assignedCourse = assignment.course || assignment.enrollment?.course;
+                            const courseTitle = assignedCourse?.tc_title || 'Unknown Course';
 
                             return (
                                 <div key={assignment.tta_id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">

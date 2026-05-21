@@ -373,6 +373,7 @@ export default function EnrollmentManagement() {
                     .from('tbl_tutor_assignments')
                     .update({
                         tta_is_active: false,
+                        tta_status: 'cancelled',
                         tta_assigned_at: new Date().toISOString()
                     })
                     .eq('tta_id', enrollment.tutor_assignment.tta_id);
@@ -390,7 +391,10 @@ export default function EnrollmentManagement() {
                 .insert({
                     tta_tutor_id: selectedTutor,
                     tta_enrollment_id: enrollmentId,
+                    tta_learner_id: enrollment.tce_user_id,
+                    tta_course_id: enrollment.tce_course_id,
                     tta_assigned_by: null,
+                    tta_status: 'active',
                     tta_notes: assignmentNotes || null,
                     tta_is_active: true
                 });
@@ -480,6 +484,7 @@ export default function EnrollmentManagement() {
                 .from('tbl_tutor_assignments')
                 .update({
                     tta_is_active: false,
+                    tta_status: 'cancelled',
                     tta_assigned_at: new Date().toISOString()
                 })
                 .eq('tta_id', enrollment.tutor_assignment.tta_id);
