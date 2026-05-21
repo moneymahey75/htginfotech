@@ -19,6 +19,7 @@ const UnifiedLogin: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState((location.state as any)?.error || '');
   const [showEmailConfirmationError, setShowEmailConfirmationError] = useState(false);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
@@ -28,6 +29,11 @@ const UnifiedLogin: React.FC = () => {
   const [verificationResentMessage, setVerificationResentMessage] = useState('');
   const [redirectMessage, setRedirectMessage] = useState('');
   const [redirectMessageType, setRedirectMessageType] = useState<'success' | 'error'>('success');
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   React.useEffect(() => {
     const verified = searchParams.get('verified');
@@ -117,17 +123,18 @@ const UnifiedLogin: React.FC = () => {
     setJustLoggedIn(false);
 
     if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+      setError('Please complete the Cloudflare verification');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      await login(formData.emailOrUsername, formData.password, 'any');
+      await login(formData.emailOrUsername, formData.password, 'any', recaptchaToken);
       // Set flag to trigger navigation in useEffect
       console.log('🎉 Login successful, setting justLoggedIn flag...');
       setJustLoggedIn(true);
     } catch (err: any) {
+      resetCaptcha();
       if (err.message === 'EMAIL_NOT_CONFIRMED') {
         setShowEmailConfirmationError(true);
         setUnverifiedEmail(err.email || formData.emailOrUsername);
@@ -296,7 +303,7 @@ const UnifiedLogin: React.FC = () => {
                 </Link>
               </div>
 
-              <ReCaptcha onVerify={setRecaptchaToken} />
+              <ReCaptcha action="user_login" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
 
               <button
                   type="submit"

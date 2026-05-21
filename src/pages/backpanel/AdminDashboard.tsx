@@ -7,6 +7,7 @@ import GeneralSettings from '../../components/admin/GeneralSettings';
 import RegistrationSettings from '../../components/admin/RegistrationSettings';
 import ContactSocialSettings from '../../components/admin/ContactSocialSettings';
 import EmailTemplateManager from '../../components/admin/EmailTemplateManager';
+import CloudflareTurnstileSettings from '../../components/admin/CloudflareTurnstileSettings';
 import SliderManagement from '../../components/admin/SliderManagement';
 import LearnerManagement from '../../components/admin/LearnerManagement';
 import TutorManagement from '../../components/admin/TutorManagement';
@@ -320,6 +321,7 @@ const AdminDashboard: React.FC = () => {
         {id: 'contactsocial', label: 'Contact & Social Settings', icon: UserCheck},
         {id: 'smtp', label: 'SMTP Settings', icon: FileText},
         {id: 'emailtemplates', label: 'Email Templates', icon: FileText},
+        {id: 'turnstile', label: 'Cloudflare CAPTCHA', icon: Shield},
         // { id: 'sms', label: 'SMS Settings', icon: FileText }
     ];
 
@@ -602,6 +604,7 @@ const AdminDashboard: React.FC = () => {
                                     {settingsTab === 'videostorage' && <VideoStorageSettings key={`videostorage-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'contactsocial' && <ContactSocialSettings key={`contactsocial-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'emailtemplates' && <EmailTemplateManager key={`emailtemplates-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'turnstile' && <CloudflareTurnstileSettings key={`turnstile-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'smtp' && <SMTPSettings key={`smtp-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'sms' && <SMSSettings key={`sms-${settingsTabRefreshKey}`}/>}
                                 </div>

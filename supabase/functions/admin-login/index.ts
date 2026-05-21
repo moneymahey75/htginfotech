@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { loadSystemSettings } from "../_shared/email.ts"
+import { resolveTurnstileKeys, validateTurnstileToken } from "../_shared/turnstile.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +11,7 @@ const corsHeaders = {
 interface AdminLoginRequest {
   email: string;
   password: string;
+  turnstileToken?: string;
 }
 
 serve(async (req) => {
@@ -17,13 +20,27 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password }: AdminLoginRequest = await req.json()
+    const { email, password, turnstileToken }: AdminLoginRequest = await req.json()
 
     const { createClient } = await import('npm:@supabase/supabase-js@2')
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    const settings = await loadSystemSettings(supabase)
+    const turnstile = resolveTurnstileKeys(settings, req)
+
+    if (!turnstile.enabled || !turnstile.secretKey) {
+      throw new Error('Cloudflare Turnstile is not configured.')
+    }
+
+    await validateTurnstileToken({
+      req,
+      token: turnstileToken || '',
+      secretKey: turnstile.secretKey,
+      expectedAction: 'admin_login',
+    })
 
     console.log('🔍 Admin login attempt for:', email)
 

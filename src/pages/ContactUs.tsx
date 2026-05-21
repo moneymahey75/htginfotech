@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { invokeSupabaseFunction } from '../lib/supabase';
+import ReCaptcha from '../components/ui/ReCaptcha';
 
 const ContactUs: React.FC = () => {
   const { settings } = useAdmin();
@@ -14,6 +15,13 @@ const ContactUs: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +31,14 @@ const ContactUs: React.FC = () => {
       setSubmitResult({
         success: false,
         message: 'Please fill in all required fields before submitting.'
+      });
+      return;
+    }
+
+    if (!recaptchaToken) {
+      setSubmitResult({
+        success: false,
+        message: 'Please complete the Cloudflare verification before submitting.'
       });
       return;
     }
@@ -38,6 +54,7 @@ const ContactUs: React.FC = () => {
           metadata: {
             userAgent: navigator.userAgent,
           },
+          turnstileToken: recaptchaToken,
         }
       });
 
@@ -52,6 +69,7 @@ const ContactUs: React.FC = () => {
       setFormData({ name: '', email: '', subject: '', message: '', type: 'general' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
+      resetCaptcha();
       console.error('Contact form submission failed:', error);
       const errorMessage = error instanceof Error ? error.message : null;
       const detailedMessage =
@@ -210,9 +228,11 @@ const ContactUs: React.FC = () => {
                     />
                   </div>
 
+                  <ReCaptcha action="contact_us" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
+
                   <button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !recaptchaToken}
                       className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
                   >
                     {isSubmitting ? (

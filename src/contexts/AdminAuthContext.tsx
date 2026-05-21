@@ -117,7 +117,7 @@ interface SubAdmin {
 
 interface AdminAuthContextType {
   admin: AdminUser | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, turnstileToken: string) => Promise<void>;
   logout: () => void;
   createSubAdmin: (data: {
     email: string;
@@ -240,7 +240,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, turnstileToken: string) => {
     try {
       console.log('🔍 Starting admin login process for:', email);
 
@@ -248,6 +248,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         body: {
           email: email.trim(),
           password,
+          turnstileToken,
         },
       });
 

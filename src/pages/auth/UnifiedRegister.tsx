@@ -75,6 +75,7 @@ const UnifiedRegister: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState('');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showUsernameTooltip, setShowUsernameTooltip] = useState(false);
@@ -95,6 +96,11 @@ const UnifiedRegister: React.FC = () => {
   const usernameTimeout = useRef<NodeJS.Timeout>();
   const passwordTimeout = useRef<NodeJS.Timeout>();
   const tooltipTimeout = useRef<NodeJS.Timeout>();
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   const userTypes = [
     { value: 'learner', label: 'Learner' },
@@ -263,7 +269,7 @@ const UnifiedRegister: React.FC = () => {
     setIsSubmitting(true);
 
     if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+      setError('Please complete the Cloudflare verification');
       setIsSubmitting(false);
       return;
     }
@@ -328,11 +334,11 @@ const UnifiedRegister: React.FC = () => {
         userName: finalUsername,
         phoneNumber: fullPhone, // This will be null if no phone number
         mobile: fullPhone // Add this for backward compatibility
-      }, formData.userType as any);
+      }, formData.userType as any, recaptchaToken);
 
       navigate('/login');
     } catch (err) {
-      // Error is handled by notification system
+      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -798,7 +804,7 @@ const UnifiedRegister: React.FC = () => {
                 </label>
               </div>
 
-              <ReCaptcha onVerify={setRecaptchaToken} />
+              <ReCaptcha action="user_register" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
 
               <button
                   type="submit"

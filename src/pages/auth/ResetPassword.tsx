@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Eye, EyeOff, Loader, Lock, Shield } from 'lucide-react';
 import ReCaptcha from '../../components/ui/ReCaptcha';
 import { useAdmin } from '../../contexts/AdminContext';
+import { verifyTurnstileToken } from '../../lib/turnstile';
 import PasswordPolicyChecklist from '../../components/auth/PasswordPolicyChecklist';
 import {
   createEmptyPasswordValidation,
@@ -26,9 +27,15 @@ const ResetPassword: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState<PasswordValidationResult>(createEmptyPasswordValidation());
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   useEffect(() => {
     if (hasVerifiedToken.current) {
@@ -80,7 +87,7 @@ const ResetPassword: React.FC = () => {
     setIsSubmitting(true);
 
     if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+      setError('Please complete the Cloudflare verification');
       setIsSubmitting(false);
       return;
     }
@@ -98,6 +105,7 @@ const ResetPassword: React.FC = () => {
     }
 
     try {
+      await verifyTurnstileToken(recaptchaToken, 'reset_password');
       const { error } = await supabase.auth.updateUser({
         password: formData.password
       });
@@ -113,6 +121,7 @@ const ResetPassword: React.FC = () => {
         navigate('/login');
       }, 3000);
     } catch (err) {
+      resetCaptcha();
       setError(err instanceof Error ? err.message : 'Failed to reset password. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -252,7 +261,7 @@ const ResetPassword: React.FC = () => {
               </div>
             </div>
 
-            <ReCaptcha onVerify={setRecaptchaToken} />
+            <ReCaptcha action="reset_password" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
 
             <button
               type="submit"

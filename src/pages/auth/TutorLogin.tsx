@@ -14,7 +14,13 @@ const TutorLogin: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState('');
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,16 +28,16 @@ const TutorLogin: React.FC = () => {
     setIsSubmitting(true);
 
     if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+      setError('Please complete the Cloudflare verification');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      await login(formData.emailOrUsername, formData.password, 'tutor');
+      await login(formData.emailOrUsername, formData.password, 'tutor', recaptchaToken);
       navigate('/tutor/dashboard');
     } catch (err) {
-      // Error is now handled by notification system
+      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -125,7 +131,7 @@ const TutorLogin: React.FC = () => {
               </Link>
             </div>
 
-            <ReCaptcha onVerify={setRecaptchaToken} />
+            <ReCaptcha action="user_login" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
 
             <button
               type="submit"

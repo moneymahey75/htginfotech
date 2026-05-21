@@ -28,7 +28,13 @@ const TutorRegister: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState('');
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   const specializationOptions = [
     'JavaScript',
@@ -73,7 +79,7 @@ const TutorRegister: React.FC = () => {
     setIsSubmitting(true);
 
     if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+      setError('Please complete the Cloudflare verification');
       setIsSubmitting(false);
       return;
     }
@@ -97,13 +103,13 @@ const TutorRegister: React.FC = () => {
     }
 
     try {
-      await register(formData, 'tutor');
+      await register(formData, 'tutor', recaptchaToken);
 
       // After successful registration, show message about email confirmation
       // Navigation will be handled by the user clicking the confirmation link
       navigate('/login');
     } catch (err) {
-      // Error is handled by notification system
+      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -479,7 +485,7 @@ const TutorRegister: React.FC = () => {
               </label>
             </div>
 
-            <ReCaptcha onVerify={setRecaptchaToken} />
+            <ReCaptcha action="user_register" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
 
             <button
               type="submit"

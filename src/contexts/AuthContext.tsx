@@ -4,6 +4,7 @@ import { useNotification } from '../components/ui/NotificationProvider';
 import { sessionUtils } from '../utils/sessionUtils';
 import { buildAbsoluteUrl, getBaseUrl } from '../utils/baseUrl';
 import { withTimeout } from '../utils/loadingRecovery';
+import { verifyTurnstileToken } from '../lib/turnstile';
 
 const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
 const UNVERIFIED_ACCOUNT_MESSAGE = 'Your account is not verified. Please verify your email to continue.';
@@ -58,11 +59,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (emailOrUsername: string, password: string, userType: string) => Promise<void>;
-  register: (userData: any, userType: string) => Promise<string>;
+  login: (emailOrUsername: string, password: string, userType: string, turnstileToken: string) => Promise<void>;
+  register: (userData: any, userType: string, turnstileToken: string) => Promise<string>;
   resendVerificationEmail: (email: string) => Promise<void>;
   logout: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
+  forgotPassword: (email: string, turnstileToken: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyOTP: (otp: string) => Promise<void>;
   sendOTPToUser: (userId: string, contactInfo: string, otpType: 'email' | 'mobile') => Promise<any>;
@@ -417,9 +418,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (emailOrUsername: string, password: string, userType: string) => {
+  const login = async (emailOrUsername: string, password: string, userType: string, turnstileToken: string) => {
     setLoading(true);
     try {
+      await verifyTurnstileToken(turnstileToken, 'user_login');
       const loginIdentifier = emailOrUsername.trim();
       console.log('🔍 Attempting login for:', loginIdentifier);
 
@@ -538,7 +540,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (userData: any, userType: string) => {
+  const register = async (userData: any, userType: string, turnstileToken: string) => {
     setLoading(true);
     try {
       console.log('🔍 Attempting registration for:', userData.email);
@@ -558,7 +560,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phoneNumber: userData.phoneNumber && userData.phoneNumber.trim() !== '' ? userData.phoneNumber : null,
           gender: userData.gender || null,
           userType,
-          siteUrl: getBaseUrl()
+          siteUrl: getBaseUrl(),
+          turnstileToken,
         }
       });
 
@@ -670,7 +673,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const forgotPassword = async (email: string) => {
+  const forgotPassword = async (email: string, turnstileToken: string) => {
     try {
       const normalizedEmail = email.trim();
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -686,6 +689,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({
           email: normalizedEmail,
           siteUrl: getBaseUrl(),
+          turnstileToken,
         }),
       });
 

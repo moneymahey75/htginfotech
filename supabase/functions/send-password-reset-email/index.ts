@@ -7,6 +7,7 @@ import {
   loadSystemSettings,
   sendSmtpEmail,
 } from "../_shared/email.ts";
+import { resolveTurnstileKeys, validateTurnstileToken } from "../_shared/turnstile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,7 @@ const createJsonResponse = (status: number, payload: Record<string, unknown>) =>
 interface PasswordResetPayload {
   email: string;
   siteUrl?: string;
+  turnstileToken?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -34,7 +36,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { email, siteUrl }: PasswordResetPayload = await req.json();
+    const { email, siteUrl, turnstileToken = "" }: PasswordResetPayload = await req.json();
     const normalizedEmail = String(email || "").trim().toLowerCase();
 
     if (!normalizedEmail) {
@@ -74,6 +76,19 @@ Deno.serve(async (req: Request) => {
     }
 
     const settings = await loadSystemSettings(supabase);
+    const turnstile = resolveTurnstileKeys(settings, req);
+
+    if (!turnstile.enabled || !turnstile.secretKey) {
+      throw new Error("Cloudflare Turnstile is not configured.");
+    }
+
+    await validateTurnstileToken({
+      req,
+      token: turnstileToken,
+      secretKey: turnstile.secretKey,
+      expectedAction: "forgot_password",
+    });
+
     const branding = buildBranding(settings, { request: req, siteUrl });
     const redirectTo = `${branding.siteUrl}/auth/callback`;
 

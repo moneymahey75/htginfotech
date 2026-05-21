@@ -8,6 +8,7 @@ import {
   sendSmtpEmail,
 } from "../_shared/email.ts";
 import { getRequestBaseUrl } from "../_shared/base-url.ts";
+import { resolveTurnstileKeys, validateTurnstileToken } from "../_shared/turnstile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,7 @@ interface ContactRequest {
   pageUrl?: string;
   metadata?: Record<string, string | null | undefined>;
   sendConfirmation?: boolean;
+  turnstileToken?: string;
 }
 
 const buildResponse = (status: number, payload: Record<string, unknown>) =>
@@ -79,6 +81,7 @@ Deno.serve(async (req: Request) => {
     const inquiryType = titleCase(normalizeText(payload.type) || "general");
     const pageUrl = normalizeText(payload.pageUrl);
     const sendConfirmation = payload.sendConfirmation !== false;
+    const turnstileToken = normalizeText(payload.turnstileToken);
 
     if (!name || !email || !subject || !message) {
       return buildResponse(400, {
@@ -110,6 +113,19 @@ Deno.serve(async (req: Request) => {
     );
 
     const settings = await loadSystemSettings(supabase);
+    const turnstile = resolveTurnstileKeys(settings, req);
+
+    if (!turnstile.enabled || !turnstile.secretKey) {
+      throw new Error("Cloudflare Turnstile is not configured.");
+    }
+
+    await validateTurnstileToken({
+      req,
+      token: turnstileToken,
+      secretKey: turnstile.secretKey,
+      expectedAction: "contact_us",
+    });
+
     const branding = buildBranding(settings, {
       siteUrl,
     });

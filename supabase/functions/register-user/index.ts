@@ -7,6 +7,7 @@ import {
   loadSystemSettings,
   sendSmtpEmail,
 } from "../_shared/email.ts";
+import { resolveTurnstileKeys, validateTurnstileToken } from "../_shared/turnstile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +26,7 @@ interface RegisterPayload {
   gender?: string | null;
   userType: "learner" | "tutor" | "job_seeker" | "job_provider";
   siteUrl?: string;
+  turnstileToken?: string;
 }
 
 const createErrorResponse = (status: number, error: string) =>
@@ -67,11 +69,26 @@ Deno.serve(async (req: Request) => {
       gender = null,
       userType,
       siteUrl,
+      turnstileToken = "",
     } = payload;
 
     if (!email || !password || !firstName || !lastName || !userName || !userType) {
       return createErrorResponse(400, "Missing required registration fields");
     }
+
+    const systemSettings = await loadSystemSettings(supabase);
+    const turnstile = resolveTurnstileKeys(systemSettings, req);
+
+    if (!turnstile.enabled || !turnstile.secretKey) {
+      return createErrorResponse(400, "Cloudflare Turnstile is not configured");
+    }
+
+    await validateTurnstileToken({
+      req,
+      token: turnstileToken,
+      secretKey: turnstile.secretKey,
+      expectedAction: "user_register",
+    });
 
     const { data: authResult, error: authError } = await supabase.auth.admin.createUser({
       email,
@@ -161,7 +178,6 @@ Deno.serve(async (req: Request) => {
       throw verificationInsertError;
     }
 
-    const systemSettings = await loadSystemSettings(supabase);
     const branding = buildBranding(systemSettings, { request: req, siteUrl });
     const verificationLink =
       `${branding.siteUrl}/auth/callback?type=email_verification&token=${encodeURIComponent(verificationToken)}`;

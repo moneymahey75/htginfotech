@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { Eye, EyeOff, Mail, Lock, Shield, AlertTriangle } from 'lucide-react';
+import ReCaptcha from '../../components/ui/ReCaptcha';
 
 const AdminLogin: React.FC = () => {
   const { login } = useAdminAuth();
@@ -13,18 +14,32 @@ const AdminLogin: React.FC = () => {
     password: 'Admin@123456'
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState((location.state as any)?.error || '');
   const [successMessage] = useState((location.state as any)?.success || '');
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
+    if (!recaptchaToken) {
+      setError('Please complete the Cloudflare verification');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      await login(formData.email, formData.password);
+      await login(formData.email, formData.password, recaptchaToken);
       navigate('/backpanel/dashboard');
     } catch (err) {
+      resetCaptcha();
       setError(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
@@ -141,9 +156,11 @@ const AdminLogin: React.FC = () => {
               </div>
             </div>
 
+            <ReCaptcha action="admin_login" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
+
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !recaptchaToken}
               className="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-red-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               {isSubmitting ? (

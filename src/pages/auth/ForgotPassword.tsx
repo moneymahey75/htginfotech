@@ -9,8 +9,14 @@ const ForgotPassword: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState('');
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const resetCaptcha = () => {
+    setRecaptchaToken(null);
+    setCaptchaResetSignal((current) => current + 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,15 +24,16 @@ const ForgotPassword: React.FC = () => {
     setIsSubmitting(true);
 
     if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+      setError('Please complete the Cloudflare verification');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      await forgotPassword(email);
+      await forgotPassword(email, recaptchaToken);
       setSuccess(true);
     } catch (err) {
+      resetCaptcha();
       setError(err instanceof Error ? err.message : 'Failed to send reset email. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -103,7 +110,7 @@ const ForgotPassword: React.FC = () => {
               </div>
             </div>
 
-            <ReCaptcha onVerify={setRecaptchaToken} />
+            <ReCaptcha action="forgot_password" onVerify={setRecaptchaToken} resetSignal={captchaResetSignal} />
 
             <button
               type="submit"
