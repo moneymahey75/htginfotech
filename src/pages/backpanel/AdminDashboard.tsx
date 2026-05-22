@@ -8,6 +8,7 @@ import RegistrationSettings from '../../components/admin/RegistrationSettings';
 import ContactSocialSettings from '../../components/admin/ContactSocialSettings';
 import EmailTemplateManager from '../../components/admin/EmailTemplateManager';
 import CloudflareTurnstileSettings from '../../components/admin/CloudflareTurnstileSettings';
+import MaintenanceModeSettings from '../../components/admin/MaintenanceModeSettings';
 import SliderManagement from '../../components/admin/SliderManagement';
 import LearnerManagement from '../../components/admin/LearnerManagement';
 import TutorManagement from '../../components/admin/TutorManagement';
@@ -322,6 +323,7 @@ const AdminDashboard: React.FC = () => {
         {id: 'smtp', label: 'SMTP Settings', icon: FileText},
         {id: 'emailtemplates', label: 'Email Templates', icon: FileText},
         {id: 'turnstile', label: 'Cloudflare CAPTCHA', icon: Shield},
+        {id: 'maintenance', label: 'Maintenance Mode', icon: Activity},
         // { id: 'sms', label: 'SMS Settings', icon: FileText }
     ];
 
@@ -605,6 +607,7 @@ const AdminDashboard: React.FC = () => {
                                     {settingsTab === 'contactsocial' && <ContactSocialSettings key={`contactsocial-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'emailtemplates' && <EmailTemplateManager key={`emailtemplates-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'turnstile' && <CloudflareTurnstileSettings key={`turnstile-${settingsTabRefreshKey}`}/>}
+                                    {settingsTab === 'maintenance' && <MaintenanceModeSettings key={`maintenance-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'smtp' && <SMTPSettings key={`smtp-${settingsTabRefreshKey}`}/>}
                                     {settingsTab === 'sms' && <SMSSettings key={`sms-${settingsTabRefreshKey}`}/>}
                                 </div>

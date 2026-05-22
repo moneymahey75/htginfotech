@@ -8,6 +8,7 @@ import { AdminProvider } from './contexts/AdminContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import MaintenanceGate from './components/layout/MaintenanceGate';
 import Home from './pages/Home';
 import UnifiedLogin from './pages/auth/UnifiedLogin';
 import UnifiedRegister from './pages/auth/UnifiedRegister';
@@ -83,11 +84,12 @@ function App() {
                   
                   {/* Main App Routes (With Navbar/Footer) */}
                   <Route path="/*" element={
-                    <>
-                      <Navbar />
-                      <main className="public-site pt-16 md:pt-24">
-                        <Routes>
-                          <Route path="/" element={<Home />} />
+                    <MaintenanceGate>
+                      <>
+                        <Navbar />
+                        <main className="public-site pt-16 md:pt-24">
+                          <Routes>
+                            <Route path="/" element={<Home />} />
                           
                           {/* Static Pages */}
                           <Route path="/contact" element={<ContactUs />} />
@@ -167,11 +169,12 @@ function App() {
                           <Route path="/verify-otp" element={<VerifyOTP />} />
                           <Route path="/payment" element={<Payment />} />
                           
-                          <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
-                      </main>
-                      <Footer />
-                    </>
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                          </Routes>
+                        </main>
+                        <Footer />
+                      </>
+                    </MaintenanceGate>
                   } />
                 </Routes>
               </div>
