@@ -18,6 +18,7 @@ The platform uses Supabase (PostgreSQL) with the following main tables:
 
 ### Core Tables
 
+
 1. **tbl_users** - Main authentication table
    - `tu_id` (uuid, primary key)
    - `tu_email` (text, unique)
