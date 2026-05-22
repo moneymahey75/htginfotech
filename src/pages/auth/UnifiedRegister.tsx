@@ -393,7 +393,7 @@ const UnifiedRegister: React.FC = () => {
   return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <div className="rounded-2xl bg-white p-5 shadow-xl sm:p-8">
+          <div className="bg-white p-8 rounded-2xl shadow-xl">
             <div className="text-center mb-8">
               <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-indigo-600" />
@@ -477,7 +477,7 @@ const UnifiedRegister: React.FC = () => {
                   >
                     <Info className="h-4 w-4 text-gray-400 cursor-help" />
                     {showUsernameTooltip && (
-                        <div className="absolute bottom-full left-0 z-10 mb-2 w-64 max-w-[calc(100vw-2.5rem)] rounded-lg bg-gray-900 p-3 text-xs text-white shadow-lg sm:left-1/2 sm:-translate-x-1/2">
+                        <div className="absolute z-10 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg bottom-full mb-2 left-1/2 transform -translate-x-1/2">
                           <div className="font-medium mb-1">Username Requirements:</div>
                           <ul className="space-y-1">
                             <li>• {settings.username_min_length}-{settings.username_max_length} characters</li>
@@ -581,12 +581,12 @@ const UnifiedRegister: React.FC = () => {
                   <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
                   </label>
-                  <div className="flex flex-col gap-2 min-[380px]:flex-row min-[380px]:space-x-2 min-[380px]:gap-0">
+                  <div className="flex space-x-2">
                     <div className="relative">
                       <button
                           type="button"
                           onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                          className="flex h-full w-full items-center justify-between space-x-1 rounded-lg border border-gray-300 bg-white py-3 pl-3 pr-2 focus:border-transparent focus:ring-2 focus:ring-indigo-500 min-[380px]:w-auto"
+                          className="flex items-center space-x-1 pl-3 pr-2 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white h-full"
                       >
                         <span>{selectedCountry?.flag}</span>
                         <span>{selectedCountry?.code}</span>
@@ -690,7 +690,7 @@ const UnifiedRegister: React.FC = () => {
                     >
                       <Info className="h-4 w-4 text-gray-400 cursor-help" />
                       {showPasswordTooltip && (
-                          <div className="absolute bottom-full left-0 z-10 mb-2 w-80 max-w-[calc(100vw-2.5rem)] rounded-lg bg-gray-900 p-3 text-xs text-white shadow-lg sm:left-1/2 sm:-translate-x-1/2">
+                          <div className="absolute z-10 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg bottom-full mb-2 left-1/2 transform -translate-x-1/2">
                             <div className="font-medium mb-1">Password Requirements:</div>
                             <ul className="space-y-1">
                               <li>• {settings.password_min_length}-{settings.password_max_length} characters</li>

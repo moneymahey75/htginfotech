@@ -1,16 +1,19 @@
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getCourseCategories, getCourses, supabase } from '../lib/supabase';
-import { withTimeout } from '../utils/loadingRecovery';
 import CourseImage from '../components/ui/CourseImage';
 import { 
   Search, 
+  Filter, 
   Clock, 
   Users, 
   Star, 
   Play,
   BookOpen,
+  Award,
+  DollarSign,
+  Calendar,
   ChevronRight,
   Grid3X3,
   List,
@@ -32,7 +35,6 @@ interface Course {
   tc_learning_outcomes: string[];
   tc_tags: string[];
   tc_featured: boolean;
-  tc_created_at?: string;
   tbl_course_categories: {
     tcc_name: string;
     tcc_color: string;
@@ -50,13 +52,6 @@ interface CourseCategory {
 }
 
 const COURSE_VIEW_MODE_STORAGE_KEY = 'courses-view-mode';
-const COURSE_CATALOG_CACHE_KEY = 'course-catalog-cache-v1';
-const COURSES_SLOW_NOTICE_MS = 15000;
-const ENROLLMENTS_LOAD_TIMEOUT_MS = 8000;
-
-const getErrorMessage = (error: unknown) => (
-  error instanceof Error ? error.message : String(error || 'Unknown error')
-);
 
 const getInitialViewMode = (): 'grid' | 'list' => {
   if (typeof window === 'undefined') {
@@ -67,37 +62,11 @@ const getInitialViewMode = (): 'grid' | 'list' => {
   return savedViewMode === 'list' ? 'list' : 'grid';
 };
 
-const readCachedCatalog = (): { courses: Course[]; categories: CourseCategory[] } | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const cached = window.sessionStorage.getItem(COURSE_CATALOG_CACHE_KEY);
-    return cached ? JSON.parse(cached) : null;
-  } catch {
-    return null;
-  }
-};
-
-const writeCachedCatalog = (courses: Course[], categories: CourseCategory[]) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.sessionStorage.setItem(COURSE_CATALOG_CACHE_KEY, JSON.stringify({ courses, categories }));
-  } catch {
-    // Cache is only a speed hint; ignore quota/privacy-mode failures.
-  }
-};
-
 const Courses: React.FC = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<CourseCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [priceFilter, setPriceFilter] = useState<string>('all');
@@ -105,110 +74,9 @@ const Courses: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(getInitialViewMode);
 
-  const loadData = useCallback(async (isActive: () => boolean = () => true) => {
-    let slowNoticeTimer: number | undefined;
-
-    try {
-      const cachedCatalog = readCachedCatalog();
-      if (cachedCatalog) {
-        setCourses(cachedCatalog.courses);
-        setCategories(cachedCatalog.categories);
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
-
-      setLoadError('');
-
-      slowNoticeTimer = window.setTimeout(() => {
-        if (!isActive()) {
-          return;
-        }
-
-        setLoading(false);
-        setLoadError('Courses are taking longer than usual to load. You can retry, or wait a moment while we keep trying.');
-      }, COURSES_SLOW_NOTICE_MS);
-
-      const [coursesResult, categoriesResult] = await Promise.allSettled([
-        getCourses(),
-        getCourseCategories()
-      ]);
-
-      if (!isActive()) {
-        return;
-      }
-
-      if (slowNoticeTimer) {
-        window.clearTimeout(slowNoticeTimer);
-      }
-
-      if (coursesResult.status === 'rejected') {
-        throw coursesResult.reason;
-      }
-
-      const coursesData = coursesResult.value || [];
-      const categoriesData = categoriesResult.status === 'fulfilled' ? categoriesResult.value || [] : [];
-
-      if (categoriesResult.status === 'rejected') {
-        console.warn('Course categories were slow or unavailable:', getErrorMessage(categoriesResult.reason));
-      }
-
-      setCourses(coursesData);
-      setCategories(categoriesData || []);
-      writeCachedCatalog(coursesData, categoriesData || []);
-      setLoadError('');
-
-      if (user?.id) {
-        void withTimeout(
-          supabase
-            .from('tbl_course_enrollments')
-            .select('tce_course_id')
-            .eq('tce_user_id', user.id),
-          ENROLLMENTS_LOAD_TIMEOUT_MS,
-          'Loading enrollment details timed out'
-        ).then((enrollmentsResult) => {
-          if (!isActive() || enrollmentsResult.error) {
-            return;
-          }
-
-          const purchasedCourseIds = new Set(
-            (enrollmentsResult.data || []).map((enrollment) => enrollment.tce_course_id)
-          );
-
-          setCourses((currentCourses) => currentCourses.filter(
-            (course) => !purchasedCourseIds.has(course.tc_id)
-          ));
-        }).catch((error) => {
-          console.warn('Enrollment details were slow or unavailable:', getErrorMessage(error));
-        });
-      }
-    } catch (error) {
-      if (isActive()) {
-        if (!readCachedCatalog()) {
-          setCourses([]);
-          setCategories([]);
-        }
-        setLoadError(`Unable to load courses. ${getErrorMessage(error)}`);
-      }
-    } finally {
-      if (slowNoticeTimer) {
-        window.clearTimeout(slowNoticeTimer);
-      }
-
-      if (isActive()) {
-        setLoading(false);
-      }
-    }
-  }, [user?.id]);
-
   useEffect(() => {
-    let isActive = true;
-    loadData(() => isActive);
-
-    return () => {
-      isActive = false;
-    };
-  }, [loadData]);
+    loadData();
+  }, [user?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -218,11 +86,46 @@ const Courses: React.FC = () => {
     window.localStorage.setItem(COURSE_VIEW_MODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [coursesData, categoriesData, enrollmentsResult] = await Promise.all([
+        getCourses(),
+        getCourseCategories(),
+        user?.id
+          ? supabase
+              .from('tbl_course_enrollments')
+              .select('tce_course_id')
+              .eq('tce_user_id', user.id)
+          : Promise.resolve({ data: [], error: null })
+      ]);
+
+      if (enrollmentsResult.error) {
+        throw enrollmentsResult.error;
+      }
+
+      const purchasedCourseIds = new Set(
+        (enrollmentsResult.data || []).map((enrollment) => enrollment.tce_course_id)
+      );
+
+      const visibleCourses = (coursesData || []).filter(
+        (course) => !purchasedCourseIds.has(course.tc_id)
+      );
+
+      setCourses(visibleCourses);
+      setCategories(categoriesData || []);
+    } catch (error) {
+      console.error('Failed to load courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredCourses = courses.filter(course => {
     const matchesSearch = 
       course.tc_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (course.tc_description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (course.tc_tags || []).some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      course.tc_description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.tc_tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesCategory = 
       selectedCategory === 'all' || 
@@ -275,6 +178,35 @@ const Courses: React.FC = () => {
         return new Date(b.tc_created_at || '').getTime() - new Date(a.tc_created_at || '').getTime();
     }
   });
+
+  const getDifficultyColor = (level: string) => {
+    switch (level) {
+      case 'beginner': return 'bg-green-100 text-green-800';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'advanced': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriceDisplay = (course: Course) => {
+    if (course.tc_pricing_type === 'free') {
+      return <span className="text-green-600 font-bold">Free</span>;
+    } else if (course.tc_pricing_type === 'paid_days') {
+      return (
+        <div>
+          <span className="text-2xl font-bold text-gray-900">${course.tc_price}</span>
+          <span className="text-sm text-gray-600">/{course.tc_access_days} days</span>
+        </div>
+      );
+    } else {
+      return (
+        <div>
+          <span className="text-2xl font-bold text-gray-900">${course.tc_price}</span>
+          <span className="text-sm text-gray-600">/lifetime</span>
+        </div>
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -418,12 +350,12 @@ const Courses: React.FC = () => {
                 <p className="text-gray-600">{sortedCourses.length} courses found</p>
               </div>
 
-              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:space-x-4 sm:gap-0">
+              <div className="flex items-center space-x-4">
                 {/* Sort */}
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-indigo-500 sm:w-auto"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="newest">Newest First</option>
                   <option value="title">Title A-Z</option>
@@ -455,20 +387,7 @@ const Courses: React.FC = () => {
             </div>
 
             {/* Courses Grid/List */}
-            {loadError ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
-                <BookOpen className="mx-auto mb-4 h-12 w-12 text-amber-500" />
-                <h3 className="mb-2 text-lg font-medium text-amber-900">Unable to load courses</h3>
-                <p className="mx-auto max-w-md text-amber-700">{loadError}</p>
-                <button
-                  type="button"
-                  onClick={() => loadData()}
-                  className="mt-5 rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-indigo-700"
-                >
-                  Retry
-                </button>
-              </div>
-            ) : sortedCourses.length === 0 ? (
+            {sortedCourses.length === 0 ? (
               <div className="text-center py-12">
                 <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
@@ -538,8 +457,8 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
   if (viewMode === 'list') {
     return (
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-        <div className="flex flex-col sm:min-h-[220px] md:flex-row">
-          <div className="relative h-48 flex-shrink-0 overflow-hidden rounded-t-xl bg-gray-100 sm:h-56 md:h-auto md:min-h-[220px] md:w-64 md:rounded-l-xl md:rounded-tr-none">
+        <div className="flex min-h-[220px]">
+          <div className="w-64 min-h-[220px] flex-shrink-0 bg-gray-100 rounded-l-xl overflow-hidden relative">
             <CourseImage
                 src={course.tc_thumbnail_url}
                 alt={course.tc_title}
@@ -558,11 +477,11 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
               )}
             </div>
           </div>
-          <div className="flex-1 px-4 py-4 sm:px-5 sm:py-3 flex flex-col">
+          <div className="flex-1 px-5 py-2 flex flex-col">
             <div className="flex-1">
               <div className="flex items-start justify-between gap-4 mb-1">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 leading-tight mb-1 sm:text-3xl">{course.tc_title}</h3>
+                  <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-1">{course.tc_title}</h3>
                 </div>
                 <div className="flex items-center space-x-1 flex-shrink-0">
                   <Star className="h-5 w-5 text-yellow-400 fill-current" />
@@ -582,7 +501,7 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
             </div>
 
             <div className="border-t border-b border-gray-100 py-4 mt-3 mb-4">
-              <div className="grid grid-cols-1 gap-3 text-sm text-gray-500 sm:grid-cols-3 sm:gap-6">
+              <div className="grid grid-cols-3 gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-2 justify-start">
                   <Clock className="h-5 w-5 flex-shrink-0" />
                   <span>{course.tc_duration_hours}h</span>
@@ -598,16 +517,16 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 mt-auto sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex items-center justify-between gap-6 mt-auto">
               <div className="min-w-0">
                 {getPriceDisplay()}
               </div>
-              <div className="text-sm text-gray-500 sm:whitespace-nowrap sm:flex-shrink-0">
+              <div className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
                 {getAccessLabel()}
               </div>
               <Link
                 to={`/courses/${course.tc_id}`}
-                className="flex items-center justify-center space-x-2 rounded-full bg-indigo-600 px-5 py-2 text-base font-medium text-white transition-colors hover:bg-indigo-700 sm:whitespace-nowrap"
+                className="bg-indigo-600 text-white px-5 py-2 rounded-full hover:bg-indigo-700 transition-colors flex items-center space-x-2 text-base font-medium whitespace-nowrap"
               >
                 <span>View Details</span>
                 <ChevronRight className="h-4 w-4" />
@@ -671,7 +590,7 @@ const CourseCard: React.FC<{ course: Course; viewMode: 'grid' | 'list' }> = ({ c
           )}
         </div>
         
-        <div className="grid grid-cols-1 gap-3 text-sm text-gray-500 border-t border-b border-gray-100 py-4 mt-3 mb-4 min-[360px]:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3 text-sm text-gray-500 border-t border-b border-gray-100 py-4 mt-3 mb-4">
           <div className="flex flex-col items-center text-center">
             <div className="h-5 flex items-center justify-center mb-2">
               <Clock className="h-4 w-4" />

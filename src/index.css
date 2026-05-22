@@ -37,6 +37,10 @@ html {
   background-image: url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Cpath d="M20 20c0-11.046-8.954-20-20-20v20h20z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
 }
 
+.pt-16 {
+  padding-top: 6rem !important;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -56,80 +60,4 @@ html {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-html,
-body,
-#root {
-  width: 100%;
-  min-width: 0;
-  overflow-x: hidden;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-img,
-svg,
-video,
-canvas,
-iframe {
-  max-width: 100%;
-}
-
-.public-site {
-  min-width: 0;
-  overflow-x: clip;
-}
-
-.public-site section,
-.public-site article,
-.public-site div,
-.public-site p,
-.public-site h1,
-.public-site h2,
-.public-site h3,
-.public-site a,
-.public-site button,
-.public-site span {
-  overflow-wrap: anywhere;
-}
-
-.public-site input,
-.public-site select,
-.public-site textarea,
-.public-site button {
-  max-width: 100%;
-}
-
-@media (max-width: 640px) {
-  .public-site section {
-    scroll-margin-top: 5rem;
-  }
-
-  .public-site h1 {
-    font-size: clamp(2rem, 12vw, 3rem);
-    line-height: 1.08;
-  }
-
-  .public-site h2 {
-    font-size: clamp(1.75rem, 9vw, 2.5rem);
-    line-height: 1.15;
-  }
-
-  .public-site h3 {
-    line-height: 1.25;
-  }
-
-  .public-site p,
-  .public-site li,
-  .public-site label,
-  .public-site input,
-  .public-site select,
-  .public-site textarea {
-    line-height: 1.55;
-  }
 }

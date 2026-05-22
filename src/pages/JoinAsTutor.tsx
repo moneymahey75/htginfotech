@@ -134,7 +134,7 @@ const JoinAsTutor: React.FC = () => {
             <div className="relative">
               <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20">
                 <h3 className="text-2xl font-bold mb-6">Tutor Earnings</h3>
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-green-300 mb-2">$75</div>
                     <div className="text-sm text-gray-300">Average Hourly Rate</div>
@@ -309,9 +309,9 @@ const JoinAsTutor: React.FC = () => {
               <img 
                 src={buildAssetUrl('/images/tutorStartTeaching.png')}
                 alt="Requirements"
-                className="w-full rounded-2xl object-cover shadow-2xl"
+                className="rounded-2xl shadow-2xl"
               />
-              <div className="mt-4 rounded-2xl bg-gradient-to-r from-green-500 to-blue-600 p-5 text-white shadow-xl sm:absolute sm:-bottom-6 sm:-right-6 sm:mt-0 sm:p-6">
+              <div className="absolute -bottom-6 -right-6 bg-gradient-to-r from-green-500 to-blue-600 text-white p-6 rounded-2xl shadow-xl">
                 <div className="text-2xl font-bold">Ready to Teach?</div>
                 <div className="text-sm opacity-90">Join 500+ expert tutors</div>
               </div>

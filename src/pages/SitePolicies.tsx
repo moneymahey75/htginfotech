@@ -32,7 +32,7 @@ const SitePolicies: React.FC = () => {
         {/* Navigation Tabs */}
         <div className="bg-white rounded-2xl shadow-lg mb-8">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-6 overflow-x-auto px-5 sm:space-x-8 sm:px-6">
+            <nav className="flex space-x-8 px-6 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -51,7 +51,7 @@ const SitePolicies: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-5 sm:p-8">
+          <div className="p-8">
             {activeTab === 'terms' && (
               <div className="prose max-w-none">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Terms of Service</h2>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { getTurnstileConfig, type TurnstileConfig } from '../../lib/turnstile';
 
@@ -64,16 +64,6 @@ const ReCaptcha: React.FC<ReCaptchaProps> = ({ onVerify, action = 'form_submit',
   const [loading, setLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState('');
-
-  const resetWidget = useCallback(() => {
-    setIsVerified(false);
-    setError('');
-    onVerify(null);
-
-    if (widgetIdRef.current && window.turnstile) {
-      window.turnstile.reset(widgetIdRef.current);
-    }
-  }, [onVerify]);
 
   useEffect(() => {
     let isMounted = true;
@@ -145,7 +135,6 @@ const ReCaptcha: React.FC<ReCaptchaProps> = ({ onVerify, action = 'form_submit',
             onVerify(null);
           },
           theme: 'light',
-          size: 'flexible',
         });
       } catch (renderError) {
         if (!isMounted) {
@@ -171,12 +160,15 @@ const ReCaptcha: React.FC<ReCaptchaProps> = ({ onVerify, action = 'form_submit',
       return;
     }
 
-    resetWidget();
-  }, [resetSignal, resetWidget]);
+    setIsVerified(false);
+    setError('');
+    onVerify(null);
+    window.turnstile.reset(widgetIdRef.current);
+  }, [onVerify, resetSignal]);
 
   return (
     <div className="flex justify-center">
-      <div className="w-full max-w-sm overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-gray-50 p-4">
         <div className="mb-3 flex items-center justify-center space-x-2">
           {loading ? (
             <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
@@ -187,28 +179,16 @@ const ReCaptcha: React.FC<ReCaptchaProps> = ({ onVerify, action = 'form_submit',
           ) : (
             <Shield className="h-5 w-5 text-gray-600" />
           )}
-          <span className="whitespace-nowrap text-sm font-medium text-gray-700">Cloudflare Verification</span>
+          <span className="text-sm font-medium text-gray-700">Cloudflare Verification</span>
         </div>
 
         {loading ? (
           <p className="text-center text-xs text-gray-500">Loading security check...</p>
+        ) : error ? (
+          <p className="text-center text-xs text-red-600">{error}</p>
         ) : (
           <>
-            <div className="mx-auto flex min-h-[65px] w-full justify-center overflow-hidden">
-              <div ref={containerRef} className="min-h-[65px] w-full min-w-[300px]" />
-            </div>
-            {error ? (
-              <div className="mt-3 text-center">
-                <p className="text-xs text-red-600">{error}</p>
-                <button
-                  type="button"
-                  onClick={resetWidget}
-                  className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-                >
-                  Retry verification
-                </button>
-              </div>
-            ) : null}
+            <div ref={containerRef} className="min-h-[65px]" />
             {config?.usingTestKey ? (
               <p className="mt-3 text-center text-xs text-amber-600">
                 Using Cloudflare Turnstile test keys for local development.

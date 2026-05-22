@@ -142,7 +142,7 @@ const JoinAsLearner: React.FC = () => {
             <div className="relative">
               <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20">
                 <h3 className="text-2xl font-bold mb-6">Platform Stats</h3>
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-yellow-300 mb-2">10K+</div>
                     <div className="text-sm text-gray-300">Active Learners</div>

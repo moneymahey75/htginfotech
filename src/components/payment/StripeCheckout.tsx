@@ -306,13 +306,13 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
-                                <div className="mb-4 flex flex-col gap-3 rounded-2xl bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="min-w-0">
+                            <div className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm">
+                                <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                                    <div>
                                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Card details</p>
                                         <p className="mt-1 text-sm text-slate-600">Enter your card information to finish your enrollment.</p>
                                     </div>
-                                    <div className="inline-flex w-fit shrink-0 items-center whitespace-nowrap rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                                    <div className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                                         <Lock className="mr-1.5 h-3.5 w-3.5" />
                                         Encrypted
                                     </div>
