@@ -35,6 +35,14 @@ export interface VideoStatus {
   message?: string;
 }
 
+const DEFAULT_STORAGE_SETTINGS: StorageSettings = {
+  activeProvider: 'supabase',
+  supabaseBucket: 'course-videos',
+  signedUrlExpiry: 3600,
+  maxFileSizeMB: 500,
+  autoCompress: true,
+};
+
 class VideoStorageService {
   private settingsCache: StorageSettings | null = null;
   private cacheTime: number = 0;
@@ -49,32 +57,39 @@ class VideoStorageService {
     const { data, error } = await supabase
       .from('tbl_video_storage_settings')
       .select('*')
-      .single();
+      .limit(1);
 
     if (error) {
       console.error('Error fetching storage settings:', error);
       throw new Error('Failed to load storage settings');
     }
 
+    const settings = data?.[0];
+    if (!settings) {
+      this.settingsCache = DEFAULT_STORAGE_SETTINGS;
+      this.cacheTime = now;
+      return this.settingsCache;
+    }
+
     this.settingsCache = {
-      activeProvider: data.tvss_active_provider as StorageProvider,
-      supabaseBucket: data.tvss_supabase_bucket,
-      cloudflareAccountId: data.tvss_cloudflare_account_id,
-      cloudflareAccessKey: data.tvss_cloudflare_access_key,
-      cloudflareSecretKey: data.tvss_cloudflare_secret_key,
-      cloudflareBucket: data.tvss_cloudflare_bucket,
-      cloudflareWorkerUrl: data.tvss_cloudflare_worker_url,
-      cloudflarePublicUrl: data.tvss_cloudflare_public_url,
-      cloudflareStreamEnabled: data.tvss_cloudflare_stream_enabled,
-      bunnyApiKey: data.tvss_bunny_api_key,
-      bunnyStorageZone: data.tvss_bunny_storage_zone,
-      bunnyCdnUrl: data.tvss_bunny_cdn_url,
-      bunnyStreamLibraryId: data.tvss_bunny_stream_library_id,
-      bunnyStreamApiKey: data.tvss_bunny_stream_api_key,
-      bunnyUseStream: data.tvss_bunny_use_stream || false,
-      signedUrlExpiry: data.tvss_signed_url_expiry_seconds,
-      maxFileSizeMB: data.tvss_max_file_size_mb,
-      autoCompress: data.tvss_auto_compress,
+      activeProvider: settings.tvss_active_provider as StorageProvider,
+      supabaseBucket: settings.tvss_supabase_bucket,
+      cloudflareAccountId: settings.tvss_cloudflare_account_id,
+      cloudflareAccessKey: settings.tvss_cloudflare_access_key,
+      cloudflareSecretKey: settings.tvss_cloudflare_secret_key,
+      cloudflareBucket: settings.tvss_cloudflare_bucket,
+      cloudflareWorkerUrl: settings.tvss_cloudflare_worker_url,
+      cloudflarePublicUrl: settings.tvss_cloudflare_public_url,
+      cloudflareStreamEnabled: settings.tvss_cloudflare_stream_enabled,
+      bunnyApiKey: settings.tvss_bunny_api_key,
+      bunnyStorageZone: settings.tvss_bunny_storage_zone,
+      bunnyCdnUrl: settings.tvss_bunny_cdn_url,
+      bunnyStreamLibraryId: settings.tvss_bunny_stream_library_id,
+      bunnyStreamApiKey: settings.tvss_bunny_stream_api_key,
+      bunnyUseStream: settings.tvss_bunny_use_stream || false,
+      signedUrlExpiry: settings.tvss_signed_url_expiry_seconds,
+      maxFileSizeMB: settings.tvss_max_file_size_mb,
+      autoCompress: settings.tvss_auto_compress,
     };
 
     this.cacheTime = now;

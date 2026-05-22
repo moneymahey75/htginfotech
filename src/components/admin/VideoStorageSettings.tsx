@@ -25,6 +25,14 @@ interface Settings {
   tvss_auto_compress: boolean;
 }
 
+const DEFAULT_SETTINGS = {
+  tvss_active_provider: 'supabase' as StorageProvider,
+  tvss_supabase_bucket: 'course-videos',
+  tvss_signed_url_expiry_seconds: 3600,
+  tvss_max_file_size_mb: 500,
+  tvss_auto_compress: true,
+};
+
 export default function VideoStorageSettings() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,10 +52,23 @@ export default function VideoStorageSettings() {
       const { data, error: fetchError } = await supabase
         .from('tbl_video_storage_settings')
         .select('*')
-        .single();
+        .limit(1);
 
       if (fetchError) throw fetchError;
-      setSettings(data);
+
+      if (data?.[0]) {
+        setSettings(data[0]);
+        return;
+      }
+
+      const { data: createdSettings, error: createError } = await supabase
+        .from('tbl_video_storage_settings')
+        .insert(DEFAULT_SETTINGS)
+        .select('*')
+        .single();
+
+      if (createError) throw createError;
+      setSettings(createdSettings);
     } catch (err: any) {
       setError('Failed to load storage settings');
       console.error(err);
