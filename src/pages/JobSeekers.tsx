@@ -141,10 +141,10 @@ const JobSeekers: React.FC = () => {
                             <img
                                 src={buildAssetUrl('/images/banners/pro1.png')}
                                 alt="Job Search Success"
-                                className="rounded-2xl shadow-2xl"
+                                className="w-full rounded-2xl object-cover shadow-2xl"
                             />
                             <div
-                                className="absolute -bottom-6 -right-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-2xl shadow-xl">
+                                className="mt-4 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 p-5 text-white shadow-xl sm:absolute sm:-bottom-6 sm:-right-6 sm:mt-0 sm:p-6">
                                 <div className="text-2xl font-bold">10K+</div>
                                 <div className="text-sm opacity-90">Jobs Available</div>
                             </div>

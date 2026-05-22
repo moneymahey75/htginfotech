@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
 import { supabase } from '../lib/supabase';
 import { buildAssetUrl } from '../utils/baseUrl';
-import { useLoadingRecovery, withTimeout } from '../utils/loadingRecovery';
 import {
   ArrowRight,
   Users,
@@ -11,8 +10,6 @@ import {
   Shield,
   Award,
   Sparkles,
-  Zap,
-  Globe,
   ChevronLeft,
   ChevronRight,
   Play,
@@ -20,7 +17,6 @@ import {
   CheckCircle,
   Target,
   Rocket,
-  DollarSign,
   BookOpen
 } from 'lucide-react';
 
@@ -42,36 +38,37 @@ const Home: React.FC = () => {
   const { settings } = useAdmin();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [sliders, setSliders] = useState<Slider[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { hasTimedOut, didTriggerReload } = useLoadingRecovery({
-    isLoading: loading,
-    recoveryKey: 'home-page'
-  });
 
   useEffect(() => {
-    loadSliders();
+    let isActive = true;
+    loadSliders(() => isActive);
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
-  const loadSliders = async () => {
+  const loadSliders = async (isActive: () => boolean = () => true) => {
     try {
-      const response = await withTimeout(
-        supabase
-          .from('tbl_sliders')
-          .select('*')
-          .eq('ts_is_active', true)
-          .order('ts_sort_order', { ascending: true }),
-        10000,
-        'Loading homepage sliders timed out'
-      );
+      const response = await supabase
+        .from('tbl_sliders')
+        .select('*')
+        .eq('ts_is_active', true)
+        .order('ts_sort_order', { ascending: true });
 
       if (response.error) throw response.error;
 
+      if (!isActive()) {
+        return;
+      }
+
       setSliders(response.data || []);
+      setCurrentSlide(0);
     } catch (error) {
-      console.error('Failed to load sliders:', error);
-      setSliders([]);
-    } finally {
-      setLoading(false);
+      console.warn('Failed to load homepage sliders, showing fallback hero:', error);
+      if (isActive()) {
+        setSliders([]);
+      }
     }
   };
 
@@ -96,28 +93,11 @@ const Home: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">
-              {didTriggerReload
-                ? 'Refreshing the page...'
-                : hasTimedOut
-                  ? 'Still loading. Trying to recover automatically...'
-                  : 'Loading...'}
-            </p>
-          </div>
-        </div>
-    );
-  }
-
   return (
       <div className="min-h-screen">
-        {/* Hero Slider Section */ console.log(sliders)}
+        {/* Hero Slider Section */}
         {sliders.length > 0 ? (
-            <section className="relative h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+            <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 sm:min-h-[calc(100svh-6rem)]">
               <div className="absolute inset-0">
                 {sliders.map((slider, index) => (
                     <div
@@ -136,7 +116,7 @@ const Home: React.FC = () => {
               </div>
 
               {/* Slider Content */}
-              <div className="relative z-10 h-full flex items-center">
+              <div className="relative z-10 flex min-h-[calc(100svh-4rem)] items-center py-12 sm:min-h-[calc(100svh-6rem)]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                   <div className="max-w-3xl">
                     {sliders[currentSlide]?.ts_subtitle && (
@@ -148,12 +128,12 @@ const Home: React.FC = () => {
                         </div>
                     )}
 
-                    <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                       {sliders[currentSlide]?.ts_title || 'Welcome to Our Platform'}
                     </h1>
 
                     {/*{sliders[currentSlide]?.ts_description && (*/}
-                        <p className="text-xl md:text-2xl text-gray-200 mb-8 leading-relaxed">
+                        <p className="text-lg md:text-2xl text-gray-200 mb-8 leading-relaxed">
                           {sliders[currentSlide].ts_description}
                         </p>
                     {/*)}*/}
@@ -219,20 +199,20 @@ const Home: React.FC = () => {
               {/* Navigation Arrows */}
               <button
                   onClick={prevSlide}
-                  className="absolute left-6 top-1/2 transform -translate-y-1/2 z-20 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition-all duration-300"
+                  className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-2 text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 sm:left-6 sm:p-3"
               >
                 <ChevronLeft className="h-6 w-6" />
               </button>
               <button
                   onClick={nextSlide}
-                  className="absolute right-6 top-1/2 transform -translate-y-1/2 z-20 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition-all duration-300"
+                  className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-2 text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 sm:right-6 sm:p-3"
               >
                 <ChevronRight className="h-6 w-6" />
               </button>
             </section>
         ) : (
             // Fallback hero section if no sliders are available
-            <section className="relative h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+            <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 sm:min-h-[calc(100svh-6rem)]">
               <div className="absolute inset-0">
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -241,13 +221,13 @@ const Home: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
               </div>
 
-              <div className="relative z-10 h-full flex items-center">
+              <div className="relative z-10 flex min-h-[calc(100svh-4rem)] items-center py-12 sm:min-h-[calc(100svh-6rem)]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                   <div className="max-w-3xl">
-                    <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                       Welcome to {settings.site_name}
                     </h1>
-                    <p className="text-xl md:text-2xl text-gray-200 mb-8 leading-relaxed">
+                    <p className="text-lg md:text-2xl text-gray-200 mb-8 leading-relaxed">
                       Discover amazing learning opportunities with our expert tutors and comprehensive courses.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4">

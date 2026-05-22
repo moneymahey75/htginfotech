@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { supabase } from '../lib/adminClient';
-import { withTimeout } from '../utils/loadingRecovery';
+import { getSystemSettings } from '../lib/supabase';
 
 interface GeneralSettings {
   site_name: string;
@@ -108,7 +107,6 @@ interface AdminContextType {
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
-const ADMIN_SETTINGS_TIMEOUT_MS = 10000;
 
 export const useAdmin = () => {
   const context = useContext(AdminContext);
@@ -235,43 +233,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const loadSettingsFromDatabase = async () => {
     try {
-      setLoading(true);
+      setLoading(false);
 
-      const { data, error } = await withTimeout(
-        supabase
-          .from('tbl_system_settings')
-          .select('tss_setting_key, tss_setting_value'),
-        ADMIN_SETTINGS_TIMEOUT_MS,
-        'Loading system settings timed out'
-      );
+      const settingsMap = await getSystemSettings();
 
-      if (error) {
-        console.warn('Failed to load settings from database, using defaults:', error);
-        setSettings(defaultSettings);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const settingsMap = data.reduce((acc: any, setting: any) => {
-          try {
-            let value = setting.tss_setting_value;
-
-            if (typeof value === 'string') {
-              try {
-                value = JSON.parse(value);
-              } catch {
-                // Keep as string if JSON parse fails
-              }
-            }
-
-            acc[setting.tss_setting_key] = value;
-          } catch (parseError) {
-            console.warn('Failed to parse setting value:', setting.tss_setting_key, parseError);
-            acc[setting.tss_setting_key] = setting.tss_setting_value;
-          }
-          return acc;
-        }, {});
-
+      if (Object.keys(settingsMap).length > 0) {
         setEmailSMTP({
           host: settingsMap.smtp_host || 'smtp.resend.com',
           port: Number(settingsMap.smtp_port ?? 587) || 587,
@@ -351,7 +317,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
     } catch (error) {
-      console.error('Error loading settings from database:', error);
+      console.warn('Public settings unavailable, using defaults:', error);
       setSettings(defaultSettings);
       setEmailSMTP({
         host: 'smtp.resend.com',

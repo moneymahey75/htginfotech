@@ -713,7 +713,7 @@ const LearnerDashboard: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {activeTab === 'overview' && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Recent Activities */}
@@ -958,7 +958,7 @@ const LearnerDashboard: React.FC = () => {
                           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                         </div>
                     ) : assignedTutors.length === 0 ? (
-                        <div className="bg-gray-50 rounded-lg p-12 text-center">
+                        <div className="bg-gray-50 rounded-lg p-6 text-center sm:p-12">
                           <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                           <h4 className="text-lg font-semibold text-gray-900 mb-2">No Assigned Tutors</h4>
                           <p className="text-gray-600">
@@ -973,59 +973,59 @@ const LearnerDashboard: React.FC = () => {
                             const courseTitle = assignedCourse?.tc_title || 'Unknown Course';
 
                             return (
-                                <div key={assignment.tta_id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                                  <div className="flex items-start space-x-4">
+                                <div key={assignment.tta_id} className="overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+                                  <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
                                     <img
                                         src={tutorData.profilePicture}
                                         alt={tutorData.fullName}
-                                        className="w-20 h-20 rounded-full object-cover"
+                                        className="h-20 w-20 flex-shrink-0 rounded-full object-cover"
                                     />
-                                    <div className="flex-1">
-                                      <h4 className="text-xl font-semibold text-gray-900">
+                                    <div className="min-w-0 flex-1">
+                                      <h4 className="break-words text-xl font-semibold leading-snug text-gray-900">
                                         {tutorData.fullName}
                                       </h4>
-                                      <p className="text-indigo-600 mb-2">
+                                      <p className="mb-2 break-words text-indigo-600">
                                         {tutorData.specializations.length > 0
                                             ? tutorData.specializations.join(', ')
                                             : 'Instructor'}
                                       </p>
-                                      <p className="text-gray-600 text-sm mb-2">
+                                      <p className="mb-2 break-words text-sm text-gray-600">
                                         <span className="font-medium">Course:</span> {courseTitle}
                                       </p>
                                       {tutorData.bio && (
-                                          <p className="text-gray-600 text-sm mb-4">
+                                          <p className="mb-4 break-words text-sm text-gray-600">
                                             {tutorData.bio}
                                           </p>
                                       )}
 
-                                      <div className="flex items-center space-x-6 text-sm">
+                                      <div className="grid grid-cols-1 justify-items-center gap-3 text-sm text-gray-600 sm:flex sm:flex-wrap sm:items-center sm:justify-items-start sm:gap-x-6 sm:gap-y-2">
                                         {tutorData.rating > 0 && (
-                                            <div className="flex items-center space-x-1">
-                                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                                            <div className="flex min-w-0 items-center gap-1.5">
+                                              <Star className="h-4 w-4 flex-shrink-0 fill-current text-yellow-400" />
                                               <span>{tutorData.rating.toFixed(1)} rating</span>
                                             </div>
                                         )}
-                                        <div className="flex items-center space-x-1">
-                                          <User className="h-4 w-4" />
+                                        <div className="flex min-w-0 items-center gap-1.5">
+                                          <User className="h-4 w-4 flex-shrink-0" />
                                           <span>{tutorData.totalStudents} students</span>
                                         </div>
-                                        <div className="flex items-center space-x-1">
-                                          <Clock className="h-4 w-4" />
+                                        <div className="flex min-w-0 items-center gap-1.5">
+                                          <Clock className="h-4 w-4 flex-shrink-0" />
                                           <span>{tutorData.experienceYears} years experience</span>
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:items-end sm:text-right">
                                       {tutorData.email && (
                                           <a
                                               href={`mailto:${tutorData.email}`}
-                                              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors mb-2 inline-block"
+                                              className="inline-flex w-full items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 sm:w-auto"
                                           >
                                             Message Tutor
                                           </a>
                                       )}
                                       {tutorData.hourlyRate > 0 && (
-                                          <div className="text-sm text-gray-500 mt-2">
+                                          <div className="text-sm text-gray-500">
                                             ${tutorData.hourlyRate}/hour
                                           </div>
                                       )}

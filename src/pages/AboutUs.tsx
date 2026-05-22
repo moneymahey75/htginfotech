@@ -47,9 +47,9 @@ const AboutUs: React.FC = () => {
               <img 
                 src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop" 
                 alt="Our Mission"
-                className="rounded-2xl shadow-2xl"
+                className="w-full rounded-2xl object-cover shadow-2xl"
               />
-              <div className="absolute -bottom-6 -right-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-2xl shadow-xl">
+              <div className="mt-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white shadow-xl sm:absolute sm:-bottom-6 sm:-right-6 sm:mt-0 sm:p-6">
                 <div className="text-2xl font-bold">50K+</div>
                 <div className="text-sm opacity-90">Success Stories</div>
               </div>

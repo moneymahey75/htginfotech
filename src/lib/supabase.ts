@@ -1073,8 +1073,26 @@ export const getCourses = async () => {
   const { data, error } = await supabase
     .from('tbl_courses')
     .select(`
-      *,
-      tbl_course_categories!inner (*)
+      tc_id,
+      tc_title,
+      tc_description,
+      tc_short_description,
+      tc_thumbnail_url,
+      tc_price,
+      tc_pricing_type,
+      tc_access_days,
+      tc_difficulty_level,
+      tc_duration_hours,
+      tc_total_lessons,
+      tc_learning_outcomes,
+      tc_tags,
+      tc_featured,
+      tc_created_at,
+      tbl_course_categories!inner (
+        tcc_name,
+        tcc_color,
+        tcc_icon
+      )
     `)
     .eq('tc_is_active', true)
     .eq('tbl_course_categories.tcc_is_active', true)

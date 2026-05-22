@@ -327,18 +327,18 @@ const CourseDetails: React.FC = () => {
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center space-x-2 text-sm">
+          <div className="flex items-center gap-2 overflow-x-auto text-sm">
             <button
               onClick={() => navigate('/courses')}
-              className="text-indigo-600 hover:text-indigo-700 flex items-center space-x-1"
+              className="flex flex-shrink-0 items-center space-x-1 text-indigo-600 hover:text-indigo-700"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>All Courses</span>
             </button>
             <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-500">{course.tbl_course_categories?.tcc_name}</span>
+            <span className="flex-shrink-0 text-gray-500">{course.tbl_course_categories?.tcc_name}</span>
             <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-900 font-medium">{course.tc_title}</span>
+            <span className="min-w-0 text-gray-900 font-medium">{course.tc_title}</span>
           </div>
         </div>
       </div>
@@ -348,8 +348,8 @@ const CourseDetails: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Course Header */}
-            <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
-              <div className="flex items-center space-x-3 mb-4">
+            <div className="mb-8 rounded-xl bg-white p-5 shadow-sm sm:p-8">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
                 <span className="text-sm text-gray-500">
                   {course.tbl_course_categories?.tcc_name}
                 </span>
@@ -366,7 +366,7 @@ const CourseDetails: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{course.tc_title}</h1>
               <p className="text-xl text-gray-600 mb-6">{course.tc_short_description}</p>
               
-              <div className="flex items-center space-x-6 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 sm:gap-6">
                 <div className="flex items-center space-x-2">
                   <Clock className="h-5 w-5" />
                   <span>{course.tc_duration_hours} hours</span>
@@ -400,7 +400,7 @@ const CourseDetails: React.FC = () => {
             {/* Navigation Tabs */}
             <div className="bg-white rounded-xl shadow-sm mb-8">
               <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-6">
+                <nav className="flex space-x-8 overflow-x-auto px-5 sm:px-6">
                   {[
                     { id: 'overview', label: 'Overview' },
                     { id: 'curriculum', label: 'Curriculum' },
@@ -422,7 +422,7 @@ const CourseDetails: React.FC = () => {
                 </nav>
               </div>
 
-              <div className="p-6">
+              <div className="p-5 sm:p-6">
                 {activeTab === 'overview' && (
                   <div className="space-y-6">
                     <div>
@@ -465,13 +465,13 @@ const CourseDetails: React.FC = () => {
                       {course.tbl_course_content?.map((content, index) => (
                         <div
                           key={content.tcc_id}
-                          className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="flex flex-col gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
                         >
-                          <div className="flex items-center space-x-3">
+                          <div className="flex min-w-0 items-center space-x-3">
                             <div className="bg-indigo-100 p-2 rounded-lg">
                               {getContentIcon(content.tcc_content_type)}
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <h4 className="font-medium text-gray-900">{content.tcc_title}</h4>
                               <div className="flex items-center space-x-4 text-sm text-gray-500">
                                 <span className="capitalize">{content.tcc_content_type}</span>
@@ -479,7 +479,7 @@ const CourseDetails: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 sm:flex-shrink-0">
                             {content.tcc_is_free ? (
                               <span className="text-green-600 text-sm font-medium">Free Preview</span>
                             ) : (
@@ -497,11 +497,11 @@ const CourseDetails: React.FC = () => {
                 {activeTab === 'instructor' && (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Meet Your Instructor</h3>
-                    <div className="flex items-start space-x-4 p-6 bg-gray-50 rounded-lg">
+                    <div className="flex flex-col gap-4 rounded-lg bg-gray-50 p-5 sm:flex-row sm:items-start sm:p-6">
                       <img
                         src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"
                         alt="Instructor"
-                        className="w-16 h-16 rounded-full object-cover"
+                        className="h-16 w-16 rounded-full object-cover"
                       />
                       <div className="flex-1">
                         <h4 className="text-lg font-semibold text-gray-900">Dr. Sarah Johnson</h4>
@@ -509,7 +509,7 @@ const CourseDetails: React.FC = () => {
                         <p className="text-gray-600 text-sm mb-3">
                           10+ years of experience in web development and education. Passionate about teaching programming concepts.
                         </p>
-                        <div className="flex items-center space-x-4 text-sm">
+                        <div className="flex flex-wrap items-center gap-3 text-sm sm:gap-4">
                           <div className="flex items-center space-x-1">
                             <Star className="h-4 w-4 text-yellow-400 fill-current" />
                             <span>4.9 rating</span>
@@ -553,7 +553,7 @@ const CourseDetails: React.FC = () => {
                         }
                       ].map((review, index) => (
                         <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center space-x-3">
                               <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
                                 <span className="text-indigo-600 font-medium text-sm">
@@ -588,7 +588,7 @@ const CourseDetails: React.FC = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
+            <div className="sticky top-24 rounded-xl bg-white p-5 shadow-sm sm:p-6 lg:top-32">
               {/* Course Preview */}
               <div className="relative mb-6">
                 <CourseImage
