@@ -48,21 +48,21 @@ const Footer: React.FC = () => {
   };
 
   return (
-      <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      <footer className="overflow-x-clip bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Company Info */}
-            <div className="lg:col-span-2">
+            <div className="min-w-0 lg:col-span-2">
               <Link
                   to="/"
                   onClick={handleLogoClick}
-                  className="flex items-center space-x-3 mb-6 group"
+                  className="mb-6 flex min-w-0 items-center space-x-3 group"
               >
                 <div className="relative transition-transform duration-200 group-hover:scale-105">
                   <img
                       src={publicSettings.logo_url}
                       alt={publicSettings.site_name}
-                      className="h-14 w-auto object-cover rounded-lg shadow-lg"
+                      className="h-14 w-auto max-w-[220px] rounded-lg object-contain shadow-lg"
                       onError={(e) => {
                         // Fallback to default logo if image fails to load
                         (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop';
@@ -85,12 +85,12 @@ const Footer: React.FC = () => {
                 {publicSettings.primary_email && (
                     <a
                         href={`mailto:${publicSettings.primary_email}`}
-                        className="flex items-center space-x-3 text-gray-300 hover:text-emerald-400 transition-colors duration-200 group"
+                        className="group flex min-w-0 items-center space-x-3 text-gray-300 transition-colors duration-200 hover:text-emerald-400"
                     >
                       <div className="bg-emerald-600 p-2 rounded-lg group-hover:bg-emerald-500 transition-colors">
                         <Mail className="h-4 w-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span>{publicSettings.primary_email}</span>
                         {publicSettings.primary_email_tagline && (
                             <span className="text-sm text-gray-400 block">{publicSettings.primary_email_tagline}</span>
@@ -103,12 +103,12 @@ const Footer: React.FC = () => {
                 {publicSettings.support_email && publicSettings.support_email !== publicSettings.primary_email && (
                     <a
                         href={`mailto:${publicSettings.support_email}`}
-                        className="flex items-center space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-200 group"
+                        className="group flex min-w-0 items-center space-x-3 text-gray-300 transition-colors duration-200 hover:text-blue-400"
                     >
                       <div className="bg-blue-600 p-2 rounded-lg group-hover:bg-blue-500 transition-colors">
                         <Mail className="h-4 w-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span>{publicSettings.support_email}</span>
                         {publicSettings.support_email_tagline && (
                             <span className="text-sm text-gray-400 block">{publicSettings.support_email_tagline}</span>
@@ -121,12 +121,12 @@ const Footer: React.FC = () => {
                 {publicSettings.primary_phone && (
                     <a
                         href={`tel:${publicSettings.primary_phone}`}
-                        className="flex items-center space-x-3 text-gray-300 hover:text-teal-400 transition-colors duration-200 group"
+                        className="group flex min-w-0 items-center space-x-3 text-gray-300 transition-colors duration-200 hover:text-teal-400"
                     >
                       <div className="bg-teal-600 p-2 rounded-lg group-hover:bg-teal-500 transition-colors">
                         <Phone className="h-4 w-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span>{publicSettings.primary_phone}</span>
                         {publicSettings.primary_phone_tagline && (
                             <span className="text-sm text-gray-400 block">{publicSettings.primary_phone_tagline}</span>
@@ -139,12 +139,12 @@ const Footer: React.FC = () => {
                 {publicSettings.secondary_phone && (
                     <a
                         href={`tel:${publicSettings.secondary_phone}`}
-                        className="flex items-center space-x-3 text-gray-300 hover:text-cyan-400 transition-colors duration-200 group"
+                        className="group flex min-w-0 items-center space-x-3 text-gray-300 transition-colors duration-200 hover:text-cyan-400"
                     >
                       <div className="bg-cyan-600 p-2 rounded-lg group-hover:bg-cyan-500 transition-colors">
                         <Phone className="h-4 w-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span>{publicSettings.secondary_phone}</span>
                         {publicSettings.secondary_phone_tagline && (
                             <span className="text-sm text-gray-400 block">{publicSettings.secondary_phone_tagline}</span>
@@ -159,12 +159,12 @@ const Footer: React.FC = () => {
                         href={`https://wa.me/${publicSettings.whatsapp_number.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-green-400 transition-colors duration-200 group"
+                        className="group flex min-w-0 items-center space-x-3 text-gray-300 transition-colors duration-200 hover:text-green-400"
                     >
                       <div className="bg-green-600 p-2 rounded-lg group-hover:bg-green-500 transition-colors">
                         <MessageCircle className="h-4 w-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span>WhatsApp: {publicSettings.whatsapp_number}</span>
                         <span className="text-sm text-gray-400 block">Chat with us</span>
                       </div>
@@ -173,11 +173,11 @@ const Footer: React.FC = () => {
 
                 {/* Address */}
                 {publicSettings.address && (
-                    <div className="flex items-start space-x-3 text-gray-300">
+                    <div className="flex min-w-0 items-start space-x-3 text-gray-300">
                       <div className="bg-purple-600 p-2 rounded-lg">
                         <MapPin className="h-4 w-4" />
                       </div>
-                      <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                      <div className="min-w-0 rounded-lg border border-gray-700 bg-gray-800/50 p-4">
                         <address className="text-gray-300 text-sm not-italic">
                           {formatAddress()}
                         </address>

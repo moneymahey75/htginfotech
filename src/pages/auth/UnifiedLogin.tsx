@@ -173,8 +173,8 @@ const UnifiedLogin: React.FC = () => {
 
   return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="bg-white p-8 rounded-2xl shadow-xl">
+        <div className="w-full max-w-md space-y-8">
+          <div className="rounded-2xl bg-white p-5 shadow-xl sm:p-8">
             <div className="text-center mb-8">
               <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LogIn className="h-8 w-8 text-indigo-600" />

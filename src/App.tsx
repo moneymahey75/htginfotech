@@ -85,7 +85,7 @@ function App() {
                   <Route path="/*" element={
                     <>
                       <Navbar />
-                      <main className="pt-16">
+                      <main className="public-site pt-16 md:pt-24">
                         <Routes>
                           <Route path="/" element={<Home />} />
                           
