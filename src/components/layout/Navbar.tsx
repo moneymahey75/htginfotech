@@ -150,7 +150,7 @@ const Navbar: React.FC = () => {
       <>
         {/* Top Contact Strip - Fixed */}
         {hasTopStrip && (
-        <div className="hidden md:block bg-gray-900 text-white py-2 text-sm fixed w-full top-0 z-50">
+        <div className="bg-gray-900 text-white py-2 text-sm fixed w-full top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-2 min-h-14 md:min-h-0">
               {/* Left Side - Contact Info */}
@@ -198,22 +198,23 @@ const Navbar: React.FC = () => {
         )}
 
         {/* Main Navigation - Fixed with top offset */}
-        <nav className={`bg-white/95 backdrop-blur-md shadow-lg fixed w-full z-40 border-b border-gray-100 ${hasTopStrip ? 'top-0 md:top-8' : 'top-0'}`}>
+        <nav className={`bg-white/95 backdrop-blur-md shadow-lg fixed w-full z-40 border-b border-gray-100 ${hasTopStrip ? 'top-14 md:top-8' : 'top-0'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between gap-3">
-              <div className="flex h-full min-w-0 items-center">
-                <Link to="/" className="flex h-full min-w-0 items-center group" aria-label="HTG Infotech home">
-                  <div className="relative flex h-full max-w-[185px] items-center sm:max-w-[240px]">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <Link to="/" className="flex items-center space-x-3 group">
+                  <div className="relative">
                     <img
                         src={publicSettings.logo_url}
                         alt={publicSettings.site_name}
-                        className="block max-h-12 w-auto max-w-full object-contain sm:max-h-14"
+                        className="h-14 w-100 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
                         onError={(e) => {
                           // Fallback to loading GIF with proper sizing
                           (e.target as HTMLImageElement).src = buildAssetUrl('/htginfotech-logo.png');
-                          (e.target as HTMLImageElement).className = 'block max-h-12 w-auto max-w-full object-contain sm:max-h-14';
+                          (e.target as HTMLImageElement).className = 'h-14 w-100 object-contain';
                         }}
                     />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
                 </Link>
               </div>
@@ -370,12 +371,10 @@ const Navbar: React.FC = () => {
               </div>
 
               {/* Mobile menu button */}
-              <div className="flex h-full items-center lg:hidden">
+              <div className="lg:hidden">
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
-                    aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                    aria-expanded={isMenuOpen}
+                    className="p-2 rounded-xl text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
                 >
                   {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
@@ -385,7 +384,7 @@ const Navbar: React.FC = () => {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-              <div className="lg:hidden bg-white/95 backdrop-blur-md border-t border-gray-100 max-h-[calc(100svh-4rem)] overflow-y-auto">
+              <div className="lg:hidden bg-white/95 backdrop-blur-md border-t border-gray-100">
                 <div className="px-4 pt-2 pb-3 space-y-1">
                   <Link
                       to="/"

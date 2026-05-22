@@ -9,13 +9,8 @@ import { verifyTurnstileToken } from '../lib/turnstile';
 const INVALID_LOGIN_MESSAGE = 'Invalid email/username or password';
 const UNVERIFIED_ACCOUNT_MESSAGE = 'Your account is not verified. Please verify your email to continue.';
 const AUTH_REQUEST_TIMEOUT_MS = 10000;
-const AUTH_INIT_TIMEOUT_MS = 5000;
 
 const isEmailIdentifier = (value: string) => value.includes('@');
-
-const isTimeoutError = (error: unknown) => (
-  error instanceof Error && error.message.toLowerCase().includes('timed out')
-);
 
 const resolveLoginIdentifier = async (loginIdentifier: string) => {
   const normalizedIdentifier = loginIdentifier.trim();
@@ -92,41 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isInitialized, setIsInitialized] = useState(false);
   const notification = useNotification();
 
-  const buildFallbackUserFromStoredSession = (userId?: string): User | null => {
-    const storedSession = sessionManager.getSession(userId);
-    const sessionUser = storedSession?.user;
-
-    if (!sessionUser || (userId && sessionUser.id !== userId)) {
-      return null;
-    }
-
-    return {
-      id: sessionUser.id,
-      email: sessionUser.email || 'unknown@example.com',
-      firstName: sessionUser.user_metadata?.first_name,
-      lastName: sessionUser.user_metadata?.last_name,
-      userType: sessionUser.user_metadata?.user_type || 'learner',
-      educationLevel: sessionUser.user_metadata?.education_level,
-      interests: Array.isArray(sessionUser.user_metadata?.interests) ? sessionUser.user_metadata.interests : [],
-      isVerified: true,
-      hasActivePlan: true,
-      mobileVerified: Boolean(sessionUser.phone_confirmed_at)
-    };
-  };
-
   const buildFallbackUserFromSession = async (userId?: string): Promise<User | null> => {
     try {
-      const storedFallbackUser = buildFallbackUserFromStoredSession(userId);
-
-      if (storedFallbackUser) {
-        return storedFallbackUser;
-      }
-
-      const { data: { session } } = await withTimeout(
-        supabase.auth.getSession(),
-        AUTH_INIT_TIMEOUT_MS,
-        'Loading fallback auth session timed out'
-      );
+      const { data: { session } } = await supabase.auth.getSession();
       const sessionUser = session?.user;
 
       if (!sessionUser || (userId && sessionUser.id !== userId)) {
@@ -159,17 +122,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       try {
         console.log('🔍 Initializing authentication...');
-        const cachedUser = buildFallbackUserFromStoredSession();
-
-        if (cachedUser) {
-          console.log('✅ Using cached session while auth initializes:', cachedUser.id);
-          setUser(cachedUser);
-        }
 
         // First, check if there's an existing Supabase session
         const { data: { session: existingSession } } = await withTimeout(
           supabase.auth.getSession(),
-          AUTH_INIT_TIMEOUT_MS,
+          AUTH_REQUEST_TIMEOUT_MS,
           'Authentication initialization timed out'
         );
 
@@ -177,37 +134,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('✅ Found existing Supabase session:', existingSession.user.id);
           // Save to localStorage if not already saved
           sessionManager.saveSession(existingSession);
-          void fetchUserData(existingSession.user.id);
+          await withTimeout(
+            fetchUserData(existingSession.user.id),
+            AUTH_REQUEST_TIMEOUT_MS,
+            'Fetching user session timed out'
+          );
         } else {
           // Try to restore from localStorage
           console.log('🔍 Checking localStorage for saved session...');
           const restoredSession = await withTimeout(
             sessionManager.restoreSession(),
-            AUTH_INIT_TIMEOUT_MS,
+            AUTH_REQUEST_TIMEOUT_MS,
             'Session restoration timed out'
           );
 
           if (restoredSession?.user) {
             console.log('✅ Session restored from localStorage:', restoredSession.user.id);
-            void fetchUserData(restoredSession.user.id);
+            await withTimeout(
+              fetchUserData(restoredSession.user.id),
+              AUTH_REQUEST_TIMEOUT_MS,
+              'Fetching restored session timed out'
+            );
           } else {
             console.log('ℹ️ No existing session found');
-            if (!cachedUser) {
-              setUser(null);
-            }
+            setUser(null);
           }
         }
       } catch (error) {
-        const fallbackUser = buildFallbackUserFromStoredSession();
+        console.error('❌ Failed to initialize session:', error);
+        const fallbackUser = await buildFallbackUserFromSession();
         if (fallbackUser) {
-          if (!isTimeoutError(error)) {
-            console.warn('Auth initialization failed, preserving cached session:', error);
-          }
+          console.log('✅ Preserving session with fallback user after initialization error');
           setUser(fallbackUser);
         } else {
-          if (!isTimeoutError(error)) {
-            console.warn('Auth initialization did not complete, continuing as logged out:', error);
-          }
+          // Clear any truly unusable session data
+          sessionManager.removeSession();
           setUser(null);
         }
       } finally {
