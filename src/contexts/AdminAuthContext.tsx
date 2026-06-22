@@ -17,6 +17,7 @@ export type PermissionModule =
   | 'categories'
   | 'payments'
   | 'sliders'
+  | 'content'
   | 'settings'
   | 'admins';
 
@@ -30,6 +31,7 @@ const createDefaultPermissions = (): PermissionSet => ({
   categories: { read: false, write: false, delete: false },
   payments: { read: false, write: false, delete: false },
   sliders: { read: false, write: false, delete: false },
+  content: { read: false, write: false, delete: false },
   settings: { read: false, write: false, delete: false },
   admins: { read: false, write: false, delete: false },
 });
@@ -70,6 +72,7 @@ const normalizePermissions = (rawPermissions: Partial<Record<string, Partial<Rec
     categories: ['categories', 'coupons'],
     payments: ['payments'],
     sliders: ['sliders'],
+    content: ['content'],
     settings: ['settings'],
     admins: ['admins'],
   };
@@ -89,6 +92,7 @@ const serializePermissionsForStorage = (permissions: PermissionSet): PermissionS
   categories: { ...permissions.categories },
   payments: { ...permissions.payments },
   sliders: { ...permissions.sliders },
+  content: { ...permissions.content },
   settings: { ...permissions.settings },
   admins: { ...permissions.admins },
 });

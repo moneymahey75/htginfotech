@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Send, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAdmin } from '../contexts/AdminContext';
 import { invokeSupabaseFunction } from '../lib/supabase';
 import ReCaptcha from '../components/ui/ReCaptcha';
+import {
+  ContactUsContent,
+  defaultContactUsContent,
+  getContentByKey,
+  parseContactUsContent,
+} from '../lib/content';
 
 const ContactUs: React.FC = () => {
-  const { settings } = useAdmin();
+  const [content, setContent] = useState<ContactUsContent>(defaultContactUsContent);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,6 +22,23 @@ const ContactUs: React.FC = () => {
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadContent = async () => {
+      const entry = await getContentByKey('contact_us');
+      if (isMounted) {
+        setContent(parseContactUsContent(entry?.content));
+      }
+    };
+
+    loadContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const resetCaptcha = () => {
     setRecaptchaToken(null);
@@ -107,12 +129,11 @@ const ContactUs: React.FC = () => {
 
   return (
       <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
         <section className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">Contact Us</h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">{content.hero.title}</h1>
             <p className="text-xl md:text-2xl text-indigo-100 max-w-3xl mx-auto">
-              We're here to help you succeed. Get in touch with our support team.
+              {content.hero.subtitle}
             </p>
           </div>
         </section>
@@ -121,7 +142,7 @@ const ContactUs: React.FC = () => {
           <div className="flex justify-center">
             <div className="w-full">
               <div className="rounded-2xl bg-white p-5 shadow-lg sm:p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">{content.form.title}</h2>
 
                 {submitResult && (
                   <div className={`border rounded-lg p-4 mb-6 ${
@@ -252,39 +273,21 @@ const ContactUs: React.FC = () => {
             </div>
           </div>
 
-          {/* FAQ Section */}
-          <div className="mt-20">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
-              <p className="text-gray-600">Quick answers to common questions</p>
+          <section className="mt-20">
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold text-gray-900">{content.faq.title}</h2>
+              <p className="mt-4 text-gray-600">{content.faq.subtitle}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[
-                {
-                  question: "How quickly will I receive a response?",
-                  answer: "We typically respond to all inquiries within 24 hours during business days. For urgent matters, please call our support line."
-                },
-                {
-                  question: "What information should I include in my message?",
-                  answer: "Please include your account details (if applicable), a clear description of your issue, and any relevant screenshots or error messages."
-                },
-                {
-                  question: "Do you offer phone support?",
-                  answer: `Yes, we offer phone support. You can reach us at ${settings.primary_phone || 'our support number'}.`
-                },
-                {
-                  question: "Can I schedule a consultation?",
-                  answer: "Absolutely! We offer free consultations for potential business partners and enterprise clients. Please mention this in your message."
-                }
-              ].map((faq, index) => (
-                  <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                    <h3 className="font-semibold text-gray-900 mb-3">{faq.question}</h3>
-                    <p className="text-gray-600">{faq.answer}</p>
-                  </div>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              {content.faq.items.map((faq) => (
+                <article key={faq.question} className="rounded-lg bg-white p-6 shadow-sm border border-gray-100">
+                  <h3 className="mb-3 font-semibold text-gray-900">{faq.question}</h3>
+                  <p className="leading-relaxed text-gray-600">{faq.answer}</p>
+                </article>
               ))}
             </div>
-          </div>
+          </section>
         </div>
       </div>
   );

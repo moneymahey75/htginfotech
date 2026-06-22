@@ -1,258 +1,215 @@
-import React from 'react';
-import { Users, Target, Award, Globe, TrendingUp, Shield, Heart, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Award,
+  Globe,
+  Heart,
+  Shield,
+  TrendingUp,
+  Users,
+  Zap,
+} from 'lucide-react';
+import {
+  AboutUsContent,
+  defaultAboutUsContent,
+  getContentByKey,
+  parseAboutUsContent,
+} from '../lib/content';
+
+const valueIcons = {
+  shield: Shield,
+  heart: Heart,
+  users: Users,
+  zap: Zap,
+};
+
+const impactIcons = {
+  users: Users,
+  globe: Globe,
+  trending: TrendingUp,
+  award: Award,
+};
 
 const AboutUs: React.FC = () => {
+  const [content, setContent] = useState<AboutUsContent>(defaultAboutUsContent);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadContent = async () => {
+      const entry = await getContentByKey('about_us');
+      if (isMounted) {
+        setContent(parseAboutUsContent(entry?.content));
+      }
+    };
+
+    loadContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20 overflow-hidden">
+    <div className="min-h-screen bg-white">
+      <section className="relative overflow-hidden py-16 text-white sm:py-20">
         <div className="absolute inset-0">
-          <img 
-            src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop" 
-            alt="About Us"
-            className="w-full h-full object-cover opacity-20"
+          <img
+            src={content.hero.imageUrl}
+            alt={content.hero.title}
+            className="h-full w-full object-cover"
           />
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-700/80 to-purple-700/80" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">About Our Platform</h1>
-          <p className="text-xl md:text-2xl text-indigo-100 max-w-3xl mx-auto">
-            Empowering entrepreneurs worldwide through innovative MLM technology and transparent business practices.
+        <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+          <h1 className="text-4xl font-bold leading-tight sm:text-5xl">{content.hero.title}</h1>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-indigo-50">
+            {content.hero.subtitle}
           </p>
         </div>
       </section>
 
-      {/* Mission & Vision */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center space-x-2 bg-indigo-100 rounded-full px-6 py-3 mb-6">
-                <Target className="h-5 w-5 text-indigo-600" />
-                <span className="text-sm font-semibold text-indigo-600">Our Mission</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Democratizing Financial Success
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                We believe everyone deserves the opportunity to build financial freedom through entrepreneurship. 
-                Our platform provides the tools, technology, and support needed to create sustainable income streams 
-                through network marketing.
-              </p>
-              <p className="text-lg text-gray-600">
-                By combining cutting-edge blockchain technology with proven MLM strategies, we're creating 
-                a transparent, fair, and profitable ecosystem for all participants.
-              </p>
+      <section className="bg-gray-50 py-16 sm:py-20">
+        <div className="mx-auto grid max-w-5xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <div>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-600">
+              <Globe className="h-4 w-4" />
+              {content.mission.eyebrow}
             </div>
-            <div className="relative">
-              <img 
-                src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop" 
-                alt="Our Mission"
-                className="w-full rounded-2xl object-cover shadow-2xl"
-              />
-              <div className="mt-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white shadow-xl sm:absolute sm:-bottom-6 sm:-right-6 sm:mt-0 sm:p-6">
-                <div className="text-2xl font-bold">50K+</div>
-                <div className="text-sm opacity-90">Success Stories</div>
-              </div>
+            <h2 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">
+              {content.mission.title}
+            </h2>
+            <p className="mt-6 leading-relaxed text-gray-600">{content.mission.body}</p>
+            <p className="mt-5 leading-relaxed text-gray-600">{content.mission.secondBody}</p>
+          </div>
+
+          <div className="relative">
+            <img
+              src={content.mission.imageUrl}
+              alt={content.mission.title}
+              className="aspect-[4/3] w-full rounded-xl object-cover shadow-2xl"
+            />
+            <div className="absolute -bottom-5 right-4 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 px-6 py-5 text-white shadow-xl sm:right-[-1rem]">
+              <div className="text-2xl font-bold">{content.mission.statValue}</div>
+              <div className="text-sm font-semibold text-indigo-100">{content.mission.statLabel}</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Our Story */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Founded in 2020 by a team of entrepreneurs and technology experts who experienced 
-              the challenges of traditional learning systems firsthand.
-            </p>
+      <section className="bg-white py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-bold text-gray-900">{content.story.title}</h2>
+            <p className="mt-5 text-lg leading-relaxed text-gray-600">{content.story.subtitle}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                year: "2020",
-                title: "The Beginning",
-                description: "Founded with a vision to revolutionize network marketing through technology and transparency.",
-                image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
-              },
-              {
-                year: "2022",
-                title: "Blockchain Integration",
-                description: "Launched our blockchain-based payment system, ensuring complete transparency in all transactions.",
-                image: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
-              },
-              {
-                year: "2024",
-                title: "Global Expansion",
-                description: "Reached 50,000+ active members across 150+ countries, becoming a truly global platform.",
-                image: "https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop"
-              }
-            ].map((milestone, index) => (
-              <div key={index} className="relative group">
-                <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-shadow">
-                  <div className="relative mb-6">
-                    <img 
-                      src={milestone.image} 
-                      alt={milestone.title}
-                      className="w-full h-48 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 left-4 bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                      {milestone.year}
-                    </div>
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            {content.story.milestones.map((milestone) => (
+              <article key={`${milestone.year}-${milestone.title}`} className="rounded-xl bg-gray-50 p-6 shadow-sm">
+                <div className="relative overflow-hidden rounded-lg">
+                  <img
+                    src={milestone.imageUrl}
+                    alt={milestone.title}
+                    className="aspect-[16/10] w-full object-cover"
+                  />
+                  <span className="absolute left-4 top-4 rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white">
+                    {milestone.year}
+                  </span>
+                </div>
+                <h3 className="mt-5 font-bold text-gray-900">{milestone.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-gray-600">{milestone.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-gradient-to-r from-gray-900 to-indigo-900 py-16 text-white sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold">{content.values.title}</h2>
+          <p className="mx-auto mt-5 max-w-3xl text-indigo-100">{content.values.subtitle}</p>
+
+          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {content.values.items.map((item) => {
+              const Icon = valueIcons[item.icon] || Shield;
+              return (
+                <div key={item.title} className="text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-white/10 text-indigo-200">
+                    <Icon className="h-8 w-8" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{milestone.title}</h3>
-                  <p className="text-gray-600">{milestone.description}</p>
+                  <h3 className="mt-6 font-bold">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-indigo-100">{item.description}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Core Values */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 to-indigo-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Core Values</h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              The principles that guide everything we do and shape our platform's culture.
-            </p>
-          </div>
+      <section className="bg-white py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-gray-900">{content.leadership.title}</h2>
+          <p className="mx-auto mt-5 max-w-3xl text-gray-600">{content.leadership.subtitle}</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Shield,
-                title: "Transparency",
-                description: "Complete visibility into all transactions and earnings through blockchain technology."
-              },
-              {
-                icon: Heart,
-                title: "Integrity",
-                description: "Honest business practices and ethical treatment of all community members."
-              },
-              {
-                icon: Users,
-                title: "Community",
-                description: "Building strong relationships and supporting each other's success."
-              },
-              {
-                icon: Zap,
-                title: "Innovation",
-                description: "Continuously improving our platform with cutting-edge technology."
-              }
-            ].map((value, index) => (
-              <div key={index} className="text-center group">
-                <div className="bg-white/10 backdrop-blur-sm w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <value.icon className="h-10 w-10 text-indigo-300" />
-                </div>
-                <h3 className="text-xl font-bold mb-4">{value.title}</h3>
-                <p className="text-gray-300">{value.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Leadership Team</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Meet the experienced professionals driving our mission forward.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Sarah Johnson",
-                role: "CEO & Co-Founder",
-                bio: "Former VP at Fortune 500 company with 15+ years in network marketing and business development.",
-                image: "https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop"
-              },
-              {
-                name: "Michael Chen",
-                role: "CTO & Co-Founder",
-                bio: "Blockchain expert and software architect with experience at leading tech companies.",
-                image: "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop"
-              },
-              {
-                name: "Emma Davis",
-                role: "Head of Operations",
-                bio: "Operations specialist focused on scaling global platforms and ensuring exceptional user experience.",
-                image: "https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop"
-              }
-            ].map((member, index) => (
-              <div key={index} className="bg-gray-50 rounded-2xl p-8 text-center group hover:shadow-lg transition-shadow">
-                <img 
-                  src={member.image} 
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            {content.leadership.members.map((member) => (
+              <article key={member.name} className="rounded-xl bg-gray-50 p-8 shadow-sm">
+                <img
+                  src={member.imageUrl}
                   alt={member.name}
-                  className="w-32 h-32 rounded-full mx-auto mb-6 object-cover group-hover:scale-105 transition-transform"
+                  className="mx-auto h-24 w-24 rounded-full object-cover"
                 />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-                <p className="text-indigo-600 font-semibold mb-4">{member.role}</p>
-                <p className="text-gray-600">{member.bio}</p>
-              </div>
+                <h3 className="mt-6 font-bold text-gray-900">{member.name}</h3>
+                <p className="mt-1 text-sm font-bold text-indigo-600">{member.role}</p>
+                <p className="mt-5 text-sm leading-relaxed text-gray-600">{member.bio}</p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Statistics */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Impact</h2>
-            <p className="text-xl text-indigo-100 max-w-3xl mx-auto">
-              Numbers that reflect our commitment to empowering entrepreneurs worldwide.
-            </p>
-          </div>
+      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 py-16 text-white sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold">{content.impact.title}</h2>
+          <p className="mx-auto mt-5 max-w-3xl text-indigo-100">{content.impact.subtitle}</p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { icon: Users, number: "50,000+", label: "Active Members" },
-              { icon: Globe, number: "150+", label: "Countries" },
-              { icon: TrendingUp, number: "$2M+", label: "Total Earnings" },
-              { icon: Award, number: "99.9%", label: "Uptime" }
-            ].map((stat, index) => (
-              <div key={index} className="group">
-                <div className="bg-white/10 backdrop-blur-sm w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <stat.icon className="h-8 w-8 text-indigo-300" />
+          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {content.impact.stats.map((stat) => {
+              const Icon = impactIcons[stat.icon] || Users;
+              return (
+                <div key={`${stat.value}-${stat.label}`} className="text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-white/10 text-indigo-100">
+                    <Icon className="h-7 w-7" />
+                  </div>
+                  <div className="mt-5 text-4xl font-bold">{stat.value}</div>
+                  <div className="mt-2 text-sm font-medium text-indigo-100">{stat.label}</div>
                 </div>
-                <div className="text-3xl md:text-4xl font-bold mb-2">{stat.number}</div>
-                <div className="text-indigo-100">{stat.label}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Ready to Join Our Community?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Become part of a global network of entrepreneurs building their financial future together.
+      <section className="bg-white py-16 text-center sm:py-20">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-gray-900">{content.cta.title}</h2>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-600">
+            {content.cta.subtitle}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/register"
-              className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-indigo-700 transition-colors"
+          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+            <Link
+              to="/learners"
+              className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-8 py-3 font-semibold text-white transition hover:bg-indigo-700"
             >
-              Join as Learner
-            </a>
-            <a
-              href="/register"
-              className="border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-2xl font-semibold hover:bg-indigo-50 transition-colors"
+              {content.cta.primaryButtonText}
+            </Link>
+            <Link
+              to="/tutors"
+              className="inline-flex items-center justify-center rounded-lg border border-indigo-600 px-8 py-3 font-semibold text-indigo-600 transition hover:bg-indigo-50"
             >
-              Join as Tutor
-            </a>
+              {content.cta.secondaryButtonText}
+            </Link>
           </div>
         </div>
       </section>

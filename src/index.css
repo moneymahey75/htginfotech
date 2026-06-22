@@ -105,6 +105,77 @@ iframe {
   max-width: 100%;
 }
 
+.managed-content {
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.managed-content h1,
+.managed-content h2,
+.managed-content h3 {
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.managed-content h1 {
+  font-size: 2.25rem;
+}
+
+.managed-content h2 {
+  font-size: 1.875rem;
+}
+
+.managed-content h3 {
+  font-size: 1.5rem;
+}
+
+.managed-content.policy-content > :first-child {
+  margin-top: 0;
+}
+
+.managed-content p,
+.managed-content ul,
+.managed-content ol {
+  margin: 0 0 1rem;
+}
+
+.managed-content ul,
+.managed-content ol {
+  padding-left: 1.5rem;
+}
+
+.managed-content ul {
+  list-style: disc;
+}
+
+.managed-content ol {
+  list-style: decimal;
+}
+
+.managed-content a {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.managed-content img {
+  height: auto;
+  margin: 1.5rem 0;
+  border-radius: 0.75rem;
+}
+
+.content-editor .ql-container {
+  min-height: 320px;
+  font-size: 1rem;
+}
+
+.content-editor .ql-editor {
+  min-height: 320px;
+}
+
 @media (max-width: 640px) {
   .public-site section {
     scroll-margin-top: 5rem;

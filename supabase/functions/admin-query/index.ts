@@ -43,6 +43,7 @@ const ALLOWED_TABLES = new Set([
   'tbl_user_subscriptions',
   'tbl_users',
   'tbl_video_storage_settings',
+  'content_management',
   'users',
 ]);
 

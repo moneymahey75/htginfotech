@@ -22,6 +22,8 @@ import StripeConnectSettings from '../../components/admin/StripeConnectSettings'
 import VideoStorageSettings from '../../components/admin/VideoStorageSettings';
 import AdminPaymentHistory from '../../components/admin/PaymentHistory';
 import EnrollmentManagement from '../../components/admin/EnrollmentManagement';
+import ContentManagement from '../../components/admin/ContentManagement';
+import FAQManagement from '../../components/admin/FAQManagement';
 import NotificationBell from '../../components/admin/NotificationBell';
 import {
     Users,
@@ -49,9 +51,11 @@ import {
     ChevronRight,
     BookOpen,
     GraduationCap,
+    HelpCircle,
     Image as ImageIcon,
     Folder,
-    Video
+    Video,
+    Layers
 } from 'lucide-react';
 
 interface SubAdmin {
@@ -73,6 +77,7 @@ const createDefaultDashboardPermissions = (): PermissionSet => ({
     categories: {read: false, write: false, delete: false},
     payments: {read: false, write: false, delete: false},
     sliders: {read: false, write: false, delete: false},
+    content: {read: false, write: false, delete: false},
     settings: {read: false, write: false, delete: false},
     admins: {read: false, write: false, delete: false}
 });
@@ -261,6 +266,8 @@ const AdminDashboard: React.FC = () => {
         {id: 'payments', label: 'Payments', icon: DollarSign, permission: 'payments' as PermissionModule},
         {id: 'admins', label: 'Sub-Admins', icon: Shield, permission: 'admins' as PermissionModule},
         {id: 'sliders', label: 'Home Sliders', icon: ImageIcon, permission: 'sliders' as PermissionModule},
+        {id: 'content', label: 'Content Management', icon: Layers, permission: 'content' as PermissionModule},
+        {id: 'faq', label: 'FAQ', icon: HelpCircle, permission: 'content' as PermissionModule},
         {id: 'settings', label: 'Settings', icon: Settings, permission: 'settings' as PermissionModule}
     ];
 
@@ -465,6 +472,8 @@ const AdminDashboard: React.FC = () => {
                                 {activeTab === 'payments' && 'View payment transactions and history'}
                                 {activeTab === 'admins' && 'Manage sub-administrators and permissions'}
                                 {activeTab === 'sliders' && 'Manage home page sliders'}
+                                {activeTab === 'content' && 'Manage static website pages and footer text'}
+                                {activeTab === 'faq' && 'Manage FAQ categories, questions, and support content'}
                                 {activeTab === 'settings' && 'Configure system settings and preferences'}
                             </p>
                         </div>
@@ -569,6 +578,14 @@ const AdminDashboard: React.FC = () => {
 
                     {activeTab === 'sliders' && canAccessTab('sliders') && (
                         <SliderManagement key={`sliders-${activeTabRefreshKey}`}/>
+                    )}
+
+                    {activeTab === 'content' && canAccessTab('content') && (
+                        <ContentManagement key={`content-${activeTabRefreshKey}`}/>
+                    )}
+
+                    {activeTab === 'faq' && canAccessTab('faq') && (
+                        <FAQManagement key={`faq-${activeTabRefreshKey}`}/>
                     )}
 
                     {activeTab === 'settings' && canAccessTab('settings') && (

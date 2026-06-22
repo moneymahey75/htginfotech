@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { Link, useLocation } from 'react-router-dom';
 import { getSystemSettings } from '../../lib/supabase';
+import { CONTENT_NOT_AVAILABLE, getContentByKey, hasUsableContent } from '../../lib/content';
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube, MessageCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const { settings } = useAdmin();
   const location = useLocation();
   const [publicSettings, setPublicSettings] = useState<any>(settings);
+  const [copyrightText, setCopyrightText] = useState('');
 
   useEffect(() => {
     setPublicSettings(settings);
@@ -24,6 +26,15 @@ const Footer: React.FC = () => {
     };
 
     loadPublicSettings();
+  }, []);
+
+  useEffect(() => {
+    const loadCopyrightText = async () => {
+      const entry = await getContentByKey('copyright_text');
+      setCopyrightText(entry?.content || '');
+    };
+
+    loadCopyrightText();
   }, []);
 
   // Format the full address from individual components
@@ -45,6 +56,19 @@ const Footer: React.FC = () => {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const renderCopyrightText = () => {
+    if (!hasUsableContent(copyrightText)) {
+      return CONTENT_NOT_AVAILABLE;
+    }
+
+    return copyrightText
+      .replace(/\{\{year\}\}/g, String(new Date().getFullYear()))
+      .replace(/\{\{current_year\}\}/g, String(new Date().getFullYear()))
+      .replace(/\{\{site_name\}\}/g, publicSettings.site_name || 'HTG Infotech')
+      .replace(/\{\{copyright_symbol\}\}/g, '(c)')
+      .replace(/\{\{rights_reserved\}\}/g, 'All rights reserved.');
   };
 
   return (
@@ -302,7 +326,7 @@ const Footer: React.FC = () => {
 
               <div className="text-center md:text-right">
                 <p className="text-gray-400 text-sm">
-                  © {new Date().getFullYear()} {publicSettings.site_name || 'HTG Infotech'}. All rights reserved.
+                  {renderCopyrightText()}
                 </p>
               </div>
             </div>
