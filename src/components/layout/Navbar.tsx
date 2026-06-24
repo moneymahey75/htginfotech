@@ -244,13 +244,15 @@ const Navbar: React.FC = () => {
                   <span>Job Providers</span>
                 </Link>
 
-                <Link
-                    to="/tutors"
-                    className={getDesktopNavClassName(location.pathname, '/tutors', 'bg-purple-50 text-purple-600', 'text-gray-700 hover:text-purple-600 hover:bg-purple-50')}
-                >
-                  <GraduationCap className="h-4 w-4" />
-                  <span>Tutors</span>
-                </Link>
+                {!displayUser && (
+                  <Link
+                      to="/tutors"
+                      className={getDesktopNavClassName(location.pathname, '/tutors', 'bg-purple-50 text-purple-600', 'text-gray-700 hover:text-purple-600 hover:bg-purple-50')}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    <span>Tutors</span>
+                  </Link>
+                )}
 
                 <Link
                     to="/learners"
@@ -414,14 +416,16 @@ const Navbar: React.FC = () => {
                     <span className="font-medium">Job Providers</span>
                   </Link>
 
-                  <Link
-                      to="/tutors"
-                      className={getMobileNavClassName(location.pathname, '/tutors', 'bg-purple-50 text-purple-600', 'text-gray-700 hover:text-purple-600 hover:bg-purple-50')}
-                      onClick={() => setIsMenuOpen(false)}
-                  >
-                    <GraduationCap className="h-5 w-5" />
-                    <span className="font-medium">Tutors</span>
-                  </Link>
+                  {!displayUser && (
+                    <Link
+                        to="/tutors"
+                        className={getMobileNavClassName(location.pathname, '/tutors', 'bg-purple-50 text-purple-600', 'text-gray-700 hover:text-purple-600 hover:bg-purple-50')}
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                      <GraduationCap className="h-5 w-5" />
+                      <span className="font-medium">Tutors</span>
+                    </Link>
+                  )}
 
                   <Link
                       to="/learners"

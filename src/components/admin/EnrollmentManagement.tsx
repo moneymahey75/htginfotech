@@ -5,7 +5,6 @@ import {
     Users,
     BookOpen,
     CheckCircle,
-    XCircle,
     UserCheck,
     AlertCircle,
     ChevronLeft,
@@ -24,6 +23,7 @@ interface Enrollment {
     tce_tutor_assigned: boolean;
     tce_tutor_assigned_at: string | null;
     tce_payment_status: string;
+    tce_is_active: boolean | null;
     learner: {
         tu_email: string;
         tbl_user_profiles: {
@@ -42,6 +42,9 @@ interface Enrollment {
     tutor_assignment?: {
         tta_id: string;
         tta_tutor_id: string;
+        tta_course_id?: string | null;
+        tta_enrollment_id?: string | null;
+        assignment_scope?: 'enrollment' | 'course';
         tutor: {
             tu_id: string;
             tu_email: string;
@@ -123,6 +126,7 @@ export default function EnrollmentManagement() {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAssigning, setIsAssigning] = useState(false);
+    const [updatingEnrollmentStatus, setUpdatingEnrollmentStatus] = useState<string | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -168,6 +172,7 @@ export default function EnrollmentManagement() {
           tce_tutor_assigned,
           tce_tutor_assigned_at,
           tce_payment_status,
+          tce_is_active,
           learner:tbl_users!tbl_course_enrollments_tce_user_id_fkey (
             tu_email,
             tbl_user_profiles (
@@ -185,12 +190,6 @@ export default function EnrollmentManagement() {
           )
         `, {count: 'exact'})
                 .order('tce_enrollment_date', {ascending: false});
-
-            if (filter === 'unassigned') {
-                query = query.eq('tce_tutor_assigned', false);
-            } else if (filter === 'assigned') {
-                query = query.eq('tce_tutor_assigned', true);
-            }
 
             if (statusFilter !== 'all') {
                 query = query.eq('tce_payment_status', statusFilter);
@@ -264,55 +263,99 @@ export default function EnrollmentManagement() {
                 query = query.in('tce_course_id', courseIds);
             }
 
-            // Apply pagination
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-            query = query.range(from, to);
-
-            const {data, error, count} = await query;
+            const {data, error} = await query;
 
             if (error) throw error;
 
             if (data) {
-                const enrollmentIds = data
-                    .filter((e: any) => e.tce_tutor_assigned)
-                    .map((e: any) => e.tce_id);
+                const enrollmentIds = data.map((e: any) => e.tce_id).filter(Boolean);
+                const courseIds = Array.from(new Set(data.map((e: any) => e.tce_course_id).filter(Boolean)));
 
-                if (enrollmentIds.length > 0) {
-                    const {data: assignments} = await supabase
+                const [enrollmentAssignmentsResult, courseAssignmentsResult] = await Promise.all([
+                    enrollmentIds.length > 0
+                        ? supabase
+                            .from('tbl_tutor_assignments')
+                            .select(`
+                  tta_id,
+                  tta_enrollment_id,
+                  tta_course_id,
+                  tta_tutor_id,
+                  tta_assigned_at,
+                  tutor:tbl_users!tta_tutor_id (
+                    tu_id,
+                    tu_email,
+                    tbl_user_profiles (
+                      tup_first_name,
+                      tup_last_name
+                    )
+                  )
+                `)
+                            .in('tta_enrollment_id', enrollmentIds)
+                            .eq('tta_is_active', true)
+                        : Promise.resolve({data: [], error: null}),
+                    courseIds.length > 0
+                        ? supabase
                         .from('tbl_tutor_assignments')
                         .select(`
-              tta_id,
-              tta_enrollment_id,
-              tta_tutor_id,
-              tutor:tbl_users!tta_tutor_id (
-                tu_id,
-                tu_email,
-                tbl_user_profiles (
-                  tup_first_name,
-                  tup_last_name
-                )
-              )
-            `)
-                        .in('tta_enrollment_id', enrollmentIds)
-                        .eq('tta_is_active', true);
+                  tta_id,
+                  tta_enrollment_id,
+                  tta_course_id,
+                  tta_tutor_id,
+                  tta_assigned_at,
+                  tutor:tbl_users!tta_tutor_id (
+                    tu_id,
+                    tu_email,
+                    tbl_user_profiles (
+                      tup_first_name,
+                      tup_last_name
+                    )
+                  )
+                `)
+                            .in('tta_course_id', courseIds)
+                            .is('tta_enrollment_id', null)
+                            .eq('tta_is_active', true)
+                            .order('tta_assigned_at', {ascending: false})
+                        : Promise.resolve({data: [], error: null})
+                ]);
 
-                    const enrichedData = data.map((enrollment: any) => {
-                        const assignment = assignments?.find(
-                            (a: any) => a.tta_enrollment_id === enrollment.tce_id
-                        );
-                        return {
-                            ...enrollment,
-                            tutor_assignment: assignment || null,
-                        };
-                    });
+                if (enrollmentAssignmentsResult.error) throw enrollmentAssignmentsResult.error;
+                if (courseAssignmentsResult.error) throw courseAssignmentsResult.error;
 
-                    setEnrollments(enrichedData);
-                } else {
-                    setEnrollments(data);
-                }
+                const enrollmentAssignments = enrollmentAssignmentsResult.data || [];
+                const courseAssignments = courseAssignmentsResult.data || [];
 
-                setTotalCount(count || 0);
+                const enrichedData = data.map((enrollment: any) => {
+                    const enrollmentAssignment = enrollmentAssignments.find(
+                        (assignment: any) => assignment.tta_enrollment_id === enrollment.tce_id
+                    );
+                    const courseAssignment = courseAssignments.find(
+                        (assignment: any) => assignment.tta_course_id === enrollment.tce_course_id
+                    );
+                    const assignment = enrollmentAssignment || courseAssignment || null;
+
+                    return {
+                        ...enrollment,
+                        tce_tutor_assigned: Boolean(enrollment.tce_tutor_assigned || assignment),
+                        tutor_assignment: assignment
+                            ? {
+                                ...assignment,
+                                assignment_scope: enrollmentAssignment ? 'enrollment' : 'course',
+                            }
+                            : null,
+                    };
+                });
+
+                const assignmentFilteredData = enrichedData.filter((enrollment: Enrollment) => {
+                    if (filter === 'assigned') return enrollment.tce_tutor_assigned;
+                    if (filter === 'unassigned') return !enrollment.tce_tutor_assigned;
+                    return true;
+                });
+
+                const from = (currentPage - 1) * itemsPerPage;
+                const to = from + itemsPerPage;
+
+                setEnrollments(assignmentFilteredData.slice(from, to));
+                setTotalCount(assignmentFilteredData.length);
             }
         } catch (error: any) {
             console.error('Error fetching enrollments:', error);
@@ -366,7 +409,9 @@ export default function EnrollmentManagement() {
                 throw new Error('Enrollment not found');
             }
 
-            const isChangingTutor = enrollment.tce_tutor_assigned && enrollment.tutor_assignment;
+            const isChangingTutor = enrollment.tce_tutor_assigned
+                && enrollment.tutor_assignment
+                && enrollment.tutor_assignment.assignment_scope !== 'course';
 
             if (isChangingTutor) {
                 const {error: deactivateError} = await supabase
@@ -479,6 +524,9 @@ export default function EnrollmentManagement() {
             if (!enrollment || !enrollment.tutor_assignment) {
                 throw new Error('Assignment not found');
             }
+            if (enrollment.tutor_assignment.assignment_scope === 'course') {
+                throw new Error('This tutor is assigned at the course level. Change the tutor for this enrollment or update the course-level assignment instead.');
+            }
 
             const {error: deactivateError} = await supabase
                 .from('tbl_tutor_assignments')
@@ -518,6 +566,34 @@ export default function EnrollmentManagement() {
         const enrollment = enrollments.find(e => e.tce_id === enrollmentId);
         if (enrollment?.tutor_assignment) {
             setSelectedTutor(enrollment.tutor_assignment.tta_tutor_id);
+        }
+    };
+
+    const handleEnrollmentStatusChange = async (enrollmentId: string, isActive: boolean) => {
+        setUpdatingEnrollmentStatus(enrollmentId);
+        setErrorMessage('');
+
+        try {
+            const {error} = await supabase
+                .from('tbl_course_enrollments')
+                .update({tce_is_active: isActive})
+                .eq('tce_id', enrollmentId);
+
+            if (error) throw error;
+
+            setEnrollments((currentEnrollments) => currentEnrollments.map((enrollment) => (
+                enrollment.tce_id === enrollmentId
+                    ? {...enrollment, tce_is_active: isActive}
+                    : enrollment
+            )));
+            setSuccessMessage(`Enrolled course ${isActive ? 'activated' : 'deactivated'} successfully!`);
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (error: any) {
+            console.error('Error updating enrolled course status:', error);
+            setErrorMessage(`Failed to update enrolled course status: ${error.message}`);
+            setTimeout(() => setErrorMessage(''), 5000);
+        } finally {
+            setUpdatingEnrollmentStatus(null);
         }
     };
 
@@ -706,14 +782,14 @@ export default function EnrollmentManagement() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Status
+                            Payment Status
                         </label>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'completed')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                            <option value="all">All Status</option>
+                            <option value="all">All Payment Status</option>
                             <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
                         </select>
@@ -756,7 +832,7 @@ export default function EnrollmentManagement() {
                                 Enrolled Date
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
+                                ENROLLED COURSE STATUS
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Assigned Tutor
@@ -802,25 +878,35 @@ export default function EnrollmentManagement() {
                                             {new Date(enrollment.tce_enrollment_date).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {enrollment.tce_tutor_assigned ? (
-                                                <span
-                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle className="h-4 w-4 mr-1"/>
-                            Assigned
-                          </span>
-                                            ) : (
-                                                <span
-                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            <XCircle className="h-4 w-4 mr-1"/>
-                            Pending
-                          </span>
-                                            )}
+                                            <select
+                                                value={enrollment.tce_is_active === false ? 'deactivate' : 'activate'}
+                                                onChange={(event) => handleEnrollmentStatusChange(
+                                                    enrollment.tce_id,
+                                                    event.target.value === 'activate'
+                                                )}
+                                                disabled={updatingEnrollmentStatus === enrollment.tce_id}
+                                                className={`rounded-full border px-3 py-1 text-xs font-medium focus:ring-2 focus:ring-blue-500 ${
+                                                    enrollment.tce_is_active === false
+                                                        ? 'border-red-200 bg-red-50 text-red-700'
+                                                        : 'border-green-200 bg-green-50 text-green-700'
+                                                }`}
+                                            >
+                                                <option value="activate">Activate</option>
+                                                <option value="deactivate">Deactivate</option>
+                                            </select>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {enrollment.tutor_assignment ? (
-                                                <div className="flex items-center">
-                                                    <UserCheck className="h-4 w-4 text-green-600 mr-1"/>
-                                                    {getTutorName(enrollment.tutor_assignment.tutor)}
+                                                <div>
+                                                    <div className="flex items-center">
+                                                        <UserCheck className="h-4 w-4 text-green-600 mr-1"/>
+                                                        {getTutorName(enrollment.tutor_assignment.tutor)}
+                                                    </div>
+                                                    {enrollment.tutor_assignment.assignment_scope === 'course' && (
+                                                        <div className="text-xs text-gray-400 mt-1">
+                                                            Assigned from course
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 'Not assigned'
@@ -843,14 +929,18 @@ export default function EnrollmentManagement() {
                                                     >
                                                         Change
                                                     </button>
-                                                    <span className="text-gray-300">|</span>
-                                                    <button
-                                                        onClick={() => handleRemoveTutor(enrollment.tce_id)}
-                                                        className="text-red-600 hover:text-red-900 font-medium"
-                                                        disabled={isAssigning}
-                                                    >
-                                                        Remove
-                                                    </button>
+                                                    {enrollment.tutor_assignment?.assignment_scope !== 'course' && (
+                                                        <>
+                                                            <span className="text-gray-300">|</span>
+                                                            <button
+                                                                onClick={() => handleRemoveTutor(enrollment.tce_id)}
+                                                                className="text-red-600 hover:text-red-900 font-medium"
+                                                                disabled={isAssigning}
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
                                         </td>

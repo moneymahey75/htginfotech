@@ -404,7 +404,6 @@ const CourseDetails: React.FC = () => {
                   {[
                     { id: 'overview', label: 'Overview' },
                     { id: 'curriculum', label: 'Curriculum' },
-                    { id: 'instructor', label: 'Instructor' },
                     { id: 'reviews', label: 'Reviews' }
                   ].map((tab) => (
                     <button
@@ -490,40 +489,6 @@ const CourseDetails: React.FC = () => {
                       )) || (
                         <p className="text-gray-500 text-center py-8">Course content will be available after enrollment.</p>
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'instructor' && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Meet Your Instructor</h3>
-                    <div className="flex flex-col gap-4 rounded-lg bg-gray-50 p-5 sm:flex-row sm:items-start sm:p-6">
-                      <img
-                        src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"
-                        alt="Instructor"
-                        className="h-16 w-16 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <h4 className="text-lg font-semibold text-gray-900">Dr. Sarah Johnson</h4>
-                        <p className="text-indigo-600 mb-2">Senior Software Engineer & Educator</p>
-                        <p className="text-gray-600 text-sm mb-3">
-                          10+ years of experience in web development and education. Passionate about teaching programming concepts.
-                        </p>
-                        <div className="flex flex-wrap items-center gap-3 text-sm sm:gap-4">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span>4.9 rating</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Users className="h-4 w-4" />
-                            <span>5,234 students</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Play className="h-4 w-4" />
-                            <span>23 courses</span>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}

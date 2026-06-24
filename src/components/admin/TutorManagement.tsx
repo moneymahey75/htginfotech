@@ -39,7 +39,7 @@ interface Tutor {
 
 interface Assignment {
   tta_id: string;
-  tta_assigned_at: string;
+  tta_assigned_at: string | null;
   tta_status: string;
   tta_learner_id: string;
   tta_course_id: string;
@@ -50,8 +50,36 @@ interface Assignment {
     }[];
   };
   tbl_courses?: {
+    tc_id: string;
     tc_title: string;
+    tc_short_description?: string | null;
+    tc_price?: number | null;
+    tc_pricing_type?: string | null;
+    tc_difficulty_level?: string | null;
+    tc_duration_hours?: number | null;
+    tc_total_lessons?: number | null;
+    tc_is_active?: boolean | null;
+    tbl_course_categories?: {
+      tcc_name: string;
+    } | null;
   };
+}
+
+interface AssignedCourse {
+  courseId: string;
+  courseTitle: string;
+  categoryName: string;
+  shortDescription: string;
+  price: number;
+  pricingType: string;
+  difficultyLevel: string;
+  durationHours: number;
+  totalLessons: number;
+  isActive: boolean;
+  learnerCount: number;
+  firstAssignedAt: string | null;
+  latestAssignedAt: string | null;
+  statusCounts: Record<string, number>;
 }
 
 interface TutorConfirmationState {
@@ -995,6 +1023,57 @@ const TutorDetails: React.FC<{
   const profile = getProfile(currentTutor);
   const tutorInfo = getTutorInfo(currentTutor);
   const tutorSpecializations = Array.isArray(tutorInfo?.tt_specializations) ? tutorInfo.tt_specializations : [];
+  const assignedCourses = useMemo<AssignedCourse[]>(() => {
+    const courseMap = new Map<string, AssignedCourse>();
+
+    assignments.forEach((assignment) => {
+      const course = assignment.tbl_courses;
+      const courseId = course?.tc_id || assignment.tta_course_id;
+      if (!courseId) return;
+
+      const assignedAt = assignment.tta_assigned_at;
+      const existingCourse = courseMap.get(courseId);
+      const status = assignment.tta_status || 'unknown';
+
+      if (existingCourse) {
+        existingCourse.learnerCount += 1;
+        existingCourse.statusCounts[status] = (existingCourse.statusCounts[status] || 0) + 1;
+
+        if (assignedAt) {
+          if (!existingCourse.firstAssignedAt || new Date(assignedAt) < new Date(existingCourse.firstAssignedAt)) {
+            existingCourse.firstAssignedAt = assignedAt;
+          }
+          if (!existingCourse.latestAssignedAt || new Date(assignedAt) > new Date(existingCourse.latestAssignedAt)) {
+            existingCourse.latestAssignedAt = assignedAt;
+          }
+        }
+        return;
+      }
+
+      courseMap.set(courseId, {
+        courseId,
+        courseTitle: course?.tc_title || 'N/A',
+        categoryName: course?.tbl_course_categories?.tcc_name || 'Uncategorized',
+        shortDescription: course?.tc_short_description || '',
+        price: Number(course?.tc_price || 0),
+        pricingType: course?.tc_pricing_type || 'free',
+        difficultyLevel: course?.tc_difficulty_level || 'Not specified',
+        durationHours: Number(course?.tc_duration_hours || 0),
+        totalLessons: Number(course?.tc_total_lessons || 0),
+        isActive: Boolean(course?.tc_is_active),
+        learnerCount: 1,
+        firstAssignedAt: assignedAt,
+        latestAssignedAt: assignedAt,
+        statusCounts: { [status]: 1 }
+      });
+    });
+
+    return Array.from(courseMap.values()).sort((a, b) => {
+      const latestA = a.latestAssignedAt ? new Date(a.latestAssignedAt).getTime() : 0;
+      const latestB = b.latestAssignedAt ? new Date(b.latestAssignedAt).getTime() : 0;
+      return latestB - latestA;
+    });
+  }, [assignments]);
 
   const [editData, setEditData] = useState({
     first_name: profile?.tup_first_name || '',
@@ -1016,10 +1095,10 @@ const TutorDetails: React.FC<{
   const notification = useNotification();
 
   useEffect(() => {
-    if (activeTab === 'students') {
+    if (activeTab === 'students' || activeTab === 'courses') {
       loadAssignments();
     }
-  }, [activeTab]);
+  }, [activeTab, currentTutor.tu_id, tutorInfo?.tt_id]);
 
   useEffect(() => {
     setCurrentTutor(tutor);
@@ -1046,11 +1125,13 @@ const TutorDetails: React.FC<{
   const loadAssignments = async () => {
     setLoading(true);
     try {
-      if (!tutorInfo?.tt_id) {
+      if (!currentTutor.tu_id && !tutorInfo?.tt_id) {
         console.warn('No tutor ID found, skipping assignment load');
         setAssignments([]);
         return;
       }
+
+      const tutorAssignmentIds = [currentTutor.tu_id, tutorInfo?.tt_id].filter(Boolean);
 
       // First, get the assignments with course information
       const { data: assignments, error } = await supabase
@@ -1062,10 +1143,21 @@ const TutorDetails: React.FC<{
           tta_learner_id,
           tta_course_id,
           tbl_courses (
-            tc_title
+            tc_id,
+            tc_title,
+            tc_short_description,
+            tc_price,
+            tc_pricing_type,
+            tc_difficulty_level,
+            tc_duration_hours,
+            tc_total_lessons,
+            tc_is_active,
+            tbl_course_categories (
+              tcc_name
+            )
           )
         `)
-          .eq('tta_tutor_id', tutorInfo.tt_id)
+          .in('tta_tutor_id', tutorAssignmentIds)
           .order('tta_assigned_at', { ascending: false });
 
       if (error) throw error;
@@ -1288,8 +1380,20 @@ const TutorDetails: React.FC<{
     }
   };
 
+  const formatAssignmentDate = (date: string | null) => (
+    date ? new Date(date).toLocaleDateString() : 'N/A'
+  );
+
+  const formatCoursePrice = (course: AssignedCourse) => {
+    if (course.pricingType === 'free' || course.price === 0) {
+      return 'Free';
+    }
+    return `$${course.price}`;
+  };
+
   const tabs = [
     { id: 'profile', label: 'Profile Details', icon: User },
+    { id: 'courses', label: 'Assigned Courses', icon: BookOpen },
     { id: 'students', label: 'Assigned Students', icon: Users },
     { id: 'performance', label: 'Teaching Performance', icon: TrendingUp }
   ];
@@ -1351,7 +1455,7 @@ const TutorDetails: React.FC<{
 
           {/* Tabs */}
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
+            <nav className="flex space-x-8 overflow-x-auto">
               {tabs.map((tab) => (
                   <button
                       key={tab.id}
@@ -1585,12 +1689,123 @@ const TutorDetails: React.FC<{
                     </div>
                   </div>
                 </div>
-              </div>
-          )}
+                </div>
+            )}
+  
+            {activeTab === 'courses' && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="font-medium text-gray-900 flex items-center">
+                      <BookOpen className="h-5 w-5 mr-2" />
+                      Assigned Courses
+                    </h4>
+                    <div className="text-sm text-gray-500">
+                      Total: {assignedCourses.length} courses
+                    </div>
+                  </div>
 
-          {activeTab === 'students' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
+                  {loading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                        <p className="text-gray-500 mt-2">Loading assigned courses...</p>
+                      </div>
+                  ) : assignedCourses.length > 0 ? (
+                      <div className="overflow-hidden border border-gray-200 rounded-lg">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Course
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Details
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Learners
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Assignment Status
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Assigned Dates
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {assignedCourses.map((course) => (
+                                  <tr key={course.courseId} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 align-top">
+                                      <div className="font-medium text-gray-900">{course.courseTitle}</div>
+                                      <div className="text-sm text-gray-500">{course.categoryName}</div>
+                                      {course.shortDescription && (
+                                          <p className="text-sm text-gray-500 mt-1 max-w-sm line-clamp-2">
+                                            {course.shortDescription}
+                                          </p>
+                                      )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap align-top">
+                                      <div className="text-sm text-gray-900 capitalize">{course.difficultyLevel}</div>
+                                      <div className="text-sm text-gray-500">
+                                        {course.durationHours}h • {course.totalLessons} lessons
+                                      </div>
+                                      <div className="text-sm text-gray-500">{formatCoursePrice(course)}</div>
+                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
+                                          course.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                      }`}>
+                                        {course.isActive ? 'Active Course' : 'Inactive Course'}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap align-top">
+                                      <div className="text-sm font-medium text-gray-900">{course.learnerCount}</div>
+                                      <div className="text-sm text-gray-500">
+                                        {course.learnerCount === 1 ? 'assigned learner' : 'assigned learners'}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 align-top">
+                                      <div className="flex flex-wrap gap-2">
+                                        {Object.entries(course.statusCounts).map(([status, count]) => (
+                                            <span key={status} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                status === 'active'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : status === 'completed'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : status === 'cancelled'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                              {status.charAt(0).toUpperCase() + status.slice(1)}: {count}
+                                            </span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap align-top">
+                                      <div className="text-sm text-gray-900">
+                                        Latest: {formatAssignmentDate(course.latestAssignedAt)}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        First: {formatAssignmentDate(course.firstAssignedAt)}
+                                      </div>
+                                    </td>
+                                  </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                  ) : (
+                      <div className="text-center py-12">
+                        <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No courses assigned</h3>
+                        <p className="text-gray-600">This tutor hasn't been assigned to any courses yet.</p>
+                      </div>
+                  )}
+                </div>
+            )}
+
+            {activeTab === 'students' && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
                   <h4 className="font-medium text-gray-900 flex items-center">
                     <Users className="h-5 w-5 mr-2" />
                     Assigned Students

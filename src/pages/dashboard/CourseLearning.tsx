@@ -53,6 +53,21 @@ export default function CourseLearning() {
       }
       setUserId(user.id);
 
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from('tbl_course_enrollments')
+        .select('tce_id')
+        .eq('tce_user_id', user.id)
+        .eq('tce_course_id', courseId)
+        .eq('tce_is_active', true)
+        .maybeSingle();
+
+      if (enrollmentError) throw enrollmentError;
+
+      if (!enrollmentData) {
+        setError('This course is not active in your enrolled courses.');
+        return;
+      }
+
       const { data: courseData, error: courseError } = await supabase
         .from('tbl_courses')
         .select('tc_id, tc_title, tc_description, tc_thumbnail_url, tc_total_lessons')
@@ -151,6 +166,7 @@ export default function CourseLearning() {
         .select('tce_id, tce_progress_percentage, tce_completion_status')
         .eq('tce_user_id', userId)
         .eq('tce_course_id', courseId)
+        .eq('tce_is_active', true)
         .single();
 
       if (enrollment && enrollment.tce_progress_percentage === 100 && enrollment.tce_completion_status !== 'completed') {

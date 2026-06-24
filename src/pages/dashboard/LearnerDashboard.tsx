@@ -167,6 +167,7 @@ const LearnerDashboard: React.FC = () => {
         .from('tbl_course_enrollments')
         .select('tce_id, tce_completion_date, tbl_courses(tc_title)')
         .eq('tce_user_id', user!.id)
+        .eq('tce_is_active', true)
         .eq('tce_progress_percentage', 100)
         .not('tce_completion_date', 'is', null)
         .order('tce_completion_date', { ascending: false })
@@ -187,6 +188,7 @@ const LearnerDashboard: React.FC = () => {
         .from('tbl_course_enrollments')
         .select('tce_id, tce_enrollment_date, tbl_courses(tc_title)')
         .eq('tce_user_id', user!.id)
+        .eq('tce_is_active', true)
         .order('tce_enrollment_date', { ascending: false })
         .limit(3);
 
@@ -748,9 +750,6 @@ const LearnerDashboard: React.FC = () => {
                       <div className="space-y-3">
                         <button className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors" onClick={() => navigate('/courses')}>
                           Browse New Courses
-                        </button>
-                        <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors" onClick={() => navigate('/tutors')}>
-                          Browse Tutors
                         </button>
                       </div>
                     </div>

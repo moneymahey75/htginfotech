@@ -1053,6 +1053,7 @@ export const getUserEnrollments = async (userId: string) => {
       )
     `)
     .eq('tce_user_id', userId)
+    .eq('tce_is_active', true)
     .order('tce_created_at', { ascending: false })
 
   if (error) throw error

@@ -26,6 +26,7 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    UserCheck,
 } from 'lucide-react';
 
 const COURSE_FALLBACK_IMAGE = buildAssetUrl('/htginfotech-logo.png');
@@ -98,6 +99,25 @@ interface CourseCategory {
     tcc_color: string;
     tcc_is_active?: boolean;
     tcc_sort_order?: number;
+}
+
+interface Tutor {
+    tu_id: string;
+    tu_email: string;
+    tbl_user_profiles: {
+        tup_first_name: string;
+        tup_last_name: string;
+    }[];
+    tbl_tutors: {
+        tt_specializations: string[];
+    }[];
+}
+
+interface CourseTutorAssignment {
+    tta_id: string;
+    tta_course_id: string;
+    tta_tutor_id: string;
+    tutor: Tutor;
 }
 
 interface Lesson {
@@ -189,6 +209,8 @@ const CourseManagement: React.FC = () => {
     const { hasPermission } = useAdminAuth();
     const [courses, setCourses] = useState<Course[]>([]);
     const [categories, setCategories] = useState<CourseCategory[]>([]);
+    const [tutors, setTutors] = useState<Tutor[]>([]);
+    const [courseTutorAssignments, setCourseTutorAssignments] = useState<Record<string, CourseTutorAssignment>>({});
     const [loading, setLoading] = useState(true);
     const [listLoading, setListLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -198,8 +220,11 @@ const CourseManagement: React.FC = () => {
     const [showCourseModal, setShowCourseModal] = useState(false);
     const [showLessonsModal, setShowLessonsModal] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showTutorModal, setShowTutorModal] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [selectedCategoryCourse, setSelectedCategoryCourse] = useState<Course | null>(null);
+    const [selectedTutorCourse, setSelectedTutorCourse] = useState<Course | null>(null);
+    const [selectedTutorId, setSelectedTutorId] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [editLessonMode, setEditLessonMode] = useState(false);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -211,6 +236,7 @@ const CourseManagement: React.FC = () => {
     const [totalCount, setTotalCount] = useState(0);
     const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
     const [updatingCategoryId, setUpdatingCategoryId] = useState<string | null>(null);
+    const [assigningTutor, setAssigningTutor] = useState(false);
     const [confirmation, setConfirmation] = useState<CourseConfirmationState | null>(null);
 
     const notification = useNotification();
@@ -302,6 +328,72 @@ const CourseManagement: React.FC = () => {
         }
     };
 
+    const loadTutors = async () => {
+        try {
+            const {data, error} = await supabase
+                .from('tbl_users')
+                .select(`
+          tu_id,
+          tu_email,
+          tbl_user_profiles (
+            tup_first_name,
+            tup_last_name
+          ),
+          tbl_tutors (
+            tt_specializations
+          )
+        `)
+                .eq('tu_user_type', 'tutor')
+                .eq('tu_is_active', true);
+
+            if (error) throw error;
+            setTutors(data || []);
+        } catch (error) {
+            console.error('Failed to load tutors:', error);
+            setTutors([]);
+        }
+    };
+
+    const loadCourseTutorAssignments = async () => {
+        try {
+            const {data, error} = await supabase
+                .from('tbl_tutor_assignments')
+                .select(`
+          tta_id,
+          tta_course_id,
+          tta_tutor_id,
+          tutor:tbl_users!tta_tutor_id (
+            tu_id,
+            tu_email,
+            tbl_user_profiles (
+              tup_first_name,
+              tup_last_name
+            ),
+            tbl_tutors (
+              tt_specializations
+            )
+          )
+        `)
+                .is('tta_enrollment_id', null)
+                .eq('tta_is_active', true)
+                .order('tta_assigned_at', {ascending: false});
+
+            if (error) throw error;
+
+            const assignmentsByCourse = (data || []).reduce((acc: Record<string, CourseTutorAssignment>, assignment: any) => {
+                if (assignment.tta_course_id && !acc[assignment.tta_course_id]) {
+                    acc[assignment.tta_course_id] = assignment;
+                }
+                return acc;
+            }, {});
+
+            setCourseTutorAssignments(assignmentsByCourse);
+        } catch (error) {
+            console.error('Failed to load course tutor assignments:', error);
+            setCourseTutorAssignments({});
+        }
+    };
+
     const loadLessons = async (courseId: string) => {
         try {
             const {data, error} = await supabase
@@ -322,6 +414,8 @@ const CourseManagement: React.FC = () => {
     useEffect(() => {
         loadCourses();
         loadCategories();
+        loadTutors();
+        loadCourseTutorAssignments();
     }, [searchTerm, categoryFilter, statusFilter, currentPage, itemsPerPage]);
 
     // Reset to first page when filters change
@@ -733,6 +827,92 @@ const CourseManagement: React.FC = () => {
         }
     };
 
+    const getTutorName = (tutor?: Tutor) => {
+        const profile = tutor?.tbl_user_profiles?.[0];
+        const fullName = [profile?.tup_first_name, profile?.tup_last_name]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+
+        return fullName || tutor?.tu_email || 'Unknown Tutor';
+    };
+
+    const getTutorNameWithSubjects = (tutor: Tutor) => {
+        const tutorProfile = tutor.tbl_tutors?.[0];
+        const specializations = tutorProfile?.tt_specializations || [];
+
+        if (specializations.length > 0) {
+            return `${getTutorName(tutor)} - ${specializations.join(', ')}`;
+        }
+        return getTutorName(tutor);
+    };
+
+    const openTutorModal = (course: Course) => {
+        const existingAssignment = courseTutorAssignments[course.tc_id];
+        setSelectedTutorCourse(course);
+        setSelectedTutorId(existingAssignment?.tta_tutor_id || '');
+        setShowTutorModal(true);
+    };
+
+    const closeTutorModal = () => {
+        setSelectedTutorCourse(null);
+        setSelectedTutorId('');
+        setShowTutorModal(false);
+    };
+
+    const handleAssignTutorToCourse = async () => {
+        if (!selectedTutorCourse || !selectedTutorId) {
+            notification.showError('Tutor Required', 'Please select a tutor to assign');
+            return;
+        }
+
+        try {
+            setAssigningTutor(true);
+            const existingAssignment = courseTutorAssignments[selectedTutorCourse.tc_id];
+
+            if (existingAssignment?.tta_tutor_id === selectedTutorId) {
+                closeTutorModal();
+                return;
+            }
+
+            if (existingAssignment) {
+                const {error: deactivateError} = await supabase
+                    .from('tbl_tutor_assignments')
+                    .update({
+                        tta_is_active: false,
+                        tta_status: 'cancelled',
+                        tta_assigned_at: new Date().toISOString()
+                    })
+                    .eq('tta_id', existingAssignment.tta_id);
+
+                if (deactivateError) throw deactivateError;
+            }
+
+            const {error: insertError} = await supabase
+                .from('tbl_tutor_assignments')
+                .insert({
+                    tta_tutor_id: selectedTutorId,
+                    tta_course_id: selectedTutorCourse.tc_id,
+                    tta_enrollment_id: null,
+                    tta_learner_id: null,
+                    tta_assigned_by: null,
+                    tta_status: 'active',
+                    tta_is_active: true
+                });
+
+            if (insertError) throw insertError;
+
+            notification.showSuccess('Tutor Assigned', 'Tutor has been assigned to this course successfully');
+            closeTutorModal();
+            await loadCourseTutorAssignments();
+        } catch (error: any) {
+            console.error('Failed to assign tutor to course:', error);
+            notification.showError('Assignment Failed', error.message || 'Failed to assign tutor to course');
+        } finally {
+            setAssigningTutor(false);
+        }
+    };
+
     // Learning outcomes handlers
     const addLearningOutcome = () => {
         setCourseFormData(prev => ({
@@ -1037,6 +1217,12 @@ const CourseManagement: React.FC = () => {
                                         <div className="text-sm text-gray-500 capitalize">
                                             {course.tc_difficulty_level}
                                         </div>
+                                        {courseTutorAssignments[course.tc_id] && (
+                                            <div className="mt-1 flex items-center text-sm text-gray-500">
+                                                <UserCheck className="h-4 w-4 text-green-600 mr-1"/>
+                                                {getTutorName(courseTutorAssignments[course.tc_id].tutor)}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
@@ -1068,13 +1254,22 @@ const CourseManagement: React.FC = () => {
                                                 <Eye className="h-4 w-4"/>
                                             </button>
                                             {canWriteCourses && (
-                                                <button
-                                                    onClick={() => openEditCourse(course)}
-                                                    className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
-                                                    title="Edit Course"
-                                                >
-                                                    <Pencil className="h-4 w-4"/>
-                                                </button>
+                                                <>
+                                                    <button
+                                                        onClick={() => openTutorModal(course)}
+                                                        className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-purple-50"
+                                                        title={courseTutorAssignments[course.tc_id] ? 'Change Tutor' : 'Assign Tutor'}
+                                                    >
+                                                        <UserCheck className="h-4 w-4"/>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openEditCourse(course)}
+                                                        className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
+                                                        title="Edit Course"
+                                                    >
+                                                        <Pencil className="h-4 w-4"/>
+                                                    </button>
+                                                </>
                                             )}
                                             {canDeleteCourses && (
                                                 <button
@@ -1156,6 +1351,81 @@ const CourseManagement: React.FC = () => {
                                     No active categories available.
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showTutorModal && selectedTutorCourse && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                            <div>
+                                <h4 className="text-lg font-semibold text-gray-900">
+                                    {courseTutorAssignments[selectedTutorCourse.tc_id] ? 'Change Course Tutor' : 'Assign Course Tutor'}
+                                </h4>
+                                <p className="text-sm text-gray-500">
+                                    {selectedTutorCourse.tc_title}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeTutorModal}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {courseTutorAssignments[selectedTutorCourse.tc_id] && (
+                                <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
+                                    Current tutor: {getTutorName(courseTutorAssignments[selectedTutorCourse.tc_id].tutor)}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Select Tutor
+                                </label>
+                                <select
+                                    value={selectedTutorId}
+                                    onChange={(e) => setSelectedTutorId(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    disabled={assigningTutor}
+                                >
+                                    <option value="">Choose a tutor</option>
+                                    {tutors.map((tutor) => (
+                                        <option key={tutor.tu_id} value={tutor.tu_id}>
+                                            {getTutorNameWithSubjects(tutor)}
+                                        </option>
+                                    ))}
+                                </select>
+                                {tutors.length === 0 && (
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        No active tutors are available.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={closeTutorModal}
+                                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                                    disabled={assigningTutor}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAssignTutorToCourse}
+                                    disabled={assigningTutor || !selectedTutorId}
+                                    className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                >
+                                    {assigningTutor ? 'Assigning...' : 'Assign Tutor'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

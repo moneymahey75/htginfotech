@@ -38,7 +38,8 @@ export default function VideoLibrary() {
       const { data: enrollments, error: enrollError } = await supabase
         .from('tbl_course_enrollments')
         .select('tce_course_id')
-        .eq('tce_user_id', user.id);
+        .eq('tce_user_id', user.id)
+        .eq('tce_is_active', true);
 
       if (enrollError) throw enrollError;
 

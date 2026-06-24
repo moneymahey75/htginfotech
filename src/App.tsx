@@ -1,7 +1,7 @@
 //import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { AuthProvider } from './contexts/AuthContext';
+import { useEffect, type ReactNode } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './components/ui/NotificationProvider';
 import SessionWarning from './components/ui/SessionWarning';
 import { AdminProvider } from './contexts/AdminContext';
@@ -57,6 +57,20 @@ function ScrollToTop() {
   return null;
 }
 
+function PublicOnlyRoute({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <NotificationProvider>
@@ -98,7 +112,11 @@ function App() {
                           <Route path="/faq" element={<FAQ />} />
                           <Route path="/job-seekers" element={<JobSeekers />} />
                           <Route path="/job-providers" element={<JobProviders />} />
-                          <Route path="/tutors" element={<JoinAsTutor />} />
+                          <Route path="/tutors" element={
+                            <PublicOnlyRoute>
+                              <JoinAsTutor />
+                            </PublicOnlyRoute>
+                          } />
                           <Route path="/learners" element={<JoinAsLearner />} />
                           
                           {/* Unified Auth Routes */}
